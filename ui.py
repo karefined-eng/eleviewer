@@ -6,6 +6,9 @@ from PySide6.QtGui import QAction
 from PySide6.QtCore import Qt, QSize
 import os
 
+from bookmark_manager import add_bookmark, load_bookmarks
+from bookmark_panel import BookmarkPanel
+
 try:
     from web_panel import WebPanel, WEB_AVAILABLE
 except ImportError:
@@ -20,7 +23,7 @@ from session_manager import load_session, save_session
 from quick_switcher import QuickSwitcher
 from settings import load_settings, save_settings
 from settings_dialog import SettingsDialog
-from theme import main_window_stylesheet
+from theme import main_window_stylesheet, ICON_SIZE_TOOLBAR, ICON_SIZE_COMPACT
 from save_utils import atomic_write
 from icons import icon
 from vault_explorer import VaultExplorer
@@ -40,6 +43,7 @@ class MainWindow(QMainWindow):
         self.closed_tabs = []
         self.web_panel = None
         self.vault_panel = None
+        self.bookmarks_panel = None
 
         self.setWindowTitle("EleViewer")
         self.resize(1200, 800)
@@ -78,6 +82,13 @@ class MainWindow(QMainWindow):
         self.tabs.customContextMenuRequested.connect(self.show_tab_context_menu)
         self.editor_splitter.addWidget(self.tabs)
 
+        self.bookmarks_panel = BookmarkPanel()
+        self.bookmarks_panel.setMinimumWidth(200)
+        self.bookmarks_panel.setMaximumWidth(360)
+        self.bookmarks_panel.bookmark_activated.connect(self._navigate_to_bookmark)
+        self.bookmarks_panel.hide()
+        self.editor_splitter.addWidget(self.bookmarks_panel)
+
         self.main_splitter.addWidget(self.editor_splitter)
         self.main_splitter.setSizes([0, 1200])
         self.vault_panel.hide()
@@ -87,43 +98,44 @@ class MainWindow(QMainWindow):
     def _build_toolbar(self):
         self.toolbar = QToolBar("Main Toolbar")
         self.toolbar.setMovable(False)
-        self.toolbar.setIconSize(QSize(22, 22))
+        self.toolbar.setIconSize(QSize(ICON_SIZE_TOOLBAR, ICON_SIZE_TOOLBAR))
         self.toolbar.setToolButtonStyle(Qt.ToolButtonIconOnly)
         self.addToolBar(self.toolbar)
 
         menu_btn = QToolButton()
-        menu_btn.setIcon(icon("menu"))
+        menu_btn.setIconSize(QSize(ICON_SIZE_TOOLBAR, ICON_SIZE_TOOLBAR))
+        menu_btn.setIcon(icon("menu", size=ICON_SIZE_TOOLBAR))
         menu_btn.setToolTip("Menu")
         menu_btn.setPopupMode(QToolButton.InstantPopup)
         menu_btn.setMenu(self._build_popup_menu())
         menu_btn.setStyleSheet("QToolButton { padding: 6px; border: none; } QToolButton:hover { background: #3c3c3c; }")
         self.toolbar.addWidget(menu_btn)
 
-        vault_btn = QAction(icon("panel-left"), "Toggle Vault", self)
+        vault_btn = QAction(icon("panel-left", size=ICON_SIZE_TOOLBAR), "Toggle Vault", self)
         vault_btn.setToolTip("Toggle Vault (Ctrl+Shift+E)")
         vault_btn.setShortcut("Ctrl+Shift+E")
         vault_btn.triggered.connect(self.toggle_vault_panel)
         self.toolbar.addAction(vault_btn)
 
-        open_btn = QAction(icon("folder-open"), "Open", self)
+        open_btn = QAction(icon("folder-open", size=ICON_SIZE_TOOLBAR), "Open", self)
         open_btn.setToolTip("Open File (Ctrl+O)")
         open_btn.setShortcut("Ctrl+O")
         open_btn.triggered.connect(self.open_file)
         self.toolbar.addAction(open_btn)
 
-        save_btn = QAction(icon("save"), "Save", self)
+        save_btn = QAction(icon("save", size=ICON_SIZE_TOOLBAR), "Save", self)
         save_btn.setToolTip("Save File (Ctrl+S)")
         save_btn.setShortcut("Ctrl+S")
         save_btn.triggered.connect(self.save_file)
         self.toolbar.addAction(save_btn)
 
         if WEB_AVAILABLE:
-            web_btn = QAction(icon("globe"), "Web", self)
+            web_btn = QAction(icon("globe", size=ICON_SIZE_TOOLBAR), "Web", self)
             web_btn.setToolTip("Toggle Web Panel")
             web_btn.triggered.connect(self.toggle_web_panel)
             self.toolbar.addAction(web_btn)
 
-        settings_btn = QAction(icon("settings"), "Settings", self)
+        settings_btn = QAction(icon("settings", size=ICON_SIZE_TOOLBAR), "Settings", self)
         settings_btn.setToolTip("Settings")
         settings_btn.triggered.connect(self.open_settings)
         self.toolbar.addAction(settings_btn)
@@ -142,10 +154,10 @@ class MainWindow(QMainWindow):
         self._add_menu_action(menu, "Open File...", self.open_file, "Ctrl+O")
         self._add_menu_action(menu, "Save", self.save_file, "Ctrl+S")
         menu.addSeparator()
-        menu.addAction("Open Vault...", self.add_vault)
+        menu.addAction("Open Folder", self.add_vault)
         self._add_menu_action(menu, "Toggle Vault", self.toggle_vault_panel, "Ctrl+Shift+E")
         menu.addSeparator()
-        self._add_menu_action(menu, "Reopen Tab", self.reopen_closed_tab, "Ctrl+Shift+T")
+        self._add_menu_action(menu, "Restore Tab", self.reopen_closed_tab, "Ctrl+Shift+T")
         self._add_menu_action(menu, "Quick Switcher", self.open_quick_switcher, "Ctrl+P")
         menu.addSeparator()
         menu.addAction("Settings...", self.open_settings)
@@ -194,6 +206,68 @@ class MainWindow(QMainWindow):
     def _wire_editor(self, editor):
         if hasattr(editor, "set_status_callback"):
             editor.set_status_callback(self.show_status_message)
+        if hasattr(editor, "set_bookmark_callback"):
+            editor.set_bookmark_callback(
+                lambda data, ed=editor: self._add_bookmark_from_editor(ed, data),
+            )
+
+    @staticmethod
+    def _elide_menu_label(path, max_len=36):
+        name = os.path.basename(path)
+        if len(name) <= max_len:
+            return name
+        keep = max_len - 3
+        front = keep // 2
+        back = keep - front
+        return f"{name[:front]}...{name[-back:]}"
+
+    def _add_bookmark_from_editor(self, editor, data):
+        path = getattr(editor, "file_path", None)
+        if not path:
+            self.show_status_message("Save the file before bookmarking", 3000)
+            return
+        add_bookmark(
+            path,
+            page_number=data.get("page_number", 0),
+            scroll_position_y=data.get("scroll_position_y", 0.0),
+            label=data.get("label"),
+        )
+        self.bookmarks_panel.refresh()
+        self.update_menus()
+        self.show_status_message("Bookmark saved", 2000)
+
+    def _navigate_to_bookmark(self, bookmark):
+        path = bookmark.get("file_path")
+        if not path or not os.path.exists(path):
+            self.show_status_message("Bookmarked file not found", 3000)
+            return
+        if not self.switch_to_tab_if_open(path):
+            try:
+                editor = create_viewer_widget(path)
+                self._wire_editor(editor)
+                save_recent_file(path)
+                self._add_editor_tab(editor, os.path.basename(path))
+            except Exception as e:
+                QMessageBox.critical(self, "Error", f"Failed to open file: {str(e)}")
+                return
+        editor = self.current_editor()
+        if hasattr(editor, "go_to_bookmark"):
+            editor.go_to_bookmark(
+                bookmark.get("page_number", 0),
+                bookmark.get("scroll_position_y", 0.0),
+            )
+        self.show_status_message(f"Opened bookmark: {bookmark.get('label', '')}", 2000)
+
+    def toggle_bookmarks_panel(self):
+        if self.bookmarks_panel is None:
+            return
+        visible = self.bookmarks_panel.isVisible()
+        self.bookmarks_panel.setVisible(not visible)
+        if not visible:
+            self.bookmarks_panel.refresh()
+            self.editor_splitter.setSizes([max(self.width() - 280, 400), 260])
+        else:
+            self.editor_splitter.setSizes([self.width(), 0])
 
     def show_status_message(self, message, timeout_ms=0):
         self.statusBar().showMessage(message, timeout_ms)
@@ -279,12 +353,13 @@ class MainWindow(QMainWindow):
                 "is_active": (i == self.tabs.currentIndex()),
                 "is_modified": getattr(editor, "is_modified", False),
             })
-        save_session(tabs_info)
+        save_session(tabs_info, bookmarks_panel_visible=self.bookmarks_panel.isVisible())
 
     def restore_session(self):
         session = load_session()
+        tabs = session.get("tabs", [])
         active_index = 0
-        for tab_info in session:
+        for tab_info in tabs:
             file_path = tab_info.get("file_path")
             content = tab_info.get("content", "")
             is_active = tab_info.get("is_active", False)
@@ -316,6 +391,10 @@ class MainWindow(QMainWindow):
         if self.tabs.count() > 0:
             self.tabs.setCurrentIndex(active_index)
             self.update_status_bar()
+        if session.get("bookmarks_panel_visible") and self.bookmarks_panel:
+            self.bookmarks_panel.show()
+            self.bookmarks_panel.refresh()
+            self.editor_splitter.setSizes([max(self.width() - 280, 400), 260])
 
     def create_menu(self):
         menu = self.menuBar()
@@ -332,16 +411,23 @@ class MainWindow(QMainWindow):
         )
 
         vault_menu = menu.addMenu("Vault")
-        vault_menu.addAction("Add Vault...", self.add_vault)
-        vault_menu.addAction("Remove Current Vault", self.vault_panel.remove_current_vault)
-        self._add_menu_action(vault_menu, "Toggle Panel", self.toggle_vault_panel, "Ctrl+Shift+E")
+        vault_menu.addAction("Add Folder", self.add_vault)
+        vault_menu.addAction("Remove Folder", self.vault_panel.remove_current_vault)
+        self._add_menu_action(
+            vault_menu, "Toggle Panel (Ctrl+Shift+E)", self.toggle_vault_panel, "Ctrl+Shift+E",
+        )
 
         session_menu = menu.addMenu("Session")
-        self._add_menu_action(session_menu, "Reopen Tab", self.reopen_closed_tab, "Ctrl+Shift+T")
+        self._add_menu_action(session_menu, "Restore Tab", self.reopen_closed_tab, "Ctrl+Shift+T")
         self._add_menu_action(session_menu, "Quick Switcher", self.open_quick_switcher, "Ctrl+P")
+        session_menu.addSeparator()
+        self._add_menu_action(
+            session_menu, "Toggle Bookmarks", self.toggle_bookmarks_panel, "Ctrl+Shift+B",
+        )
         session_menu.addSeparator()
         self.recent_menu = session_menu.addMenu("Recent Files")
         self.pinned_menu = session_menu.addMenu("Pinned Files")
+        self.bookmarks_menu = session_menu.addMenu("Bookmarks")
 
         menu.addAction("Settings...", self.open_settings)
 
@@ -361,6 +447,7 @@ class MainWindow(QMainWindow):
     def update_menus(self):
         self.update_recent_files_menu()
         self.update_pinned_files_menu()
+        self.update_bookmarks_menu()
 
     def update_tab_title(self, editor):
         index = self.tabs.indexOf(editor)
@@ -386,10 +473,10 @@ class MainWindow(QMainWindow):
         menu = QMenu(self)
         if path:
             if is_pinned(path):
-                pin_action = menu.addAction(icon("pin"), "Unpin File")
+                pin_action = menu.addAction(icon("pin", size=ICON_SIZE_COMPACT), "Unpin File")
                 pin_action.triggered.connect(lambda: self.unpin_file(path))
             else:
-                pin_action = menu.addAction(icon("pin"), "Pin File")
+                pin_action = menu.addAction(icon("pin", size=ICON_SIZE_COMPACT), "Pin File")
                 pin_action.triggered.connect(lambda: self.pin_file(path))
             menu.addSeparator()
         menu.addAction("Close Tab", lambda: self.close_tab(index))
@@ -566,7 +653,7 @@ class MainWindow(QMainWindow):
             self.recent_menu.addAction("(no recent files)")
             return
         for path in recent_files:
-            action = QAction(os.path.basename(path), self)
+            action = QAction(self._elide_menu_label(path), self)
             action.setToolTip(path)
             action.triggered.connect(lambda checked=False, p=path: self.open_recent_file(p))
             self.recent_menu.addAction(action)
@@ -578,10 +665,28 @@ class MainWindow(QMainWindow):
             self.pinned_menu.addAction("(no pinned files)")
             return
         for path in pinned_files:
-            action = QAction(os.path.basename(path), self)
+            action = QAction(self._elide_menu_label(path), self)
             action.setToolTip(path)
             action.triggered.connect(lambda checked=False, p=path: self.open_recent_file(p))
             self.pinned_menu.addAction(action)
+
+    def update_bookmarks_menu(self):
+        self.bookmarks_menu.clear()
+        bookmarks = load_bookmarks()
+        if not bookmarks:
+            self.bookmarks_menu.addAction("(no bookmarks)")
+            return
+        for bookmark in bookmarks[:15]:
+            label = bookmark.get("label", "Bookmark")
+            path = bookmark.get("file_path", "")
+            action = QAction(self._elide_menu_label(label) if len(label) > 36 else label, self)
+            action.setToolTip(path)
+            action.triggered.connect(
+                lambda checked=False, b=bookmark: self._navigate_to_bookmark(b),
+            )
+            self.bookmarks_menu.addAction(action)
+        self.bookmarks_menu.addSeparator()
+        self.bookmarks_menu.addAction("Toggle Bookmarks Panel", self.toggle_bookmarks_panel)
 
     def toggle_web_panel(self):
         if not WEB_AVAILABLE:
