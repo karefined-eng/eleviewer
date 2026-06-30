@@ -7,6 +7,8 @@ from openpyxl import load_workbook
 from openpyxl.cell.cell import MergedCell
 import io
 
+from theme import viewer_header_stylesheet
+
 
 class XlsxViewer(QWidget):
     """
@@ -34,12 +36,7 @@ class XlsxViewer(QWidget):
         header_layout = QHBoxLayout()
         
         header_label = QLabel("📊 XLSX Spreadsheet Editor")
-        header_label.setStyleSheet("""
-            QLabel {
-                color: #888;
-                font-size: 12px;
-            }
-        """)
+        header_label.setStyleSheet(viewer_header_stylesheet())
         
         self.sheet_selector = QComboBox()
         self.sheet_selector.setStyleSheet("""

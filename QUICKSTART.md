@@ -61,7 +61,14 @@ The executable will be generated at `dist/main.exe`.
 **Error: "ModuleNotFoundError: No module named 'openpyxl'"**
 - Run: `pip install openpyxl`
 
-**The app doesn't start**
+**Error: "No module named 'fitz'" or PDF won't open**
+- Run: `pip install PyMuPDF`
+
+**Error: "No module named 'markdown'"**
+- Run: `pip install markdown`
+
+**Optional: Web panel not available**
+- Run: `pip install PySide6-WebEngine`
 - Make sure you're in the project directory
 - Make sure Python 3.9+ is installed: `python --version`
 - Try: `python main.py` (not `python3 main.py`)
@@ -80,7 +87,14 @@ eleviewer/
 ├── quick_switcher.py        # Ctrl+P dialog
 ├── recent_files.py          # Recent files menu
 ├── pinned_files.py          # Pinned files
-├── autosave.py              # Auto-save system
+├── autosave.py              # Auto-save system (atomic writes, settings-aware)
+├── paths.py                 # Centralized app data paths
+├── theme.py                 # Centralized dark theme styles
+├── settings.py              # User settings persistence
+├── settings_dialog.py       # Settings UI
+├── save_utils.py            # Atomic file writes
+├── markdown_renderer.py     # Markdown with live HTML preview
+├── pdf_viewer.py            # PDF viewing (PyMuPDF)
 ├── requirements.txt         # Dependencies
 └── data/                    # User data (created at runtime)
 ```

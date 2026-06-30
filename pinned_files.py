@@ -1,60 +1,45 @@
 import json
 import os
-from pathlib import Path
+
+from paths import PINNED_FILE_PATH
 
 
-# Use safe user-writable location
-APP_DATA_DIR = Path(os.getenv("APPDATA", Path.home())) / "EleViewer"
-APP_DATA_DIR.mkdir(parents=True, exist_ok=True)
-
-PINNED_FILE_PATH = APP_DATA_DIR / "pinned_files.json"
-
-
-def load_pinned_files():
-    """Load list of pinned file paths."""
+def load_pinned_files(validate=True):
     if not PINNED_FILE_PATH.exists():
         return []
-    
     try:
         with open(PINNED_FILE_PATH, "r", encoding="utf-8") as file:
-            return json.load(file)
-    
+            files = json.load(file)
+        if validate:
+            original_count = len(files)
+            files = [f for f in files if os.path.exists(f)]
+            if len(files) != original_count:
+                _save_pinned_files(files)
+        return files
     except Exception:
         return []
 
 
-def save_pinned_file(path):
-    """
-    Add or move a file to the top of pinned list.
-    Keeps max 10 pinned files.
-    """
-    files = load_pinned_files()
-    
-    # Remove if already exists
-    if path in files:
-        files.remove(path)
-    
-    # Add to top
-    files.insert(0, path)
-    
-    # Keep only 10
-    files = files[:10]
-    
+def _save_pinned_files(files):
     with open(PINNED_FILE_PATH, "w", encoding="utf-8") as file:
         json.dump(files, file, indent=4)
+
+
+def save_pinned_file(path):
+    files = load_pinned_files(validate=False)
+    if path in files:
+        files.remove(path)
+    files.insert(0, path)
+    files = files[:10]
+    _save_pinned_files(files)
 
 
 def remove_pinned_file(path):
-    """Remove a file from pinned list."""
-    files = load_pinned_files()
-    
+    files = load_pinned_files(validate=False)
     if path in files:
         files.remove(path)
-    
-    with open(PINNED_FILE_PATH, "w", encoding="utf-8") as file:
-        json.dump(files, file, indent=4)
+    _save_pinned_files(files)
 
 
 def is_pinned(path):
-    """Check if a file is pinned."""
-    return path in load_pinned_files()
+    return path in load_pinned_files(validate=False)

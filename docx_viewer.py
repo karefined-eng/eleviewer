@@ -3,6 +3,8 @@ from PySide6.QtCore import Signal
 from docx import Document
 import io
 
+from theme import viewer_header_stylesheet, editor_stylesheet
+
 
 class DocxViewer(QWidget):
     """
@@ -25,27 +27,10 @@ class DocxViewer(QWidget):
         
         # Header showing file type
         header = QLabel("📄 DOCX Document Editor")
-        header.setStyleSheet("""
-            QLabel {
-                color: #888;
-                font-size: 12px;
-                padding: 5px;
-                background: #2a2a2a;
-            }
-        """)
-        
-        # Main text editor
+        header.setStyleSheet(viewer_header_stylesheet())
+
         self.editor = QPlainTextEdit()
-        self.editor.setStyleSheet("""
-            QPlainTextEdit {
-                background: #1e1e1e;
-                color: #ffffff;
-                font-size: 15px;
-                padding: 10px;
-                border: none;
-                font-family: 'Segoe UI', 'Consolas', monospace;
-            }
-        """)
+        self.editor.setStyleSheet(editor_stylesheet())
         
         self.editor.textChanged.connect(self._on_text_changed)
         
