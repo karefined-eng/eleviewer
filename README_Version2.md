@@ -1,107 +1,79 @@
 # EleViewer
 
-A lightweight Windows text editor supporting **DOCX**, **XLSX**, **MD**, **TXT**, and **PDF** file formats. Built with Python and PySide6.
+A lightweight Windows document editor supporting **DOCX**, **XLSX**, **MD**, **TXT**, **CSV**, and **PDF**. Built with Python and PySide6.
 
-## Features
+## Highlights
 
-✅ **Multi-format support**
-- Word documents (.docx) — view and edit (basic text editing)
-- Excel spreadsheets (.xlsx) — view, edit cells, multiple sheets
-- Markdown files (.md) — editing with live HTML preview (tables, code blocks)
-- Plain text (.txt) — full editing
-- PDF files (.pdf) — read-only viewing with page navigation
-
-✅ **Advanced editing features**
-- **Multi-tab interface** — work with multiple files simultaneously
-- **Session restore** — reopens tabs from your last session (reloads saved files from disk)
-- **Quick switcher (Ctrl+P)** — fuzzy search over recent/pinned files (VSCode-style)
-- **Reopen closed tab (Ctrl+Shift+T)**
-- **Pinned files** — keep frequently used files at the top
-- **Recent files menu** — last 10 files with automatic validation
-- **Autosave** — optional background saving with atomic writes (configurable in Settings)
-- **Quit prompt** — warns when closing with unsaved changes
-- **Status bar** — shows current file, path, and save/autosave feedback
-- **Optional web panel** — embedded browser with configurable URL
-
-✅ **Clean, Dark UI**
-- Centralized dark theme across all viewers
-- Responsive interface built with PySide6
-- Fast and lightweight
-
-## System Requirements
-
-- **Windows 10/11**
-- **Python 3.9+** (if running from source)
-- ~50MB disk space with all dependencies
+- **Lucide-style icon toolbar** with hamburger menu
+- **Multi-vault sidebar** — add multiple course-material folders, cached between sessions
+- **Markdown** — view mode, simple plain-text edit (double-click), syntax edit (triple-click or pencil icon)
+- **PDF** — Edge-like fit-to-page, high-DPI rendering, arrow-key navigation, Windows TTS
+- **Tabbed web panel** — Google, Gemini, ChatGPT, etc. with persisted tabs
+- **Excel** — Google Sheets-style bottom sheet tabs
+- **Draggable editor tabs**
 
 ## Installation
 
-### Option 1: Use the .exe (Recommended for End Users)
+```bash
+pip install -r requirements.txt
+python main.py
+```
 
-1. Download `main.exe` from the [releases](https://github.com/karefined-eng/eleviewer/releases) page
-2. Run it — no installation needed
-3. Start editing!
+Optional web panel: `pip install PySide6-WebEngine`
 
-### Option 2: Run from Source
+## Vault
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/karefined-eng/eleviewer.git
-   cd eleviewer
-   ```
+1. **Vault → Add Vault...** or toolbar **+** in the vault panel
+2. Switch vaults via the dropdown at the top of the sidebar
+3. **Ctrl+Shift+E** toggles the panel
+4. Expand folders with the chevron; double-click files to open
+5. **Settings → Vault** — show all files (for code projects) vs documents only
 
-2. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
+Multiple vaults are saved in `%APPDATA%\EleViewer\settings.json`.
 
-3. **Optional** — embedded web panel:
-   ```bash
-   pip install PySide6-WebEngine
-   ```
+## Markdown editing
 
-4. Run the app:
-   ```bash
-   python main.py
-   ```
+| Action | Result |
+|--------|--------|
+| Default open | Rendered view |
+| Double-click preview | Simple plain-text edit (no `#` or `**`) |
+| Triple-click preview | Syntax / markdown edit |
+| Pencil icon | Syntax edit |
+| Book icon | Back to rendered view |
 
-## Settings
+## PDF
 
-Open **File → Settings** to configure:
+| Control | Action |
+|---------|--------|
+| Fit page / Fit width | Toolbar buttons |
+| Arrow keys | Change pages |
+| Speaker | Read aloud (Windows voices via pyttsx3) |
+| Settings → PDF | Default fit mode and render quality |
 
-- **Autosave** — enable/disable and set interval (2–300 seconds)
-- **Web panel URL** — default homepage for the embedded browser
+## Web panel
 
-Settings are stored in `%APPDATA%\EleViewer\settings.json`.
+- Globe toolbar icon toggles the panel
+- **+** or **Ctrl+T** adds a tab
+- Tabs and URLs persist between sessions
+- Settings → Web sets default URL for new tabs
 
-## Dependencies
+## Menus
 
-| Package | Purpose |
-|---------|---------|
-| PySide6 | GUI framework |
-| python-docx | Word document support |
-| openpyxl | Excel spreadsheet support |
-| markdown | Rich markdown preview |
-| PyMuPDF | PDF viewing |
-| PySide6-WebEngine | Optional embedded web panel |
+- **File** — New, Open, Save, Close
+- **Vault** — Add, remove, toggle panel
+- **Session** — Reopen tab, quick switcher, recent/pinned
+- **Settings** — tabbed preferences
+- Toolbar **menu icon** — quick access to common actions
 
-## Keyboard Shortcuts
+## Shortcuts
 
 | Shortcut | Action |
 |----------|--------|
-| Ctrl+N | New tab |
-| Ctrl+O | Open file |
-| Ctrl+S | Save |
-| Ctrl+Shift+S | Save As |
-| Ctrl+W | Close tab |
-| Ctrl+Shift+T | Reopen closed tab |
+| Ctrl+Shift+E | Toggle vault |
+| Ctrl+Shift+T | Reopen tab |
+| Ctrl+T | New web tab (when web panel focused) |
 | Ctrl+P | Quick switcher |
 
-## User Data
+## Dependencies
 
-All user data is stored in:
-```
-C:\Users\<YourName>\AppData\Roaming\EleViewer\
-```
-
-This includes recent files, pinned files, session state, and settings.
+PySide6, python-docx, openpyxl, markdown, PyMuPDF, pyttsx3, PySide6-WebEngine (optional)

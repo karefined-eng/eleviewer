@@ -1,14 +1,13 @@
 from PySide6.QtWidgets import (
     QMainWindow, QTabWidget, QFileDialog, QMessageBox,
-    QSplitter, QMenu, QToolBar,
+    QSplitter, QMenu, QToolBar, QToolButton,
 )
 from PySide6.QtGui import QAction
-from PySide6.QtCore import Qt, QUrl, QSize
+from PySide6.QtCore import Qt, QSize
 import os
 
 try:
-    from PySide6.QtWebEngineWidgets import QWebEngineView
-    WEB_AVAILABLE = True
+    from web_panel import WebPanel, WEB_AVAILABLE
 except ImportError:
     WEB_AVAILABLE = False
 
@@ -19,28 +18,38 @@ from recent_files import load_recent_files, save_recent_file
 from pinned_files import load_pinned_files, save_pinned_file, remove_pinned_file, is_pinned
 from session_manager import load_session, save_session
 from quick_switcher import QuickSwitcher
-from settings import load_settings
+from settings import load_settings, save_settings
 from settings_dialog import SettingsDialog
 from theme import main_window_stylesheet
 from save_utils import atomic_write
+from icons import icon
+from vault_explorer import VaultExplorer
 
 
 class MainWindow(QMainWindow):
+
+    FILE_FILTER = (
+        "All Supported (*.md *.txt *.docx *.xlsx *.pdf *.csv);;"
+        "Word (*.docx);;Excel (*.xlsx);;PDF (*.pdf);;"
+        "Markdown (*.md);;Text (*.txt);;CSV (*.csv)"
+    )
 
     def __init__(self):
         super().__init__()
         self.autosaver = None
         self.closed_tabs = []
         self.web_panel = None
+        self.vault_panel = None
 
         self.setWindowTitle("EleViewer")
         self.resize(1200, 800)
         self.setStyleSheet(main_window_stylesheet())
         self.statusBar().showMessage("Ready")
 
+        self._build_layout()
         self._build_toolbar()
-        self._build_tabs()
         self.create_menu()
+        self._restore_vault()
         self.restore_session()
 
         if self.tabs.count() == 0:
@@ -48,37 +57,143 @@ class MainWindow(QMainWindow):
 
         self.tabs.currentChanged.connect(self.update_status_bar)
 
+    def _build_layout(self):
+        self.main_splitter = QSplitter(Qt.Horizontal)
+
+        self.vault_panel = VaultExplorer()
+        self.vault_panel.setMinimumWidth(180)
+        self.vault_panel.setMaximumWidth(420)
+        self.vault_panel.file_opened.connect(self._open_vault_file)
+        self.vault_panel.btn_add.clicked.connect(self.add_vault)
+        self.vault_panel.btn_remove.clicked.connect(self.vault_panel.remove_current_vault)
+        self.main_splitter.addWidget(self.vault_panel)
+
+        self.editor_splitter = QSplitter(Qt.Horizontal)
+        self.tabs = QTabWidget()
+        self.tabs.setTabsClosable(True)
+        self.tabs.setDocumentMode(True)
+        self.tabs.tabBar().setMovable(True)
+        self.tabs.tabCloseRequested.connect(self.close_tab)
+        self.tabs.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.tabs.customContextMenuRequested.connect(self.show_tab_context_menu)
+        self.editor_splitter.addWidget(self.tabs)
+
+        self.main_splitter.addWidget(self.editor_splitter)
+        self.main_splitter.setSizes([0, 1200])
+        self.vault_panel.hide()
+
+        self.setCentralWidget(self.main_splitter)
+
     def _build_toolbar(self):
         self.toolbar = QToolBar("Main Toolbar")
         self.toolbar.setMovable(False)
-        self.toolbar.setIconSize(QSize(24, 24))
+        self.toolbar.setIconSize(QSize(22, 22))
+        self.toolbar.setToolButtonStyle(Qt.ToolButtonIconOnly)
         self.addToolBar(self.toolbar)
 
-        open_btn = QAction("📂 Open", self)
+        menu_btn = QToolButton()
+        menu_btn.setIcon(icon("menu"))
+        menu_btn.setToolTip("Menu")
+        menu_btn.setPopupMode(QToolButton.InstantPopup)
+        menu_btn.setMenu(self._build_popup_menu())
+        menu_btn.setStyleSheet("QToolButton { padding: 6px; border: none; } QToolButton:hover { background: #3c3c3c; }")
+        self.toolbar.addWidget(menu_btn)
+
+        vault_btn = QAction(icon("panel-left"), "Toggle Vault", self)
+        vault_btn.setToolTip("Toggle Vault (Ctrl+Shift+E)")
+        vault_btn.setShortcut("Ctrl+Shift+E")
+        vault_btn.triggered.connect(self.toggle_vault_panel)
+        self.toolbar.addAction(vault_btn)
+
+        open_btn = QAction(icon("folder-open"), "Open", self)
         open_btn.setToolTip("Open File (Ctrl+O)")
+        open_btn.setShortcut("Ctrl+O")
         open_btn.triggered.connect(self.open_file)
         self.toolbar.addAction(open_btn)
 
-        save_btn = QAction("💾 Save", self)
+        save_btn = QAction(icon("save"), "Save", self)
         save_btn.setToolTip("Save File (Ctrl+S)")
+        save_btn.setShortcut("Ctrl+S")
         save_btn.triggered.connect(self.save_file)
         self.toolbar.addAction(save_btn)
 
         if WEB_AVAILABLE:
-            web_btn = QAction("🌐 Web", self)
-            web_btn.setToolTip("Toggle Web Browser Panel")
+            web_btn = QAction(icon("globe"), "Web", self)
+            web_btn.setToolTip("Toggle Web Panel")
             web_btn.triggered.connect(self.toggle_web_panel)
             self.toolbar.addAction(web_btn)
 
-    def _build_tabs(self):
-        self.splitter = QSplitter(Qt.Horizontal)
-        self.tabs = QTabWidget()
-        self.tabs.setTabsClosable(True)
-        self.tabs.tabCloseRequested.connect(self.close_tab)
-        self.tabs.setContextMenuPolicy(Qt.CustomContextMenu)
-        self.tabs.customContextMenuRequested.connect(self.show_tab_context_menu)
-        self.splitter.addWidget(self.tabs)
-        self.setCentralWidget(self.splitter)
+        settings_btn = QAction(icon("settings"), "Settings", self)
+        settings_btn.setToolTip("Settings")
+        settings_btn.triggered.connect(self.open_settings)
+        self.toolbar.addAction(settings_btn)
+
+    def _add_menu_action(self, menu, text, slot, shortcut=None):
+        action = QAction(text, self)
+        if shortcut:
+            action.setShortcut(shortcut)
+        action.triggered.connect(slot)
+        menu.addAction(action)
+        return action
+
+    def _build_popup_menu(self):
+        menu = QMenu(self)
+        self._add_menu_action(menu, "New Tab", self.new_tab, "Ctrl+N")
+        self._add_menu_action(menu, "Open File...", self.open_file, "Ctrl+O")
+        self._add_menu_action(menu, "Save", self.save_file, "Ctrl+S")
+        menu.addSeparator()
+        menu.addAction("Open Vault...", self.add_vault)
+        self._add_menu_action(menu, "Toggle Vault", self.toggle_vault_panel, "Ctrl+Shift+E")
+        menu.addSeparator()
+        self._add_menu_action(menu, "Reopen Tab", self.reopen_closed_tab, "Ctrl+Shift+T")
+        self._add_menu_action(menu, "Quick Switcher", self.open_quick_switcher, "Ctrl+P")
+        menu.addSeparator()
+        menu.addAction("Settings...", self.open_settings)
+        return menu
+
+    def _restore_vault(self):
+        settings = load_settings()
+        self.vault_panel.set_show_all_files(settings.get("vault_show_all_files", False))
+        self.vault_panel.restore_from_settings()
+
+    def toggle_vault_panel(self):
+        visible = self.vault_panel.isVisible()
+        if visible:
+            self.vault_panel.hide()
+            self.main_splitter.setSizes([0, self.width()])
+        else:
+            self.vault_panel.show()
+            self.main_splitter.setSizes([260, max(self.width() - 260, 400)])
+
+    def add_vault(self):
+        paths = load_settings().get("vault_paths", [])
+        start = paths[0] if paths else os.getcwd()
+        path = QFileDialog.getExistingDirectory(self, "Add Vault", start)
+        if not path:
+            return
+        self.vault_panel.add_vault(path)
+        if not self.vault_panel.isVisible():
+            self.toggle_vault_panel()
+        self.show_status_message(f"Vault added: {os.path.basename(path)}", 3000)
+
+    def open_vault(self):
+        self.add_vault()
+
+    def _open_vault_file(self, path):
+        if self.switch_to_tab_if_open(path):
+            return
+        try:
+            editor = create_viewer_widget(path)
+            self._wire_editor(editor)
+            save_recent_file(path)
+            self.update_menus()
+            self._add_editor_tab(editor, os.path.basename(path))
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Failed to open file: {str(e)}")
+
+    def _wire_editor(self, editor):
+        if hasattr(editor, "set_status_callback"):
+            editor.set_status_callback(self.show_status_message)
 
     def show_status_message(self, message, timeout_ms=0):
         self.statusBar().showMessage(message, timeout_ms)
@@ -116,18 +231,16 @@ class MainWindow(QMainWindow):
         )
         if has_modified:
             reply = QMessageBox.question(
-                self,
-                "Unsaved Changes",
+                self, "Unsaved Changes",
                 "Save all modified files before quitting?",
                 QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel,
             )
             if reply == QMessageBox.Cancel:
                 event.ignore()
                 return
-            if reply == QMessageBox.Yes:
-                if not self.save_all_modified():
-                    event.ignore()
-                    return
+            if reply == QMessageBox.Yes and not self.save_all_modified():
+                event.ignore()
+                return
 
         self.save_current_session()
         event.accept()
@@ -152,7 +265,6 @@ class MainWindow(QMainWindow):
         for i in range(self.tabs.count()):
             editor = self.tabs.widget(i)
             file_path = getattr(editor, "file_path", None)
-
             if file_path and os.path.exists(file_path):
                 content = ""
             elif is_binary_format(file_path or ""):
@@ -161,7 +273,6 @@ class MainWindow(QMainWindow):
                 content = editor.toPlainText()
             else:
                 content = ""
-
             tabs_info.append({
                 "file_path": file_path,
                 "content": content,
@@ -180,6 +291,7 @@ class MainWindow(QMainWindow):
             try:
                 if file_path and os.path.exists(file_path):
                     editor = create_viewer_widget(file_path)
+                    self._wire_editor(editor)
                 elif content:
                     from editor import EditorTab
                     editor = EditorTab()
@@ -207,47 +319,31 @@ class MainWindow(QMainWindow):
 
     def create_menu(self):
         menu = self.menuBar()
+
         file_menu = menu.addMenu("File")
-
-        actions = [
-            ("New", "Ctrl+N", self.new_tab),
-            ("Open...", "Ctrl+O", self.open_file),
-            ("Save", "Ctrl+S", self.save_file),
-            ("Save As...", "Ctrl+Shift+S", self.save_file_as),
-        ]
-        for name, shortcut, trigger in actions:
-            action = QAction(name, self)
-            action.setShortcut(shortcut)
-            action.triggered.connect(trigger)
-            file_menu.addAction(action)
-
+        self._add_menu_action(file_menu, "New", self.new_tab, "Ctrl+N")
+        self._add_menu_action(file_menu, "Open...", self.open_file, "Ctrl+O")
+        self._add_menu_action(file_menu, "Save", self.save_file, "Ctrl+S")
+        self._add_menu_action(file_menu, "Save As...", self.save_file_as, "Ctrl+Shift+S")
         file_menu.addSeparator()
+        self._add_menu_action(
+            file_menu, "Close Tab",
+            lambda: self.close_tab(self.tabs.currentIndex()), "Ctrl+W",
+        )
 
-        close_action = QAction("Close Tab", self)
-        close_action.setShortcut("Ctrl+W")
-        close_action.triggered.connect(lambda: self.close_tab(self.tabs.currentIndex()))
-        file_menu.addAction(close_action)
+        vault_menu = menu.addMenu("Vault")
+        vault_menu.addAction("Add Vault...", self.add_vault)
+        vault_menu.addAction("Remove Current Vault", self.vault_panel.remove_current_vault)
+        self._add_menu_action(vault_menu, "Toggle Panel", self.toggle_vault_panel, "Ctrl+Shift+E")
 
-        reopen_action = QAction("Reopen Closed Tab", self)
-        reopen_action.setShortcut("Ctrl+Shift+T")
-        reopen_action.triggered.connect(self.reopen_closed_tab)
-        file_menu.addAction(reopen_action)
+        session_menu = menu.addMenu("Session")
+        self._add_menu_action(session_menu, "Reopen Tab", self.reopen_closed_tab, "Ctrl+Shift+T")
+        self._add_menu_action(session_menu, "Quick Switcher", self.open_quick_switcher, "Ctrl+P")
+        session_menu.addSeparator()
+        self.recent_menu = session_menu.addMenu("Recent Files")
+        self.pinned_menu = session_menu.addMenu("Pinned Files")
 
-        self.pinned_menu = file_menu.addMenu("Pinned Files")
-        self.recent_menu = file_menu.addMenu("Recent Files")
-
-        file_menu.addSeparator()
-
-        switcher_action = QAction("Quick Switcher", self)
-        switcher_action.setShortcut("Ctrl+P")
-        switcher_action.triggered.connect(self.open_quick_switcher)
-        file_menu.addAction(switcher_action)
-
-        file_menu.addSeparator()
-
-        settings_action = QAction("Settings...", self)
-        settings_action.triggered.connect(self.open_settings)
-        file_menu.addAction(settings_action)
+        menu.addAction("Settings...", self.open_settings)
 
         self.update_menus()
 
@@ -257,8 +353,9 @@ class MainWindow(QMainWindow):
             if self.autosaver:
                 self.autosaver.apply_settings()
             settings = dialog.get_settings()
-            if self.web_panel is not None and settings.get("web_url"):
-                self.web_panel.setUrl(QUrl(settings["web_url"]))
+            self.vault_panel.set_show_all_files(settings.get("vault_show_all_files", False))
+            if self.web_panel is not None:
+                self.web_panel.restore_tabs()
             self.show_status_message("Settings saved", 2000)
 
     def update_menus(self):
@@ -289,14 +386,13 @@ class MainWindow(QMainWindow):
         menu = QMenu(self)
         if path:
             if is_pinned(path):
-                pin_action = menu.addAction("📌 Unpin File")
+                pin_action = menu.addAction(icon("pin"), "Unpin File")
                 pin_action.triggered.connect(lambda: self.unpin_file(path))
             else:
-                pin_action = menu.addAction("📌 Pin File")
+                pin_action = menu.addAction(icon("pin"), "Pin File")
                 pin_action.triggered.connect(lambda: self.pin_file(path))
             menu.addSeparator()
-        close_action = menu.addAction("Close Tab")
-        close_action.triggered.connect(lambda: self.close_tab(index))
+        menu.addAction("Close Tab", lambda: self.close_tab(index))
         menu.exec_(self.tabs.mapToGlobal(pos))
 
     def pin_file(self, path):
@@ -311,7 +407,6 @@ class MainWindow(QMainWindow):
         editor = self.tabs.widget(index)
         if not editor:
             return
-
         if getattr(editor, "is_modified", False):
             reply = QMessageBox.question(
                 self, "Unsaved Changes", "Save before closing?",
@@ -344,6 +439,7 @@ class MainWindow(QMainWindow):
         file_path = tab_data["file_path"]
         if file_path and os.path.exists(file_path):
             editor = create_viewer_widget(file_path)
+            self._wire_editor(editor)
             if tab_data["modified"] and tab_data["content"] and not is_binary_format(file_path):
                 editor.setPlainText(tab_data["content"])
                 editor.is_modified = True
@@ -385,18 +481,14 @@ class MainWindow(QMainWindow):
         return False
 
     def open_file(self):
-        path, _ = QFileDialog.getOpenFileName(
-            self, "Open File", "",
-            "All Supported (*.md *.txt *.docx *.xlsx *.pdf);;"
-            "Word (*.docx);;Excel (*.xlsx);;PDF (*.pdf);;"
-            "Markdown (*.md);;Text (*.txt)",
-        )
+        path, _ = QFileDialog.getOpenFileName(self, "Open File", "", self.FILE_FILTER)
         if not path:
             return
         if self.switch_to_tab_if_open(path):
             return
         try:
             editor = create_viewer_widget(path)
+            self._wire_editor(editor)
             save_recent_file(path)
             self.update_menus()
             self._add_editor_tab(editor, os.path.basename(path))
@@ -408,6 +500,8 @@ class MainWindow(QMainWindow):
             return
         try:
             editor = create_viewer_widget(path)
+            self._wire_editor(editor)
+            save_recent_file(path)
             self._add_editor_tab(editor, os.path.basename(path))
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Failed to open file: {str(e)}")
@@ -448,7 +542,7 @@ class MainWindow(QMainWindow):
         initial_path = os.path.join(os.getcwd(), suggested_name)
         path, _ = QFileDialog.getSaveFileName(
             self, "Save As", initial_path,
-            "All Supported (*.md *.txt *.docx *.xlsx *.pdf)",
+            "All Supported (*.md *.txt *.docx *.xlsx *.pdf *.csv)",
         )
         if not path:
             return
@@ -489,25 +583,21 @@ class MainWindow(QMainWindow):
             action.triggered.connect(lambda checked=False, p=path: self.open_recent_file(p))
             self.pinned_menu.addAction(action)
 
-    def _web_url(self):
-        return load_settings().get("web_url", "https://sakai.ug.edu.gh")
-
     def toggle_web_panel(self):
+        if not WEB_AVAILABLE:
+            QMessageBox.warning(self, "Missing Module", "QtWebEngine not installed.")
+            return
+
         if self.web_panel is None:
-            if not WEB_AVAILABLE:
-                QMessageBox.warning(self, "Missing Module", "QtWebEngine not installed.")
-                return
-            self.web_panel = QWebEngineView()
-            self.web_panel.setUrl(QUrl(self._web_url()))
-            self.web_panel.setFixedWidth(800)
-            self.splitter.addWidget(self.web_panel)
-            self.splitter.setSizes([600, 800])
+            self.web_panel = WebPanel()
+            self.web_panel.setMinimumWidth(320)
+            self.editor_splitter.addWidget(self.web_panel)
+            self.editor_splitter.setSizes([700, 500])
 
         visibility = self.web_panel.isVisible()
         self.web_panel.setVisible(not visibility)
 
         if not visibility:
-            self.web_panel.setUrl(QUrl(self._web_url()))
-            self.splitter.setSizes([600, 800])
+            self.editor_splitter.setSizes([700, 500])
         else:
-            self.splitter.setSizes([1200, 0])
+            self.editor_splitter.setSizes([self.width(), 0])

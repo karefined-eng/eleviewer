@@ -69,9 +69,12 @@ The executable will be generated at `dist/main.exe`.
 
 **Optional: Web panel not available**
 - Run: `pip install PySide6-WebEngine`
-- Make sure you're in the project directory
-- Make sure Python 3.9+ is installed: `python --version`
-- Try: `python main.py` (not `python3 main.py`)
+
+**PDF read-aloud not working**
+- Run: `pip install pyttsx3`
+- Ensure Windows speech voices are installed in Settings → Time & Language → Speech
+
+**The app doesn't start**
 
 ### Project Structure
 
@@ -93,8 +96,15 @@ eleviewer/
 ├── settings.py              # User settings persistence
 ├── settings_dialog.py       # Settings UI
 ├── save_utils.py            # Atomic file writes
-├── markdown_renderer.py     # Markdown with live HTML preview
-├── pdf_viewer.py            # PDF viewing (PyMuPDF)
+├── markdown_renderer.py     # Markdown view/edit toggle
+├── pdf_viewer.py            # PDF viewing with zoom and TTS
+├── pdf_tts.py                 # Windows native read-aloud
+├── vault_explorer.py          # Multi-vault folder sidebar
+├── web_panel.py               # Tabbed web browser panel
+├── markdown_utils.py          # Plain-text markdown conversion
+├── pdf_tts.py                 # Windows native read-aloud
+├── icons.py                   # Lucide-style icon loader
+├── icons/                     # SVG icon assets
 ├── requirements.txt         # Dependencies
 └── data/                    # User data (created at runtime)
 ```
@@ -137,12 +147,13 @@ This includes:
 
 ### Running Tests
 
-(No automated tests currently, but you can manually test):
+Manual checks for iteration 2:
 
-- Open/close multiple files
-- Close the app and reopen — tabs should restore
-- Press Ctrl+P and search for files
-- Edit DOCX and XLSX files and verify they save correctly
+- Add multiple vaults; expand subfolders with chevron; restart app — vaults should persist
+- Markdown: double-click preview for simple edit; triple-click for syntax
+- PDF: should open at readable size; TTS speak button on text pages
+- Web panel: add multiple tabs (Gemini, Google); restart — tabs should restore
+- File menu: Session → Reopen Tab (no label overflow)
 
 ---
 

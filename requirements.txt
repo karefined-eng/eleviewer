@@ -3,6 +3,7 @@ python-docx>=0.8.11
 openpyxl>=3.1.0
 markdown>=3.5.0
 PyMuPDF>=1.23.0
+pyttsx3>=2.90
 
 # Optional — install for embedded web panel:
 # pip install PySide6-WebEngine

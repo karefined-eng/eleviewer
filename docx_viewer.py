@@ -1,9 +1,9 @@
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QPlainTextEdit, QLabel, QMessageBox
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QPlainTextEdit, QMessageBox
 from PySide6.QtCore import Signal
 from docx import Document
 import io
 
-from theme import viewer_header_stylesheet, editor_stylesheet
+from theme import editor_stylesheet
 
 
 class DocxViewer(QWidget):
@@ -24,19 +24,14 @@ class DocxViewer(QWidget):
         
         # UI Setup
         layout = QVBoxLayout()
-        
-        # Header showing file type
-        header = QLabel("📄 DOCX Document Editor")
-        header.setStyleSheet(viewer_header_stylesheet())
+        layout.setContentsMargins(0, 0, 0, 0)
 
         self.editor = QPlainTextEdit()
         self.editor.setStyleSheet(editor_stylesheet())
         
         self.editor.textChanged.connect(self._on_text_changed)
         
-        layout.addWidget(header)
         layout.addWidget(self.editor)
-        layout.setContentsMargins(0, 0, 0, 0)
         
         self.setLayout(layout)
         
