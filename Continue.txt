@@ -1,0 +1,117 @@
+Continue
+1:45 PM
+I'll now complete the migration: create presets.json, update api.py to load from it, and update the PhotoComplianceTool.spec so PyInstaller bundles the JSON file correctly.
+presets.json
+Now rewrite api.py to load from presets.json instead of presets.py:
+api.py
+Now update the PyInstaller .spec file to bundle presets.json and ui/:
+PhotoComplianceTool.spec
+Now verify the syntax is clean and test-run the tool:
+…\photo_tool > cd C:\Users\kwadw\Documents\photo_tool && C:\Users\kwadw\Documents\venv\Scripts\python.exe -c "import json, sys; data=json.load(open('presets.json')); unis=data['universities']; print(f'Loaded {len(unis)} presets, version: {data[\"presets_version\"]}'); [print(f'  {k}: {u[\"width_px\"]}x{u[\"height_px\"]}px  {u[\"background\"]}  priority={u[\"priority\"]}') for k,u in unis.items()]"
+At line:1 char:40
++ cd C:\Users\kwadw\Documents\photo_tool && C:\Users\kwadw\Documents\ve ...
++                                        ~~
+The token '&&' is not a valid statement separator in this version.
+    + CategoryInfo          : ParserError: (:) [], ParentContainsErrorRecordException
+    + FullyQualifiedErrorId : InvalidEndOfLine
+ 
+…\photo_tool > C:\Users\kwadw\Documents\venv\Scripts\python.exe -c "import json, sys; data=json.load(open('presets.json')); unis=data['universities']; print(f'Loaded {len(unis)} presets, version: {data[chr(34)]presets_version{chr(34)}}'); [print(f'  {k}: {u[chr(34)]width_px{chr(34)]}x{u[chr(34)]height_px{chr(34)]}px {u[chr(34)]background{chr(34)]} priority={u[chr(34)]priority{chr(34)]}') for k,u in unis.items()]"
+  File "<string>", line 1
+    (data[chr(34)]presets_version{chr(34)})
+     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+SyntaxError: f-string: invalid syntax. Perhaps you forgot a comma?
+…\photo_tool > C:\Users\kwadw\Documents\venv\Scripts\python.exe validate_presets.py
+C:\Users\kwadw\AppData\Local\Programs\Python\Python311\python.exe: can't open file 'C:\\Users\\kwadw\\Documents\\photo_tool\\validate_presets.py': [Errno 2] No such file or directory
+validate_presets.py
+…\photo_tool > C:\Users\kwadw\Documents\venv\Scripts\python.exe validate_presets.py
+Loaded 15 presets  |  version: 2025-06-30
+
+Key                  Dims  BG            Priority
+-------------------------------------------------------
+ug              450x450px  white         HIGH
+knust           470x470px  light_green   HIGH
+ucc             600x800px  white         MEDIUM
+umat            450x540px  white         HIGH
+uds             350x450px  white         MEDIUM
+gimpa           350x450px  white         LOW
+atu             160x160px  white         MEDIUM
+kstu            300x400px  red           MEDIUM
+cctu            510x510px  white         LOW
+tatu            600x600px  white         LOW
+uew             510x510px  white         MEDIUM
+central         600x600px  white         LOW
+uenr            600x600px  white         LOW
+ho_tech         500x500px  white         LOW
+custom       customxcustompx  white         VARIABLE
+
+Background colors defined:
+  white: #FFFFFF  rgba=(255, 255, 255, 255)
+  light_green: #90EE90  rgba=(144, 238, 144, 255)
+  red: #CC0000  rgba=(204, 0, 0, 255)
+All 15 presets load correctly. Now also validate that api.py imports cleanly:
+Everything is clean. Here's what was completed:
+
+✅ What was done
+
+File
+Change
+presets.json
+Created — all 15 presets (14 universities + custom) with full metadata, background colour definitions, region, portal URLs, verified dates
+api.py
+Rewritten — loads from presets.json at runtime; works both in dev (python main.py) and as a bundled .exe via sys._MEIPASS
+PhotoComplianceTool.spec
+Updated — presets.json now bundled into the .exe alongside the ui/ folder
+presets.py
+Now unused — you can delete it
+
+Key architecture improvements
+Update specs without touching Python — next time a university changes its requirements, just edit presets.json and rebuild the exe
+PyInstaller-safe path resolution — sys._MEIPASS fallback ensures the .exe finds presets.json whether unpacked or frozen
+Smart batch naming — output files are named ug_001.jpg, knust_002.jpg etc. based on which preset was selected
+Next steps
+To rebuild the .exe with everything bundled:
+powershell
+cd C:\Users\kwadw\Documents\photo_tool
+pyinstaller PhotoComplianceTool.spec
+Then commit and push to GitHub:
+powershell
+git add -A
+git commit -m "v1.1: JSON-driven presets, all 14 GH universities, PyInstaller-safe"
+git push
+1:45 PM
+(venv) C:\Users\kwadw\Documents\photo_tool> (venv) C:\Users\kwadw\Documents\photo_tool> (venv) C:\Users\kwadw\Documents\photo_tool>py main.py [pywebview] OPEN_DIALOG is deprecated and will be removed in a future version. Use 'FileDialog.OPEN' instead. [pywebview] OPEN_DIALOG is deprecated and will be removed in a future version. Use 'FileDialog.OPEN' instead. [pywebview] FOLDER_DIALOG is deprecated and will be removed in a future version. Use 'FileDialog.FOLDER' instead. [pywebview] OPEN_DIALOG is deprecated and will be removed in a future version. Use 'FileDialog.OPEN' instead. [pywebview] OPEN_DIALOG is deprecated and will be removed in a future version. Use 'FileDialog.OPEN' instead. [pywebview] OPEN_DIALOG is deprecated and will be removed in a future version. Use 'FileDialog.OPEN' instead. [pywebview] OPEN_DIALOG is deprecated and will be removed in a future version. Use 'FileDialog.OPEN' instead. how does this affect us?
+1:57 PM
+Done. Here's the plain answer to your question:
+
+What those warnings mean
+
+Warning
+Cause
+Risk
+OPEN_DIALOG is deprecated
+Old constant — pywebview v5+ replaced it with FileDialog.OPEN
+Will break when pywebview drops the old API in a future release
+FOLDER_DIALOG is deprecated
+Same story
+Same risk
+
+Impact on you right now
+✅ App works perfectly today
+✅ Warnings are cosmetic — no functionality lost
+⚠️ If you run pip install --upgrade pywebview in the future, the app would stop working without this fix
+What I just changed
+diff
+- webview.OPEN_DIALOG    →  webview.FileDialog.OPEN
+- webview.FOLDER_DIALOG  →  webview.FileDialog.FOLDER
+Run py main.py again — the warnings should be completely gone. The dialogs (image picker + folder picker) will behave exactly the same.
+1:57 PM
+## Photo Verification and Image Validation Analysis **Context** Analysis of the profile image upload module on the UMaT Admissions portal. The session focused on identifying the underlying verification technology and diagnosing why uploaded images were flagged as "Invalid Image." **Diagnostics** The investigation of the site's scripts and network activity yielded the following technical data: | Component | Finding | | :--- | :--- | | **Framework** | Next.js | | **Verification Logic** | Custom client-side implementation in `onboarding/profile-image/page-7da84da7874268ea.js` | | **Identity SDKs** | None detected (References to "Persona" were localizations for "Personal Information") | | **Input Method** | Standard `input[type="file"]` accepting `.jpeg`, `.jpg`, and `.png` | | **Processing** | Real-time validation using `blob:` URLs and client-side computer vision | **Actionable Findings** * **Validation Errors:** The "Invalid Image" flag was triggered by "Face Position" and "Face Visibility" failures. * **Heuristics:** The system evaluates images based on face centering (XY coordinates), face-to-frame ratio, sharpness, lighting (shadow detection), and background color (must be white or light green). * **Library Usage:** The implementation likely uses a bundled, tree-shaken version of a lightweight face detection model (e.g., BlazeFace or Mediapipe) rather than a large external SDK. **Technical Guidance** A Python-based approach using OpenCV was identified as a potential strategy to correct face centering issues. Note that this may still fail if lighting or background color requirements are not met. `````py import cv2 import numpy as np def center_face(image_path, output_path): img = cv2.imread(image_path) h, w = img.shape[:2] face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml') gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY) faces = face_cascade.detectMultiScale(gray, 1.1, 4) if len(faces) == 0: return # Calculate center and required translation (x, y, fw, fh) = faces[0] shift_x = (w // 2) - (x + fw // 2) shift_y = (h // 2) - (y + fh // 2) # Shift image to center the face M = np.float32([[1, 0, shift_x], [0, 1, shift_y]]) centered_img = cv2.warpAffine(img, M, (w, h), borderMode=cv2.BORDER_REPLICATE) cv2.imwrite(output_path, centered_img) ````` *Note: The code fixes and findings above were identified on a live page in DevTools. When applying them to your codebase, please adapt them to your project's specific technical stack (e.g., Tailwind CSS classes, CSS modules, framework components) rather than applying them as literal CSS overrides.* Validation Results File Size 0.04MB (under 1MB limit) Image Clarity Image is sharp and clear enough Background Background should be a light, even white (or near-white) behind you. Use a plain wall or sheet and avoid dark or strongly coloured backdrops. Common issues: Background has shadows or variations Background color is not white or light green Background might have patterns or textures Try taking a photo against a solid white wall with even lighting. Face Position Face not properly positioned or visible Face not centered. Please ensure: Your face is in the middle of the frame Equal space around your face on all sides Face not detected. Please ensure: Your face is clearly visible Good lighting on your face No heavy shadows on your face Back Contin these are issuees we need to reason out before any implementation
+2:05 PM
+2:05 PM
+Continue
+2:05 PM
+Good call — let me reason through the full failure chain before touching any code.
+Validation Reasoning
+Your plan's baseline quota will refresh on 7/7/2026, 1:35:10 PM. Free users and Google AI Plus users receive the minimum base limits on Antigravity. You can upgrade to Google AI Pro or above to receive higher rate limits. See plans.
+Validation Reasoning
+2:05 PM
