@@ -7,14 +7,14 @@ from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QTreeWidget, QTreeWidgetItem,
     QLabel, QComboBox, QToolButton,
 )
-from PySide6.QtCore import Signal, Qt
+from PySide6.QtCore import Signal, Qt, QSize
 
 from icons import icon
 from settings import (
     get_vault_paths, add_vault_path, remove_vault_path,
     set_active_vault_index, load_settings,
 )
-from theme import compact_toolbar_stylesheet
+from theme import compact_toolbar_stylesheet, ICON_SIZE_COMPACT, ICON_SIZE_VAULT_TREE
 
 SUPPORTED_EXTENSIONS = {".md", ".txt", ".pdf", ".docx", ".xlsx", ".csv"}
 
@@ -35,6 +35,8 @@ class VaultExplorer(QWidget):
 
         header_row = QHBoxLayout()
         header_row.setContentsMargins(4, 4, 4, 0)
+        icon_sz = ICON_SIZE_COMPACT
+        icon_qsize = QSize(icon_sz, icon_sz)
 
         self.vault_selector = QComboBox()
         self.vault_selector.setStyleSheet(
@@ -43,13 +45,15 @@ class VaultExplorer(QWidget):
         self.vault_selector.currentIndexChanged.connect(self._on_vault_selected)
 
         self.btn_add = QToolButton()
-        self.btn_add.setIcon(icon("plus"))
+        self.btn_add.setIconSize(icon_qsize)
+        self.btn_add.setIcon(icon("plus", size=icon_sz))
         self.btn_add.setToolTip("Add vault")
         self.btn_add.setStyleSheet(compact_toolbar_stylesheet())
         self.btn_add.setAutoRaise(True)
 
         self.btn_remove = QToolButton()
-        self.btn_remove.setIcon(icon("square"))
+        self.btn_remove.setIconSize(icon_qsize)
+        self.btn_remove.setIcon(icon("square", size=icon_sz))
         self.btn_remove.setToolTip("Remove current vault from list")
         self.btn_remove.setStyleSheet(compact_toolbar_stylesheet())
         self.btn_remove.setAutoRaise(True)
@@ -59,6 +63,7 @@ class VaultExplorer(QWidget):
         header_row.addWidget(self.btn_remove)
 
         self.tree = QTreeWidget()
+        self.tree.setIconSize(QSize(ICON_SIZE_VAULT_TREE, ICON_SIZE_VAULT_TREE))
         self.tree.setHeaderHidden(True)
         self.tree.setAnimated(True)
         self.tree.setIndentation(16)

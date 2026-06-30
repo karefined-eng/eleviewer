@@ -10,12 +10,12 @@ from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QTabWidget, QLineEdit,
     QToolButton, QTabBar,
 )
-from PySide6.QtCore import Qt, QUrl, Signal
+from PySide6.QtCore import Qt, QUrl, Signal, QSize
 from PySide6.QtGui import QKeySequence, QShortcut
 
 from icons import icon
 from settings import load_settings, save_settings, DEFAULT_WEB_TABS
-from theme import compact_toolbar_stylesheet
+from theme import compact_toolbar_stylesheet, ICON_SIZE_COMPACT
 
 
 class WebPanel(QWidget):
@@ -31,23 +31,28 @@ class WebPanel(QWidget):
 
         nav = QHBoxLayout()
         nav.setContentsMargins(4, 4, 4, 0)
+        icon_sz = ICON_SIZE_COMPACT
+        icon_qsize = QSize(icon_sz, icon_sz)
 
         self.url_bar = QLineEdit()
         self.url_bar.setPlaceholderText("https://...")
         self.url_bar.returnPressed.connect(self._navigate_current)
 
         self.btn_back = QToolButton()
-        self.btn_back.setIcon(icon("chevron-left"))
+        self.btn_back.setIconSize(icon_qsize)
+        self.btn_back.setIcon(icon("chevron-left", size=icon_sz))
         self.btn_back.setToolTip("Back")
         self.btn_back.clicked.connect(self._go_back)
 
         self.btn_forward = QToolButton()
-        self.btn_forward.setIcon(icon("chevron-right"))
+        self.btn_forward.setIconSize(icon_qsize)
+        self.btn_forward.setIcon(icon("chevron-right", size=icon_sz))
         self.btn_forward.setToolTip("Forward")
         self.btn_forward.clicked.connect(self._go_forward)
 
         self.btn_add = QToolButton()
-        self.btn_add.setIcon(icon("plus"))
+        self.btn_add.setIconSize(icon_qsize)
+        self.btn_add.setIcon(icon("plus", size=icon_sz))
         self.btn_add.setToolTip("New tab")
         self.btn_add.clicked.connect(self.add_tab)
 

@@ -5,6 +5,10 @@ from PySide6.QtWidgets import (
 )
 
 from settings import load_settings, save_settings, DEFAULT_SETTINGS, DEFAULT_WEB_TABS
+from theme import (
+    MARKDOWN_ICON_SIZE_MIN, MARKDOWN_ICON_SIZE_MAX,
+    resolve_markdown_icon_size,
+)
 
 
 class SettingsDialog(QDialog):
@@ -17,11 +21,11 @@ class SettingsDialog(QDialog):
         layout = QVBoxLayout(self)
         tabs = QTabWidget()
 
-        tabs.addTab(self._build_general_tab(), "General")
-        tabs.addTab(self._build_editor_tab(), "Editor")
-        tabs.addTab(self._build_pdf_tab(), "PDF")
-        tabs.addTab(self._build_vault_tab(), "Vault")
-        tabs.addTab(self._build_web_tab(), "Web")
+        tabs.addTab(self._build_general_tab(), "Startup & Defaults")
+        tabs.addTab(self._build_editor_tab(), "Text Editing")
+        tabs.addTab(self._build_pdf_tab(), "PDF Reading")
+        tabs.addTab(self._build_vault_tab(), "Folders & Organization")
+        tabs.addTab(self._build_web_tab(), "Web Browser Panel")
         layout.addWidget(tabs)
 
         buttons = QHBoxLayout()
@@ -55,8 +59,8 @@ class SettingsDialog(QDialog):
         current = self.settings.get("markdown_default_mode", "view")
         self.md_mode_combo.setCurrentText(current)
         self.md_icon_spin = QSpinBox()
-        self.md_icon_spin.setRange(24, 48)
-        self.md_icon_spin.setValue(self.settings.get("markdown_icon_size", 32))
+        self.md_icon_spin.setRange(MARKDOWN_ICON_SIZE_MIN, MARKDOWN_ICON_SIZE_MAX)
+        self.md_icon_spin.setValue(resolve_markdown_icon_size(self.settings.get("markdown_icon_size")))
         form.addRow("Default markdown mode:", self.md_mode_combo)
         form.addRow("Mode icon size (px):", self.md_icon_spin)
         return w
@@ -66,7 +70,7 @@ class SettingsDialog(QDialog):
         form = QFormLayout(w)
         self.pdf_fit_combo = QComboBox()
         self.pdf_fit_combo.addItems(["page", "width"])
-        self.pdf_fit_combo.setCurrentText(self.settings.get("pdf_fit_mode", "page"))
+        self.pdf_fit_combo.setCurrentText(self.settings.get("pdf_fit_mode", "width"))
         self.pdf_quality_combo = QComboBox()
         self.pdf_quality_combo.addItems(["normal", "high"])
         self.pdf_quality_combo.setCurrentText(self.settings.get("pdf_render_quality", "high"))

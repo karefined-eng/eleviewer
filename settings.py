@@ -1,6 +1,8 @@
 import json
 import os
+
 from paths import SETTINGS_FILE_PATH
+from theme import ICON_SIZE_MARKDOWN
 
 DEFAULT_WEB_TABS = [{"title": "Google", "url": "https://www.google.com"}]
 
@@ -14,8 +16,8 @@ DEFAULT_SETTINGS = {
     "active_vault_index": 0,
     "vault_show_all_files": False,
     "markdown_default_mode": "view",
-    "markdown_icon_size": 32,
-    "pdf_fit_mode": "page",
+    "markdown_icon_size": ICON_SIZE_MARKDOWN,
+    "pdf_fit_mode": "width",
     "pdf_render_quality": "high",
 }
 

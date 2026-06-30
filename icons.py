@@ -6,11 +6,13 @@ from PySide6.QtCore import QByteArray, QSize, Qt
 from PySide6.QtGui import QIcon, QPainter, QPixmap
 from PySide6.QtSvg import QSvgRenderer
 
+from theme import ICON_SIZE_TOOLBAR
+
 ICONS_DIR = Path(__file__).parent / "icons"
 _cache: dict[tuple[str, int], QIcon] = {}
 
 
-def icon(name: str, size: int = 24, color: str = "#e0e0e0") -> QIcon:
+def icon(name: str, size: int = ICON_SIZE_TOOLBAR, color: str = "#e0e0e0") -> QIcon:
     key = (name, size)
     if key in _cache:
         return _cache[key]

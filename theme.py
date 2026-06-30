@@ -1,5 +1,25 @@
 """Centralized dark theme stylesheets for EleViewer."""
 
+ICON_SIZE_TOOLBAR = 24
+ICON_SIZE_COMPACT = 22
+ICON_SIZE_MARKDOWN = 32
+ICON_SIZE_VAULT_TREE = 24
+
+MARKDOWN_ICON_SIZE_MIN = 24
+MARKDOWN_ICON_SIZE_MAX = 48
+
+
+def resolve_markdown_icon_size(value=None):
+    """Return a clamped markdown mode-button icon size from settings or a raw value."""
+    if value is None:
+        from settings import load_settings
+        value = load_settings().get("markdown_icon_size", ICON_SIZE_MARKDOWN)
+    try:
+        size = int(value)
+    except (TypeError, ValueError):
+        return ICON_SIZE_MARKDOWN
+    return max(MARKDOWN_ICON_SIZE_MIN, min(MARKDOWN_ICON_SIZE_MAX, size))
+
 
 def main_window_stylesheet():
     return """

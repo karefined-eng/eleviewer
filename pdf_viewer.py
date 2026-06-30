@@ -6,15 +6,15 @@ except ImportError:
 
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QToolButton, QLabel,
-    QGraphicsView, QGraphicsScene, QGraphicsPixmapItem, QMessageBox, QComboBox,
+    QGraphicsView, QGraphicsScene, QGraphicsPixmapItem, QMessageBox, QComboBox, QMenu,
 )
 from PySide6.QtGui import QPixmap, QImage, QWheelEvent, QKeyEvent
-from PySide6.QtCore import Qt, Signal, QTimer
+from PySide6.QtCore import Qt, Signal, QTimer, QSize
 
 from icons import icon
 from pdf_tts import PdfTts, TTS_AVAILABLE
 from settings import load_settings
-from theme import compact_toolbar_stylesheet
+from theme import compact_toolbar_stylesheet, ICON_SIZE_COMPACT
 
 
 class PdfGraphicsView(QGraphicsView):
@@ -51,12 +51,17 @@ class PdfViewer(QWidget):
         self.file_path = file_path
         self.is_modified = False
         self._status_callback = status_callback
+        self._bookmark_callback = None
         self.doc = None
         self.current_page = 0
         self.total_pages = 0
         self._pixmap_item = None
-        self._zoom_factor = 1.0
-        self._fit_mode = load_settings().get("pdf_fit_mode", "page")
+        self._user_zoom = 1.0
+        self._fit_mode = load_settings().get("pdf_fit_mode", "width")
+        self._cached_page = -1
+        self._cached_render_scale = 0.0
+        self._layout_complete = False
+        self._first_resize_pending = True
         self.tts = PdfTts(on_error=self._on_tts_error)
 
         self.setFocusPolicy(Qt.StrongFocus)
@@ -66,14 +71,18 @@ class PdfViewer(QWidget):
 
         toolbar = QHBoxLayout()
         toolbar.setContentsMargins(4, 4, 4, 4)
+        icon_sz = ICON_SIZE_COMPACT
+        icon_qsize = QSize(icon_sz, icon_sz)
 
         self.btn_prev = QToolButton()
-        self.btn_prev.setIcon(icon("chevron-left"))
+        self.btn_prev.setIconSize(icon_qsize)
+        self.btn_prev.setIcon(icon("chevron-left", size=icon_sz))
         self.btn_prev.setToolTip("Previous page")
         self.btn_prev.clicked.connect(self.prev_page)
 
         self.btn_next = QToolButton()
-        self.btn_next.setIcon(icon("chevron-right"))
+        self.btn_next.setIconSize(icon_qsize)
+        self.btn_next.setIcon(icon("chevron-right", size=icon_sz))
         self.btn_next.setToolTip("Next page")
         self.btn_next.clicked.connect(self.next_page)
 
@@ -81,43 +90,55 @@ class PdfViewer(QWidget):
         self.lbl_page.setStyleSheet("color: #aaa; font-weight: bold; padding: 0 8px;")
 
         self.btn_zoom_out = QToolButton()
-        self.btn_zoom_out.setIcon(icon("zoom-out"))
+        self.btn_zoom_out.setIconSize(icon_qsize)
+        self.btn_zoom_out.setIcon(icon("zoom-out", size=icon_sz))
         self.btn_zoom_out.setToolTip("Zoom out")
         self.btn_zoom_out.clicked.connect(lambda: self._apply_zoom(1 / 1.2))
 
         self.btn_fit_page = QToolButton()
-        self.btn_fit_page.setIcon(icon("minimize-2"))
+        self.btn_fit_page.setIconSize(icon_qsize)
+        self.btn_fit_page.setIcon(icon("minimize-2", size=icon_sz))
         self.btn_fit_page.setToolTip("Fit page")
         self.btn_fit_page.clicked.connect(self.fit_page)
 
         self.btn_fit_width = QToolButton()
-        self.btn_fit_width.setIcon(icon("maximize-2"))
+        self.btn_fit_width.setIconSize(icon_qsize)
+        self.btn_fit_width.setIcon(icon("maximize-2", size=icon_sz))
         self.btn_fit_width.setToolTip("Fit width")
         self.btn_fit_width.clicked.connect(self.fit_to_width)
 
         self.btn_zoom_in = QToolButton()
-        self.btn_zoom_in.setIcon(icon("zoom-in"))
+        self.btn_zoom_in.setIconSize(icon_qsize)
+        self.btn_zoom_in.setIcon(icon("zoom-in", size=icon_sz))
         self.btn_zoom_in.setToolTip("Zoom in")
         self.btn_zoom_in.clicked.connect(lambda: self._apply_zoom(1.2))
+
+        self.btn_bookmark = QToolButton()
+        self.btn_bookmark.setIconSize(icon_qsize)
+        self.btn_bookmark.setIcon(icon("book-open", size=icon_sz))
+        self.btn_bookmark.setToolTip("Bookmark this page")
+        self.btn_bookmark.clicked.connect(self._add_bookmark_here)
 
         self.voice_combo = QComboBox()
         self.voice_combo.setMinimumWidth(140)
         self._populate_voices()
 
         self.btn_speak = QToolButton()
-        self.btn_speak.setIcon(icon("volume-2"))
+        self.btn_speak.setIconSize(icon_qsize)
+        self.btn_speak.setIcon(icon("volume-2", size=icon_sz))
         self.btn_speak.setToolTip("Read current page aloud")
         self.btn_speak.clicked.connect(self.read_current_page)
 
         self.btn_stop = QToolButton()
-        self.btn_stop.setIcon(icon("square"))
+        self.btn_stop.setIconSize(icon_qsize)
+        self.btn_stop.setIcon(icon("square", size=icon_sz))
         self.btn_stop.setToolTip("Stop reading")
         self.btn_stop.clicked.connect(self.tts.stop)
 
         for w in (
             self.btn_prev, self.btn_next, self.btn_zoom_out,
             self.btn_fit_page, self.btn_fit_width, self.btn_zoom_in,
-            self.btn_speak, self.btn_stop,
+            self.btn_bookmark, self.btn_speak, self.btn_stop,
         ):
             w.setStyleSheet(compact_toolbar_stylesheet())
             w.setAutoRaise(True)
@@ -130,11 +151,14 @@ class PdfViewer(QWidget):
         toolbar.addWidget(self.btn_fit_page)
         toolbar.addWidget(self.btn_fit_width)
         toolbar.addWidget(self.btn_zoom_in)
+        toolbar.addWidget(self.btn_bookmark)
         toolbar.addWidget(self.voice_combo)
         toolbar.addWidget(self.btn_speak)
         toolbar.addWidget(self.btn_stop)
 
         self.view = PdfGraphicsView(self)
+        self.view.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.view.customContextMenuRequested.connect(self._show_context_menu)
         self.scene = QGraphicsScene()
         self.view.setScene(self.scene)
         self.view.setStyleSheet("background: #1e1e1e; border: none;")
@@ -149,13 +173,27 @@ class PdfViewer(QWidget):
     def set_status_callback(self, callback):
         self._status_callback = callback
 
+    def set_bookmark_callback(self, callback):
+        self._bookmark_callback = callback
+
     def _on_tts_error(self, message):
         if self._status_callback:
             self._status_callback(f"TTS error: {message}", 4000)
 
     def showEvent(self, event):
         super().showEvent(event)
-        QTimer.singleShot(50, self._apply_default_fit)
+        self._layout_complete = False
+        QTimer.singleShot(100, self._ensure_viewport_ready)
+
+    def _ensure_viewport_ready(self):
+        if self.view.viewport().width() > 0 and self._layout_complete:
+            self._apply_default_fit()
+        else:
+            if self.view.viewport().width() > 0:
+                self._layout_complete = True
+                self._apply_default_fit()
+            else:
+                QTimer.singleShot(100, self._ensure_viewport_ready)
 
     def _populate_voices(self):
         self.voice_combo.clear()
@@ -189,15 +227,18 @@ class PdfViewer(QWidget):
             self.doc = fitz.open(file_path)
             self.total_pages = len(self.doc)
             self.current_page = 0
-            self._zoom_factor = 1.0
-            self._fit_mode = load_settings().get("pdf_fit_mode", "page")
-            self.render_page()
-            QTimer.singleShot(50, self._apply_default_fit)
+            self._user_zoom = 1.0
+            self._cached_page = -1
+            self._cached_render_scale = 0.0
+            self._fit_mode = load_settings().get("pdf_fit_mode", "width")
+            self._layout_complete = False
+            self.render_page(force=True)
+            QTimer.singleShot(100, self._ensure_viewport_ready)
             self.is_modified = False
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Failed to load PDF: {str(e)}")
 
-    def _page_render_scale(self):
+    def _compute_render_scale(self):
         if not self.doc:
             return 1.0
         page = self.doc.load_page(self.current_page)
@@ -211,14 +252,26 @@ class PdfViewer(QWidget):
         else:
             base = min(vw / page.rect.width, vh / page.rect.height)
 
-        return base * quality
+        return base * quality * max(self._user_zoom, 1.0)
 
-    def render_page(self):
+    def _needs_rerender(self, new_scale):
+        if self._cached_page != self.current_page:
+            return True
+        if self._cached_render_scale <= 0:
+            return True
+        ratio = new_scale / self._cached_render_scale
+        return ratio < 0.9 or ratio > 1.1
+
+    def render_page(self, force=False):
         if not self.doc or self.total_pages == 0:
             return
 
+        scale = self._compute_render_scale()
+        if not force and not self._needs_rerender(scale):
+            self.lbl_page.setText(f"Page {self.current_page + 1} / {self.total_pages}")
+            return
+
         page = self.doc.load_page(self.current_page)
-        scale = self._page_render_scale()
         mat = fitz.Matrix(scale, scale)
         pix = page.get_pixmap(matrix=mat)
 
@@ -230,9 +283,10 @@ class PdfViewer(QWidget):
         self.scene.addItem(self._pixmap_item)
         self.scene.setSceneRect(self._pixmap_item.boundingRect())
 
+        self._cached_page = self.current_page
+        self._cached_render_scale = scale
         self.lbl_page.setText(f"Page {self.current_page + 1} / {self.total_pages}")
         self.view.resetTransform()
-        self._zoom_factor = 1.0
 
     def _apply_default_fit(self):
         if self._fit_mode == "width":
@@ -243,7 +297,7 @@ class PdfViewer(QWidget):
     def fit_page(self):
         if self._pixmap_item:
             self.view.fitInView(self._pixmap_item, Qt.KeepAspectRatio)
-            self._zoom_factor = 1.0
+            self._user_zoom = 1.0
             self._fit_mode = "page"
 
     def fit_to_width(self):
@@ -256,18 +310,53 @@ class PdfViewer(QWidget):
         self.view.resetTransform()
         scale = vp.width() / scene_rect.width()
         self.view.scale(scale, scale)
-        self._zoom_factor = scale
         self._fit_mode = "width"
 
     def _apply_zoom(self, factor):
+        self._user_zoom *= factor
         self.view.scale(factor, factor)
-        self._zoom_factor *= factor
+        new_scale = self._compute_render_scale()
+        if self._needs_rerender(new_scale):
+            self.render_page(force=True)
+            self._apply_default_fit()
 
     def resizeEvent(self, event):
         super().resizeEvent(event)
+        if self.view.viewport().width() > 0:
+            self._layout_complete = True
         if self.doc and self._pixmap_item:
-            self.render_page()
-            QTimer.singleShot(0, self._apply_default_fit)
+            if self._first_resize_pending:
+                self._first_resize_pending = False
+                QTimer.singleShot(100, self._ensure_viewport_ready)
+            self._apply_default_fit()
+
+    def _bookmark_payload(self):
+        return {
+            "page_number": self.current_page,
+            "scroll_position_y": 0.0,
+            "label": f"Page {self.current_page + 1}",
+        }
+
+    def _add_bookmark_here(self):
+        if self._bookmark_callback:
+            self._bookmark_callback(self._bookmark_payload())
+
+    def _show_context_menu(self, pos):
+        menu = QMenu(self)
+        menu.addAction("Bookmark This Page", self._add_bookmark_here)
+        menu.exec_(self.view.mapToGlobal(pos))
+
+    def go_to_bookmark(self, page_number=0, scroll_position_y=0.0):
+        if not self.doc:
+            return
+        page_number = max(0, min(int(page_number), self.total_pages - 1))
+        if page_number == self.current_page and self._pixmap_item:
+            return
+        self.tts.stop()
+        self.current_page = page_number
+        self._user_zoom = 1.0
+        self.render_page(force=True)
+        QTimer.singleShot(100, self._ensure_viewport_ready)
 
     def keyPressEvent(self, event: QKeyEvent):
         key = event.key()
@@ -284,14 +373,16 @@ class PdfViewer(QWidget):
         if self.current_page > 0:
             self.tts.stop()
             self.current_page -= 1
-            self.render_page()
+            self._user_zoom = 1.0
+            self.render_page(force=True)
             QTimer.singleShot(0, self._apply_default_fit)
 
     def next_page(self):
         if self.current_page < self.total_pages - 1:
             self.tts.stop()
             self.current_page += 1
-            self.render_page()
+            self._user_zoom = 1.0
+            self.render_page(force=True)
             QTimer.singleShot(0, self._apply_default_fit)
 
     def read_current_page(self):

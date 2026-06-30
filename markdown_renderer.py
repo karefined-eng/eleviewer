@@ -9,7 +9,10 @@ import markdown
 from icons import icon
 from markdown_utils import markdown_to_simple, simple_to_markdown
 from settings import load_settings
-from theme import markdown_editor_stylesheet, MARKDOWN_PREVIEW_CSS, compact_toolbar_stylesheet
+from theme import (
+    markdown_editor_stylesheet, MARKDOWN_PREVIEW_CSS, compact_toolbar_stylesheet,
+    resolve_markdown_icon_size,
+)
 
 MODE_VIEW = 0
 MODE_SIMPLE = 1
@@ -59,7 +62,7 @@ class MarkdownViewer(QWidget):
         self.file_path = file_path
         self.is_modified = False
         self._mode = MODE_VIEW
-        self._icon_size = load_settings().get("markdown_icon_size", 32)
+        self._icon_size = resolve_markdown_icon_size()
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -162,7 +165,8 @@ class MarkdownViewer(QWidget):
             self.enter_view_mode()
 
     def _update_mode_button(self):
-        size = load_settings().get("markdown_icon_size", 32)
+        size = resolve_markdown_icon_size()
+        self._icon_size = size
         self.mode_btn.setIconSize(QSize(size, size))
         if self._mode == MODE_VIEW:
             self.mode_btn.setIcon(icon("pencil", size=size))
