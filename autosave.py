@@ -1,3 +1,4 @@
+import os
 from datetime import datetime
 
 from PySide6.QtCore import QTimer
@@ -31,6 +32,7 @@ class AutoSaver:
 
         tabs = self.main_window.tabs
         saved_any = False
+        errors = []
 
         for i in range(tabs.count()):
             editor = tabs.widget(i)
@@ -46,10 +48,20 @@ class AutoSaver:
                 self.main_window.update_tab_title(editor)
                 saved_any = True
             except Exception as e:
-                self.main_window.show_status_message(f"Autosave failed: {e}", 5000)
-                return
+                errors.append((editor.file_path, e))
 
-        if saved_any:
+        if errors:
+            if len(errors) == 1:
+                path, err = errors[0]
+                self.main_window.show_status_message(
+                    f"Autosave failed for {os.path.basename(path)}: {err}", 5000
+                )
+            else:
+                names = ", ".join(os.path.basename(p) for p, _ in errors)
+                self.main_window.show_status_message(
+                    f"Autosave failed for {len(errors)} files: {names}", 5000
+                )
+        elif saved_any:
             self.main_window.show_status_message(
                 f"Autosaved at {datetime.now().strftime('%H:%M:%S')}", 3000
             )

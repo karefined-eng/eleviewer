@@ -43,6 +43,7 @@ Thumbs.db
 *.manifest
 
 # Project-specific
+Continue.txt   # Personal session notes (not part of the project)
 data/          # User data (recent files, session, settings)
 dist/          # Built executables
 build/         # Build artifacts
