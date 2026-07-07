@@ -7,15 +7,15 @@ A lightweight Windows text editor supporting **DOCX**, **XLSX**, **MD**, and **T
 ✅ **Multi-format support**
 - Word documents (.docx) — view and edit
 - Excel spreadsheets (.xlsx) — view, edit cells, multiple sheets
-- PDF files (.pdf) — view, double-page layout, rotation, smart TOC sidebar, native text-to-speech
-- Markdown files (.md) — full editing with split-view HTML preview (WebView2) and rich-text toolbar
+- PDF files (.pdf) — vector rendering, smooth continuous scroll, text selection, smart TOC sidebar, native text-to-speech
+- Markdown files (.md) — full editing with split-view HTML preview and rich-text toolbar
 - Plain text (.txt) — full editing
 
 ✅ **Advanced editing features**
 - **Rich Formatting Toolbar** — bold, italic, strikethrough, headings, lists, tables, links (with Lucide icons)
 - **Multi-tab interface** — work with multiple files simultaneously
 - **Vault Sidebar (Alt+V)** — organize and open files easily from designated folder vaults
-- **Web Browser Panel (Ctrl+T)** — side-by-side web browsing directly in the editor using Edge WebView2
+- **Web Browser Panel (Ctrl+T)** — side-by-side web browsing directly in the editor using native QtWebEngine
 - **PDF & File Bookmarks** — persistent bookmarking system with a dedicated sidebar panel
 - **Session restore** — automatically reopens tabs from your last session
 - **Quick switcher (Ctrl+Q)** — fuzzy search and jump to recent/pinned files (VSCode-style)
@@ -117,9 +117,9 @@ eleviewer/
 ├── file_handler.py         # File type router (factory pattern)
 ├── docx_viewer.py          # DOCX support
 ├── xlsx_viewer.py          # XLSX support
-├── pdf_viewer.py           # PDF support with PyMuPDF
+├── pdf_viewer.py           # PDF support with QPdfView and PyMuPDF (TTS)
 ├── vault_explorer.py       # Vault/Folder sidebar management
-├── web_panel.py            # Edge WebView2 browsing panel
+├── web_panel.py            # Web browsing panel via QWebEngineView
 ├── bookmark_panel.py       # Bookmarks sidebar
 ├── bookmark_manager.py     # Bookmark persistence backend
 ├── autosave.py             # Automatic background saving
@@ -138,10 +138,10 @@ eleviewer/
 ## Dependencies
 
 - **PySide6** — UI framework
-- **PySide6-WebEngine** — QtWebEngine support for fallback web components
+- **PySide6-WebEngine** — QtWebEngine support for web panel
 - **python-docx** — DOCX file handling
 - **openpyxl** — XLSX file handling
-- **PyMuPDF (fitz)** — PDF reading and rendering
+- **PyMuPDF (fitz)** — PDF text extraction (TTS)
 - **Markdown** — Markdown to HTML rendering
 - **pyttsx3** — Native Windows Text-to-Speech
 

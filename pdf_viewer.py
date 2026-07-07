@@ -1,21 +1,33 @@
+"""PDF viewer using Qt's native QPdfView for vector-crisp rendering.
+
+Display layer: QPdfDocument + QPdfView (PDFium-based, always sharp text).
+Background:    PyMuPDF (fitz) kept only for TTS text extraction and TOC scanning.
+"""
+
 import json
 import os
 import re
 
 try:
-    import fitz  # PyMuPDF
+    import fitz  # PyMuPDF — kept for TTS text extraction and TOC scanning
     PYMUPDF_AVAILABLE = True
 except ImportError:
     PYMUPDF_AVAILABLE = False
 
+try:
+    from PySide6.QtPdf import QPdfDocument
+    from PySide6.QtPdfWidgets import QPdfView
+    QTPDF_AVAILABLE = True
+except ImportError:
+    QTPDF_AVAILABLE = False
+
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QToolButton, QLabel,
-    QGraphicsView, QGraphicsScene, QGraphicsPixmapItem, QMessageBox,
-    QComboBox, QMenu, QLineEdit, QTreeWidget, QTreeWidgetItem, QSplitter,
-    QSizePolicy,
+    QMessageBox, QComboBox, QMenu, QLineEdit, QTreeWidget,
+    QTreeWidgetItem, QSplitter, QTreeWidgetItemIterator,
 )
-from PySide6.QtGui import QPixmap, QImage, QWheelEvent, QKeyEvent, QIntValidator
-from PySide6.QtCore import Qt, Signal, QTimer, QSize
+from PySide6.QtGui import QIntValidator, QKeyEvent, QWheelEvent
+from PySide6.QtCore import Qt, Signal, QTimer, QSize, QPointF
 
 from icons import icon
 from pdf_tts import PdfTts, TTS_AVAILABLE
@@ -25,6 +37,8 @@ from paths import APP_DATA_DIR
 
 TOC_CACHE_PATH = APP_DATA_DIR / "pdf_toc_cache.json"
 
+
+# ── TOC cache helpers (unchanged) ────────────────────────────────────
 
 def _load_toc_cache():
     try:
@@ -64,7 +78,7 @@ def _scan_toc_from_text(doc):
     entries = []
     # Match: "Title text .......... 47" or "Title text   47" at line end
     pattern = re.compile(
-        r'^(.+?)[\.\s]{2,}(\d{1,4})\s*$',
+        r'^(.+?)[\.\\s]{2,}(\d{1,4})\s*$',
         re.MULTILINE,
     )
     for m in pattern.finditer(toc_page_text):
@@ -77,31 +91,45 @@ def _scan_toc_from_text(doc):
     return entries
 
 
-class PdfGraphicsView(QGraphicsView):
-    zoom_requested = Signal(float)
+# ── Custom QPdfView with Ctrl+Wheel zoom and key navigation ─────────
 
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.setDragMode(QGraphicsView.ScrollHandDrag)
-        self.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
-        self.setResizeAnchor(QGraphicsView.AnchorUnderMouse)
+if QTPDF_AVAILABLE:
+    class EleViewerPdfView(QPdfView):
+        """QPdfView subclass adding Ctrl+Wheel zoom and arrow-key page changes."""
+        page_change = Signal(int)       # -1 for prev, +1 for next
+        bookmark_requested = Signal()
 
-    def wheelEvent(self, event: QWheelEvent):
-        if event.modifiers() & Qt.ControlModifier:
-            delta = event.angleDelta().y()
-            factor = 1.15 if delta > 0 else 1 / 1.15
-            self.zoom_requested.emit(factor)
-            event.accept()
-            return
-        super().wheelEvent(event)
+        def wheelEvent(self, event: QWheelEvent):
+            if event.modifiers() & Qt.ControlModifier:
+                delta = event.angleDelta().y()
+                factor = 1.15 if delta > 0 else 1 / 1.15
+                self.setZoomMode(QPdfView.ZoomMode.Custom)
+                self.setZoomFactor(self.zoomFactor() * factor)
+                event.accept()
+                return
+            super().wheelEvent(event)
 
-    def keyPressEvent(self, event: QKeyEvent):
-        parent = self.parent()
-        if parent and event.key() in (Qt.Key_Left, Qt.Key_Right, Qt.Key_PageUp, Qt.Key_PageDown):
-            parent.keyPressEvent(event)
-            return
-        super().keyPressEvent(event)
+        def keyPressEvent(self, event: QKeyEvent):
+            key = event.key()
+            # In single-page mode, arrow keys change pages
+            if self.pageMode() == QPdfView.PageMode.SinglePage:
+                if key in (Qt.Key_Left, Qt.Key_PageUp):
+                    self.page_change.emit(-1)
+                    event.accept()
+                    return
+                elif key in (Qt.Key_Right, Qt.Key_PageDown):
+                    self.page_change.emit(1)
+                    event.accept()
+                    return
+            # Ctrl+D bookmark shortcut works in any mode
+            if event.modifiers() & Qt.ControlModifier and key == Qt.Key_D:
+                self.bookmark_requested.emit()
+                event.accept()
+                return
+            super().keyPressEvent(event)
 
+
+# ── Main PDF Viewer widget ───────────────────────────────────────────
 
 class PdfViewer(QWidget):
     textChanged = Signal()
@@ -112,19 +140,11 @@ class PdfViewer(QWidget):
         self.is_modified = False
         self._status_callback = status_callback
         self._bookmark_callback = None
-        self.doc = None
+        self.fitz_doc = None          # PyMuPDF doc — TTS + TOC only
         self.current_page = 0
         self.total_pages = 0
-        self._pixmap_item = None
-        self._user_zoom = 1.0
-        self._fit_mode = load_settings().get("pdf_fit_mode", "width")
-        self._cached_page = -1
-        self._cached_render_scale = 0.0
-        self._layout_complete = False
-        self._first_resize_pending = True
-        self._rotation = 0          # 0 / 90 / 180 / 270
-        self._double_page = False   # side-by-side mode
         self._toc_visible = False
+        self._multi_page = False
         self.tts = PdfTts(on_error=self._on_tts_error)
 
         self.setFocusPolicy(Qt.StrongFocus)
@@ -150,9 +170,9 @@ class PdfViewer(QWidget):
             btn.clicked.connect(slot)
             return btn
 
-        self.btn_toc      = _tb("list",       "Toggle Table of Contents",  self._toggle_toc)
-        self.btn_prev     = _tb("chevron-left","Previous page",             self.prev_page)
-        self.btn_next     = _tb("chevron-right","Next page",                self.next_page)
+        self.btn_toc      = _tb("list",         "Toggle Table of Contents", self._toggle_toc)
+        self.btn_prev     = _tb("chevron-left",  "Previous page",           self.prev_page)
+        self.btn_next     = _tb("chevron-right", "Next page",               self.next_page)
 
         # Page input  ─ editable box + "/ N" label
         self.page_input = QLineEdit()
@@ -167,12 +187,11 @@ class PdfViewer(QWidget):
         self.lbl_total = QLabel(" / 0")
         self.lbl_total.setStyleSheet("color:#aaa; font-weight:bold; padding:0 6px 0 0;")
 
-        self.btn_zoom_out  = _tb("zoom-out",   "Zoom out",   lambda: self._apply_zoom(1 / 1.2))
-        self.btn_fit_page  = _tb("minimize-2", "Fit page",   self.fit_page)
-        self.btn_fit_width = _tb("maximize-2", "Fit width",  self.fit_to_width)
-        self.btn_zoom_in   = _tb("zoom-in",    "Zoom in",    lambda: self._apply_zoom(1.2))
-        self.btn_rotate    = _tb("rotate-cw",  "Rotate 90°", self._rotate_page)
-        self.btn_dbl_page  = _tb("columns-2",  "Toggle double-page view", self._toggle_double_page)
+        self.btn_zoom_out  = _tb("zoom-out",   "Zoom out",                lambda: self._apply_zoom(1 / 1.2))
+        self.btn_fit_page  = _tb("minimize-2", "Fit page",                self.fit_page)
+        self.btn_fit_width = _tb("maximize-2", "Fit width",               self.fit_to_width)
+        self.btn_zoom_in   = _tb("zoom-in",    "Zoom in",                 lambda: self._apply_zoom(1.2))
+        self.btn_multi     = _tb("columns-2",  "Toggle continuous scroll", self._toggle_multi_page)
         self.btn_bookmark  = _tb("book-open",  "Bookmark this page",      self._add_bookmark_here)
 
         self.voice_combo = QComboBox()
@@ -192,14 +211,13 @@ class PdfViewer(QWidget):
         toolbar.addWidget(self.btn_fit_page)
         toolbar.addWidget(self.btn_fit_width)
         toolbar.addWidget(self.btn_zoom_in)
-        toolbar.addWidget(self.btn_rotate)
-        toolbar.addWidget(self.btn_dbl_page)
+        toolbar.addWidget(self.btn_multi)
         toolbar.addWidget(self.btn_bookmark)
         toolbar.addWidget(self.voice_combo)
         toolbar.addWidget(self.btn_speak)
         toolbar.addWidget(self.btn_stop)
 
-        # ── Content area: TOC splitter + graphics view ───────────────
+        # ── Content area: TOC splitter + QPdfView ───────────────────
         self.content_splitter = QSplitter(Qt.Horizontal)
 
         # TOC panel
@@ -227,17 +245,28 @@ class PdfViewer(QWidget):
         self.toc_widget.setMaximumWidth(300)
         self.toc_widget.hide()
 
-        # Graphics view
-        self.view = PdfGraphicsView(self)
-        self.view.setContextMenuPolicy(Qt.CustomContextMenu)
-        self.view.customContextMenuRequested.connect(self._show_context_menu)
-        self.scene = QGraphicsScene()
-        self.view.setScene(self.scene)
-        self.view.setStyleSheet("background: #1e1e1e; border: none;")
-        self.view.zoom_requested.connect(self._apply_zoom)
+        # QPdfView — vector-rendered PDF display
+        if QTPDF_AVAILABLE:
+            self.pdf_doc_qt = QPdfDocument(self)
+            self.pdf_view = EleViewerPdfView(self)
+            self.pdf_view.setDocument(self.pdf_doc_qt)
+            self.pdf_view.setPageMode(QPdfView.PageMode.SinglePage)
+            self.pdf_view.setZoomMode(QPdfView.ZoomMode.FitToWidth)
+            self.pdf_view.setStyleSheet("background: #1e1e1e; border: none;")
+            self.pdf_view.setContextMenuPolicy(Qt.CustomContextMenu)
+            self.pdf_view.customContextMenuRequested.connect(self._show_context_menu)
+            # Wire signals
+            self.pdf_view.pageNavigator().currentPageChanged.connect(self._on_page_changed)
+            self.pdf_view.page_change.connect(self._on_page_change_key)
+            self.pdf_view.bookmark_requested.connect(self._add_bookmark_here)
+        else:
+            self.pdf_doc_qt = None
+            self.pdf_view = QLabel("QPdfView not available.\nPlease install PySide6 >= 6.6")
+            self.pdf_view.setAlignment(Qt.AlignCenter)
+            self.pdf_view.setStyleSheet("color: #e0e0e0; background: #1e1e1e; font-size: 14px;")
 
         self.content_splitter.addWidget(self.toc_widget)
-        self.content_splitter.addWidget(self.view)
+        self.content_splitter.addWidget(self.pdf_view)
 
         outer.addLayout(toolbar)
         outer.addWidget(self.content_splitter)
@@ -256,33 +285,6 @@ class PdfViewer(QWidget):
     def _on_tts_error(self, message):
         if self._status_callback:
             self._status_callback(f"TTS error: {message}", 4000)
-
-    # ── Show / resize ────────────────────────────────────────────────
-
-    def showEvent(self, event):
-        super().showEvent(event)
-        self._layout_complete = False
-        QTimer.singleShot(100, self._ensure_viewport_ready)
-
-    def _ensure_viewport_ready(self):
-        if self.view.viewport().width() > 0 and self._layout_complete:
-            self._apply_default_fit()
-        else:
-            if self.view.viewport().width() > 0:
-                self._layout_complete = True
-                self._apply_default_fit()
-            else:
-                QTimer.singleShot(100, self._ensure_viewport_ready)
-
-    def resizeEvent(self, event):
-        super().resizeEvent(event)
-        if self.view.viewport().width() > 0:
-            self._layout_complete = True
-        if self.doc and self._pixmap_item:
-            if self._first_resize_pending:
-                self._first_resize_pending = False
-                QTimer.singleShot(100, self._ensure_viewport_ready)
-            self._apply_default_fit()
 
     # ── Voice population ─────────────────────────────────────────────
 
@@ -303,55 +305,80 @@ class PdfViewer(QWidget):
     # ── Load ─────────────────────────────────────────────────────────
 
     def load_from_path(self, file_path):
-        if not PYMUPDF_AVAILABLE:
+        if not QTPDF_AVAILABLE:
             QMessageBox.critical(
                 self, "Missing Dependency",
-                "PyMuPDF is required.\nPlease run: pip install PyMuPDF",
+                "PySide6 QtPdf module is required.\nPlease update PySide6 to 6.6+.",
             )
             return
         try:
-            self.doc = fitz.open(file_path)
-            self.total_pages = len(self.doc)
+            # Load into Qt's native PDF engine for display
+            self.pdf_doc_qt.load(file_path)
+            self.total_pages = self.pdf_doc_qt.pageCount()
             self.current_page = 0
-            self._user_zoom = 1.0
-            self._rotation = 0
-            self._double_page = False
-            self._cached_page = -1
-            self._cached_render_scale = 0.0
-            self._fit_mode = load_settings().get("pdf_fit_mode", "width")
-            self._layout_complete = False
             self.lbl_total.setText(f" / {self.total_pages}")
-            self.page_input.setValidator(QIntValidator(1, self.total_pages))
-            self.render_page(force=True)
-            QTimer.singleShot(100, self._ensure_viewport_ready)
+            self.page_input.setValidator(QIntValidator(1, max(self.total_pages, 1)))
+            self.page_input.setText("1")
+
+            # Also open with PyMuPDF for TTS text extraction and TOC scanning
+            if PYMUPDF_AVAILABLE:
+                self.fitz_doc = fitz.open(file_path)
+
+            # Apply default fit mode from settings
+            settings = load_settings()
+            fit = settings.get("pdf_fit_mode", "width")
+            if fit == "page":
+                self.pdf_view.setZoomMode(QPdfView.ZoomMode.FitInView)
+            else:
+                self.pdf_view.setZoomMode(QPdfView.ZoomMode.FitToWidth)
+
             self.is_modified = False
             self._load_toc(file_path)
+
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Failed to load PDF: {str(e)}")
+
+    # ── Page change tracking ─────────────────────────────────────────
+
+    def _on_page_changed(self, page):
+        """Called by QPdfView's pageNavigator when the visible page changes."""
+        self.current_page = page
+        self.page_input.setText(str(page + 1))
+        self._highlight_toc_item()
+
+    def _on_page_change_key(self, delta):
+        """Called by EleViewerPdfView arrow key signals (-1 or +1)."""
+        if delta < 0:
+            self.prev_page()
+        else:
+            self.next_page()
+
+    # ── TOC ──────────────────────────────────────────────────────────
 
     def _load_toc(self, file_path):
         """Load TOC: built-in outline first, then cached scan, then live scan."""
         self.toc_tree.clear()
         entries = []  # list of (level, title, page_1indexed)
 
-        # Tier 1: built-in outline
-        raw = self.doc.get_toc()
-        if raw:
-            entries = [(lvl, title, pg) for lvl, title, pg in raw]
-        else:
-            # Tier 2: check cache
-            cache = _load_toc_cache()
-            key = os.path.abspath(file_path)
-            if key in cache:
-                cached = cache[key]
-                entries = [(1, t, p) for t, p in cached]
+        if self.fitz_doc:
+            # Tier 1: built-in outline
+            raw = self.fitz_doc.get_toc()
+            if raw:
+                entries = [(lvl, title, pg) for lvl, title, pg in raw]
             else:
-                # Tier 3: live text scan
-                scanned = _scan_toc_from_text(self.doc)
-                if scanned:
-                    cache[key] = scanned
-                    _save_toc_cache(cache)
-                    entries = [(1, t, p) for t, p in scanned]
+                # Tier 2: check cache
+                cache = _load_toc_cache()
+                key = os.path.abspath(file_path)
+                if key in cache:
+                    cached = cache[key]
+                    entries = [(1, t, p) for t, p in cached]
+                else:
+                    # Tier 3: live text scan
+                    scanned = _scan_toc_from_text(self.fitz_doc)
+                    if scanned:
+                        cache[key] = scanned
+                        _save_toc_cache(cache)
+                        entries = [(1, t, p) for t, p in scanned]
 
         if not entries:
             item = QTreeWidgetItem(["No outline found"])
@@ -392,101 +419,6 @@ class PdfViewer(QWidget):
         else:
             self.content_splitter.setSizes([0, self.content_splitter.width()])
 
-    # ── Page jump ────────────────────────────────────────────────────
-
-    def _jump_to_page(self):
-        try:
-            pg = int(self.page_input.text())
-        except ValueError:
-            return
-        pg = max(1, min(pg, self.total_pages))
-        self.go_to_bookmark(page_number=pg - 1)
-
-    # ── Render ───────────────────────────────────────────────────────
-
-    def _render_quality_scale(self):
-        settings = load_settings()
-        dpr = self.view.devicePixelRatioF() or 1.0
-        if settings.get("pdf_render_quality", "high") == "high":
-            return max(dpr, 1.5)
-        return 1.0
-
-    def _compute_render_scale(self):
-        if not self.doc:
-            return 1.0
-        page = self.doc.load_page(self.current_page)
-        viewport = self.view.viewport()
-        vw = max(viewport.width(), 400)
-        vh = max(viewport.height(), 500)
-        quality = self._render_quality_scale()
-
-        # In double-page mode, halve available width
-        if self._double_page:
-            vw = max(vw // 2 - 4, 200)
-
-        if self._fit_mode == "width":
-            base = vw / page.rect.width
-        else:
-            base = min(vw / page.rect.width, vh / page.rect.height)
-
-        return base * quality * max(self._user_zoom, 1.0)
-
-    def _needs_rerender(self, new_scale):
-        if self._cached_page != self.current_page:
-            return True
-        if self._cached_render_scale <= 0:
-            return True
-        ratio = new_scale / self._cached_render_scale
-        return ratio < 0.9 or ratio > 1.1
-
-    def _page_to_pixmap(self, page_index, scale):
-        """Render a single PDF page to QPixmap."""
-        page = self.doc.load_page(page_index)
-        mat = fitz.Matrix(scale, scale).prerotate(self._rotation)
-        pix = page.get_pixmap(matrix=mat)
-        img = QImage(pix.samples, pix.width, pix.height, pix.stride, QImage.Format_RGB888)
-        return QPixmap.fromImage(img)
-
-    def render_page(self, force=False):
-        if not self.doc or self.total_pages == 0:
-            return
-
-        scale = self._compute_render_scale()
-        if not force and not self._needs_rerender(scale):
-            self.page_input.setText(str(self.current_page + 1))
-            return
-
-        self.scene.clear()
-
-        if self._double_page and self.current_page + 1 < self.total_pages:
-            # Render two pages side by side
-            pm_left  = self._page_to_pixmap(self.current_page, scale)
-            pm_right = self._page_to_pixmap(self.current_page + 1, scale)
-            gap = 8
-            item_left  = QGraphicsPixmapItem(pm_left)
-            item_right = QGraphicsPixmapItem(pm_right)
-            item_right.setX(pm_left.width() + gap)
-            self.scene.addItem(item_left)
-            self.scene.addItem(item_right)
-            self._pixmap_item = item_left
-            total_w = pm_left.width() + gap + pm_right.width()
-            total_h = max(pm_left.height(), pm_right.height())
-            from PySide6.QtCore import QRectF
-            self.scene.setSceneRect(QRectF(0, 0, total_w, total_h))
-        else:
-            qpixmap = self._page_to_pixmap(self.current_page, scale)
-            self._pixmap_item = QGraphicsPixmapItem(qpixmap)
-            self.scene.addItem(self._pixmap_item)
-            self.scene.setSceneRect(self._pixmap_item.boundingRect())
-
-        self._cached_page = self.current_page
-        self._cached_render_scale = scale
-        self.page_input.setText(str(self.current_page + 1))
-        self.view.resetTransform()
-
-        # Highlight current TOC item
-        self._highlight_toc_item()
-
     def _highlight_toc_item(self):
         """Select the TOC item whose page is closest to the current page."""
         cur = self.current_page
@@ -507,91 +439,75 @@ class PdfViewer(QWidget):
             self.toc_tree.setCurrentItem(best_item)
             self.toc_tree.blockSignals(False)
 
+    # ── Page jump ────────────────────────────────────────────────────
+
+    def _jump_to_page(self):
+        try:
+            pg = int(self.page_input.text())
+        except ValueError:
+            return
+        pg = max(1, min(pg, self.total_pages))
+        self.go_to_bookmark(page_number=pg - 1)
+
     # ── Fit / zoom ───────────────────────────────────────────────────
 
-    def _apply_default_fit(self):
-        if self._fit_mode == "width":
-            self.fit_to_width()
-        else:
-            self.fit_page()
-
     def fit_page(self):
-        if self._pixmap_item:
-            self.view.fitInView(self.scene.sceneRect(), Qt.KeepAspectRatio)
-            self._user_zoom = 1.0
-            self._fit_mode = "page"
+        if QTPDF_AVAILABLE:
+            self.pdf_view.setZoomMode(QPdfView.ZoomMode.FitInView)
 
     def fit_to_width(self):
-        if not self._pixmap_item:
-            return
-        vp = self.view.viewport().rect()
-        scene_rect = self.scene.sceneRect()
-        if scene_rect.width() <= 0:
-            return
-        self.view.resetTransform()
-        scale = vp.width() / scene_rect.width()
-        self.view.scale(scale, scale)
-        self._fit_mode = "width"
+        if QTPDF_AVAILABLE:
+            self.pdf_view.setZoomMode(QPdfView.ZoomMode.FitToWidth)
 
     def _apply_zoom(self, factor):
-        self._user_zoom *= factor
-        self.view.scale(factor, factor)
-        new_scale = self._compute_render_scale()
-        if self._needs_rerender(new_scale):
-            self.render_page(force=True)
-            self._apply_default_fit()
+        if not QTPDF_AVAILABLE:
+            return
+        self.pdf_view.setZoomMode(QPdfView.ZoomMode.Custom)
+        current = self.pdf_view.zoomFactor()
+        self.pdf_view.setZoomFactor(current * factor)
 
-    # ── Rotation ─────────────────────────────────────────────────────
+    # ── Multi-page toggle ────────────────────────────────────────────
 
-    def _rotate_page(self):
-        self._rotation = (self._rotation + 90) % 360
-        self._cached_page = -1  # force rerender
-        self.render_page(force=True)
-        QTimer.singleShot(0, self._apply_default_fit)
-
-    # ── Double-page toggle ───────────────────────────────────────────
-
-    def _toggle_double_page(self):
-        self._double_page = not self._double_page
-        self._cached_page = -1
-        self.render_page(force=True)
-        QTimer.singleShot(0, self._apply_default_fit)
-        style = "background:#3c3c3c;" if self._double_page else ""
-        self.btn_dbl_page.setStyleSheet(compact_toolbar_stylesheet() + style)
+    def _toggle_multi_page(self):
+        if not QTPDF_AVAILABLE:
+            return
+        self._multi_page = not self._multi_page
+        if self._multi_page:
+            self.pdf_view.setPageMode(QPdfView.PageMode.MultiPage)
+        else:
+            self.pdf_view.setPageMode(QPdfView.PageMode.SinglePage)
+        style = "background:#3c3c3c;" if self._multi_page else ""
+        self.btn_multi.setStyleSheet(compact_toolbar_stylesheet() + style)
 
     # ── Navigation ───────────────────────────────────────────────────
 
     def prev_page(self):
-        step = 2 if self._double_page else 1
-        if self.current_page > 0:
+        if not QTPDF_AVAILABLE:
+            return
+        nav = self.pdf_view.pageNavigator()
+        cur = nav.currentPage()
+        if cur > 0:
             self.tts.stop()
-            self.current_page = max(0, self.current_page - step)
-            self._user_zoom = 1.0
-            self.render_page(force=True)
-            QTimer.singleShot(0, self._apply_default_fit)
+            nav.jump(cur - 1, QPointF(), 0)
 
     def next_page(self):
-        step = 2 if self._double_page else 1
-        if self.current_page < self.total_pages - 1:
+        if not QTPDF_AVAILABLE:
+            return
+        nav = self.pdf_view.pageNavigator()
+        cur = nav.currentPage()
+        if cur < self.total_pages - 1:
             self.tts.stop()
-            self.current_page = min(self.total_pages - 1, self.current_page + step)
-            self._user_zoom = 1.0
-            self.render_page(force=True)
-            QTimer.singleShot(0, self._apply_default_fit)
+            nav.jump(cur + 1, QPointF(), 0)
 
     def go_to_bookmark(self, page_number=0, scroll_position_y=0.0):
-        if not self.doc:
+        if not QTPDF_AVAILABLE or not self.pdf_doc_qt:
             return
         page_number = max(0, min(int(page_number), self.total_pages - 1))
-        if page_number == self.current_page and self._pixmap_item:
-            return
         self.tts.stop()
-        self.current_page = page_number
-        self._user_zoom = 1.0
-        self.render_page(force=True)
-        QTimer.singleShot(100, self._ensure_viewport_ready)
+        self.pdf_view.pageNavigator().jump(page_number, QPointF(), 0)
 
     def keyPressEvent(self, event: QKeyEvent):
+        """Catch key events when the PdfViewer widget itself has focus."""
         key = event.key()
         if key in (Qt.Key_Left, Qt.Key_PageUp):
             self.prev_page()
@@ -621,14 +537,17 @@ class PdfViewer(QWidget):
     def _show_context_menu(self, pos):
         menu = QMenu(self)
         menu.addAction("Bookmark This Page", self._add_bookmark_here)
-        menu.exec(self.view.mapToGlobal(pos))
+        if QTPDF_AVAILABLE:
+            menu.exec(self.pdf_view.mapToGlobal(pos))
 
     # ── TTS ──────────────────────────────────────────────────────────
 
     def read_current_page(self):
-        if not self.doc or not TTS_AVAILABLE:
+        if not self.fitz_doc or not TTS_AVAILABLE:
+            if self._status_callback:
+                self._status_callback("TTS requires PyMuPDF (pip install PyMuPDF)", 4000)
             return
-        page = self.doc.load_page(self.current_page)
+        page = self.fitz_doc.load_page(self.current_page)
         text = page.get_text().strip()
         if not text:
             if self._status_callback:
@@ -639,12 +558,10 @@ class PdfViewer(QWidget):
         if self._status_callback:
             self._status_callback("Reading page aloud...", 2000)
 
+    # ── Compatibility stubs ──────────────────────────────────────────
+
     def toPlainText(self):
         return ""
 
     def setPlainText(self, text):
         pass
-
-
-# Needed for _highlight_toc_item iteration
-from PySide6.QtWidgets import QTreeWidgetItemIterator  # noqa: E402

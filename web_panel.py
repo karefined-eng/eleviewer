@@ -1,47 +1,29 @@
-"""Tabbed web panel with persisted URLs."""
+"""Tabbed web panel with persisted URLs using QtWebEngine."""
 
 try:
     from PySide6.QtCore import Signal, QUrl
-    from qtwebview2 import QtWebView2Widget
+    from PySide6.QtWebEngineWidgets import QWebEngineView
     
-    class WebViewWrapper(QtWebView2Widget):
-        urlChanged = Signal(QUrl)
-        titleChanged = Signal(str)
-
+    class WebViewWrapper(QWebEngineView):
+        # We define signals to match the old API so we don't have to rewrite the parent container
+        
         def __init__(self, parent=None):
-            super().__init__(parent, debug=True)
-            self._init_settings_hook = self._register_events
-
-        def _register_events(self, core_webview):
-            core_webview.SourceChanged += self._dotnet_source_changed
-            core_webview.DocumentTitleChanged += self._dotnet_title_changed
-
-        def _dotnet_source_changed(self, sender, args):
-            if self._webview and self._webview.Source:
-                self.urlChanged.emit(QUrl(self._webview.Source.ToString()))
-
-        def _dotnet_title_changed(self, sender, args):
-            if self._webview and self._webview.CoreWebView2:
-                self.titleChanged.emit(self._webview.CoreWebView2.DocumentTitle)
-
+            super().__init__(parent)
+        
         def setUrl(self, qurl):
-            self.load_url(qurl.toString())
-
+            super().setUrl(qurl)
+            
         def setHtml(self, html):
-            self.load_html(html)
-
+            super().setHtml(html)
+            
         def url(self):
-            if self._webview and self._webview.Source:
-                return QUrl(self._webview.Source.ToString())
-            return QUrl("")
-
+            return super().url()
+            
         def back(self):
-            if self.is_ready and self._webview.CanGoBack:
-                self._webview.GoBack()
-
+            super().back()
+            
         def forward(self):
-            if self.is_ready and self._webview.CanGoForward:
-                self._webview.GoForward()
+            super().forward()
 
     WEB_AVAILABLE = True
 except ImportError:

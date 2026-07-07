@@ -97,7 +97,7 @@ eleviewer/
 ├── settings_dialog.py       # Settings UI
 ├── save_utils.py            # Atomic file writes
 ├── markdown_renderer.py     # Markdown view/edit toggle
-├── pdf_viewer.py            # PDF viewing with zoom and TTS
+├── pdf_viewer.py            # PDF viewing with QPdfView and TTS
 ├── pdf_tts.py                 # Windows native read-aloud
 ├── vault_explorer.py          # Multi-vault folder sidebar
 ├── web_panel.py               # Tabbed web browser panel
@@ -115,7 +115,7 @@ eleviewer/
 - **file_handler.py** — Determines which viewer to use based on file extension
 - **docx_viewer.py** — DOCX file viewing and editing
 - **xlsx_viewer.py** — XLSX file viewing and editing
-- **pdf_viewer.py** — PDF viewing with zoom, TTS, and bookmarking
+- **pdf_viewer.py** — QPdfView-based PDF viewing with TTS and bookmarking
 - **session_manager.py** — Saves/restores open tabs between sessions
 - **quick_switcher.py** — Ctrl+Q fuzzy file search dialog
 
