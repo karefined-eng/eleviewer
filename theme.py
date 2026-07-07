@@ -36,6 +36,9 @@ def main_window_stylesheet():
         QMenuBar::item { padding: 5px 10px; }
         QMenuBar::item:selected { background-color: #333; }
         QMenu { background-color: #2d2d2d; color: #ffffff; border: 1px solid #333; font-size: 13px; }
+        QMenu::item { padding: 6px 60px 6px 20px; }
+        QMenu::item:selected { background-color: #3c3c3c; }
+        QMenu::separator { height: 1px; background: #444; margin: 4px 0px; }
         QStatusBar { background-color: #1e1e1e; color: #aaaaaa; border-top: 1px solid #333; }
         QFileDialog { background-color: #2d2d2d; color: white; }
         QMessageBox { background-color: #2d2d2d; color: white; }

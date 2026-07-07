@@ -1,0 +1,19 @@
+doyuble click tripple click for md files not workinng
+
+we need to add a page number feature to pdf render
+
+simple italics bold and undeline and siome bullets on the text editoors wont be bad
+tables too
+
+and creating new files in the format that this eleviewer supports
+
+some labels under the icons to will help reduce friction
+
+ adding an html viewer like the markdown viewer too would be cool
+
+
+we lost all our icons
+
+the web panel is also gone
+
+

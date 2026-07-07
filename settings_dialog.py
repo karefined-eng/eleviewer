@@ -1,8 +1,9 @@
 from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit,
     QCheckBox, QSpinBox, QPushButton, QFormLayout, QTabWidget,
-    QComboBox, QWidget,
+    QComboBox, QWidget, QListWidget, QFileDialog
 )
+from PySide6.QtCore import QEvent, Qt
 
 from settings import load_settings, save_settings, DEFAULT_SETTINGS, DEFAULT_WEB_TABS
 from theme import (
@@ -15,8 +16,10 @@ class SettingsDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Settings")
-        self.resize(520, 380)
+        self.resize(520, 420)
         self.settings = load_settings()
+        # Close (reject / keep existing settings) when window loses focus
+        self.setAttribute(Qt.WA_DeleteOnClose, False)
 
         layout = QVBoxLayout(self)
         tabs = QTabWidget()
@@ -37,6 +40,12 @@ class SettingsDialog(QDialog):
         buttons.addWidget(cancel_btn)
         buttons.addWidget(save_btn)
         layout.addLayout(buttons)
+
+    def changeEvent(self, event):
+        """Auto-close (keeping existing settings) when the dialog loses focus."""
+        super().changeEvent(event)
+        if event.type() == QEvent.ActivationChange and not self.isActiveWindow():
+            self.reject()
 
     def _build_general_tab(self):
         w = QWidget()
@@ -84,11 +93,62 @@ class SettingsDialog(QDialog):
         self.vault_show_all = QCheckBox("Show all files in vault (not just documents)")
         self.vault_show_all.setChecked(self.settings.get("vault_show_all_files", False))
         form.addRow(self.vault_show_all)
+
+        folder_layout = QHBoxLayout()
+        self.save_folder_input = QLineEdit()
+        self.save_folder_input.setText(self.settings.get("default_save_folder", ""))
+        self.save_folder_input.setPlaceholderText("(Current Working Directory)")
+        browse_btn = QPushButton("Browse...")
+        def _browse():
+            from PySide6.QtWidgets import QFileDialog
+            folder = QFileDialog.getExistingDirectory(self, "Select Default Save Folder")
+            if folder:
+                self.save_folder_input.setText(folder)
+        browse_btn.clicked.connect(_browse)
+        folder_layout.addWidget(self.save_folder_input)
+        folder_layout.addWidget(browse_btn)
+        form.addRow("Default Save Folder:", folder_layout)
+
+        self.vault_list = QListWidget()
         paths = self.settings.get("vault_paths", [])
-        paths_label = QLabel("\n".join(paths) if paths else "(no vaults open)")
-        paths_label.setWordWrap(True)
-        paths_label.setStyleSheet("color: #aaa; font-size: 12px;")
-        form.addRow("Open vaults:", paths_label)
+        self.vault_list.addItems(paths)
+        
+        vault_controls = QVBoxLayout()
+        btn_add = QPushButton("Add...")
+        btn_edit = QPushButton("Edit...")
+        btn_remove = QPushButton("Remove")
+        
+        def _add_vault():
+            folder = QFileDialog.getExistingDirectory(self, "Select Vault Folder")
+            if folder:
+                self.vault_list.addItem(folder)
+                
+        def _edit_vault():
+            current = self.vault_list.currentItem()
+            if current:
+                folder = QFileDialog.getExistingDirectory(self, "Select Vault Folder", current.text())
+                if folder:
+                    current.setText(folder)
+                    
+        def _remove_vault():
+            row = self.vault_list.currentRow()
+            if row >= 0:
+                self.vault_list.takeItem(row)
+                
+        btn_add.clicked.connect(_add_vault)
+        btn_edit.clicked.connect(_edit_vault)
+        btn_remove.clicked.connect(_remove_vault)
+        
+        vault_controls.addWidget(btn_add)
+        vault_controls.addWidget(btn_edit)
+        vault_controls.addWidget(btn_remove)
+        vault_controls.addStretch()
+        
+        vault_layout = QHBoxLayout()
+        vault_layout.addWidget(self.vault_list)
+        vault_layout.addLayout(vault_controls)
+        
+        form.addRow("Open vaults:", vault_layout)
         return w
 
     def _build_web_tab(self):
@@ -104,6 +164,10 @@ class SettingsDialog(QDialog):
 
     def _save(self):
         self.settings = load_settings()
+        vaults = []
+        for i in range(self.vault_list.count()):
+            vaults.append(self.vault_list.item(i).text())
+            
         self.settings.update({
             "autosave_enabled": self.autosave_check.isChecked(),
             "autosave_interval_seconds": self.interval_spin.value(),
@@ -112,7 +176,9 @@ class SettingsDialog(QDialog):
             "pdf_fit_mode": self.pdf_fit_combo.currentText(),
             "pdf_render_quality": self.pdf_quality_combo.currentText(),
             "vault_show_all_files": self.vault_show_all.isChecked(),
+            "default_save_folder": self.save_folder_input.text().strip(),
             "web_url": self.web_url_input.text().strip() or DEFAULT_SETTINGS["web_url"],
+            "vault_paths": vaults,
         })
         save_settings(self.settings)
         self.accept()

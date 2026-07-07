@@ -69,10 +69,10 @@ Multiple vaults are saved in `%APPDATA%\EleViewer\settings.json`.
 
 | Shortcut | Action |
 |----------|--------|
-| Ctrl+Shift+E | Toggle vault |
+| Alt+V | Toggle vault |
 | Ctrl+Shift+T | Reopen tab |
-| Ctrl+T | New web tab (when web panel focused) |
-| Ctrl+P | Quick switcher |
+| Ctrl+T | New web tab |
+| Ctrl+Q | Quick switcher |
 
 ## Dependencies
 

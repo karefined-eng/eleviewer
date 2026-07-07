@@ -37,8 +37,8 @@ def create_viewer_widget(file_path, content=None):
         viewer.file_path = file_path
         return viewer
 
-    elif ext == "md":
-        viewer = MarkdownViewer(file_path)
+    elif ext in ("md", "html", "htm"):
+        viewer = MarkdownViewer(file_path, is_html=(ext in ("html", "htm")))
         viewer.file_path = file_path
         if content is not None:
             viewer.setPlainText(content)

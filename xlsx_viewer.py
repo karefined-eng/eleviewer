@@ -52,6 +52,19 @@ class XlsxViewer(QWidget):
 
         if file_path:
             self.load_from_path(file_path)
+        else:
+            from openpyxl import Workbook
+            self.workbook = Workbook()
+            self.sheet_tabs.blockSignals(True)
+            while self.sheet_tabs.count():
+                self.sheet_tabs.removeTab(0)
+            for name in self.workbook.sheetnames:
+                self.sheet_tabs.addTab(name)
+            self.sheet_tabs.blockSignals(False)
+            if self.workbook.sheetnames:
+                self.sheet_tabs.setCurrentIndex(0)
+                self._on_sheet_changed(self.workbook.sheetnames[0])
+            self.is_modified = False
 
     def load_from_path(self, file_path):
         try:
@@ -107,8 +120,8 @@ class XlsxViewer(QWidget):
         self._loading_sheet = True
         self.current_sheet_name = sheet_name
         ws = self.workbook[sheet_name]
-        max_row = ws.max_row or 1
-        max_col = ws.max_column or 1
+        max_row = max(ws.max_row or 1, 20)
+        max_col = max(ws.max_column or 1, 10)
         self.merged_cells_ranges = set(ws.merged_cells.ranges)
 
         self.table.blockSignals(True)

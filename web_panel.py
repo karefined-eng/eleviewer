@@ -1,7 +1,48 @@
 """Tabbed web panel with persisted URLs."""
 
 try:
-    from PySide6.QtWebEngineWidgets import QWebEngineView
+    from PySide6.QtCore import Signal, QUrl
+    from qtwebview2 import QtWebView2Widget
+    
+    class WebViewWrapper(QtWebView2Widget):
+        urlChanged = Signal(QUrl)
+        titleChanged = Signal(str)
+
+        def __init__(self, parent=None):
+            super().__init__(parent, debug=True)
+            self._init_settings_hook = self._register_events
+
+        def _register_events(self, core_webview):
+            core_webview.SourceChanged += self._dotnet_source_changed
+            core_webview.DocumentTitleChanged += self._dotnet_title_changed
+
+        def _dotnet_source_changed(self, sender, args):
+            if self._webview and self._webview.Source:
+                self.urlChanged.emit(QUrl(self._webview.Source.ToString()))
+
+        def _dotnet_title_changed(self, sender, args):
+            if self._webview and self._webview.CoreWebView2:
+                self.titleChanged.emit(self._webview.CoreWebView2.DocumentTitle)
+
+        def setUrl(self, qurl):
+            self.load_url(qurl.toString())
+
+        def setHtml(self, html):
+            self.load_html(html)
+
+        def url(self):
+            if self._webview and self._webview.Source:
+                return QUrl(self._webview.Source.ToString())
+            return QUrl("")
+
+        def back(self):
+            if self.is_ready and self._webview.CanGoBack:
+                self._webview.GoBack()
+
+        def forward(self):
+            if self.is_ready and self._webview.CanGoForward:
+                self._webview.GoForward()
+
     WEB_AVAILABLE = True
 except ImportError:
     WEB_AVAILABLE = False
@@ -10,7 +51,7 @@ from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QTabWidget, QLineEdit,
     QToolButton, QTabBar,
 )
-from PySide6.QtCore import Qt, QUrl, Signal, QSize
+from PySide6.QtCore import Qt, Signal, QSize
 from PySide6.QtGui import QKeySequence, QShortcut
 
 from icons import icon
@@ -74,9 +115,6 @@ class WebPanel(QWidget):
         layout.addLayout(nav)
         layout.addWidget(self.tabs)
 
-        shortcut = QShortcut(QKeySequence("Ctrl+T"), self)
-        shortcut.activated.connect(self.add_tab)
-
         self.restore_tabs()
 
     def restore_tabs(self):
@@ -98,7 +136,7 @@ class WebPanel(QWidget):
     def _add_tab_widget(self, url, title="Web"):
         if not WEB_AVAILABLE:
             return
-        view = QWebEngineView()
+        view = WebViewWrapper()
         view.setUrl(QUrl(url))
         view.urlChanged.connect(lambda u, v=view: self._on_url_changed(v, u))
         view.titleChanged.connect(lambda t, v=view: self._on_title_changed(v, t))

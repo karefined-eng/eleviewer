@@ -87,6 +87,17 @@ def rename_bookmark(bookmark_id, new_label):
     _save_raw(data)
 
 
+def update_bookmark(bookmark_id, **fields):
+    """Update arbitrary fields of a bookmark (e.g. page_number, label, color_tag)."""
+    data = _load_raw()
+    for bookmark in data["bookmarks"]:
+        if bookmark.get("id") == bookmark_id:
+            for k, v in fields.items():
+                bookmark[k] = v
+            break
+    _save_raw(data)
+
+
 def get_bookmark(bookmark_id):
     for bookmark in load_bookmarks(validate=False):
         if bookmark.get("id") == bookmark_id:

@@ -51,16 +51,8 @@ class VaultExplorer(QWidget):
         self.btn_add.setStyleSheet(compact_toolbar_stylesheet())
         self.btn_add.setAutoRaise(True)
 
-        self.btn_remove = QToolButton()
-        self.btn_remove.setIconSize(icon_qsize)
-        self.btn_remove.setIcon(icon("square", size=icon_sz))
-        self.btn_remove.setToolTip("Remove current vault from list")
-        self.btn_remove.setStyleSheet(compact_toolbar_stylesheet())
-        self.btn_remove.setAutoRaise(True)
-
         header_row.addWidget(self.vault_selector, stretch=1)
         header_row.addWidget(self.btn_add)
-        header_row.addWidget(self.btn_remove)
 
         self.tree = QTreeWidget()
         self.tree.setIconSize(QSize(ICON_SIZE_VAULT_TREE, ICON_SIZE_VAULT_TREE))

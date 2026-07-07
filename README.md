@@ -7,22 +7,26 @@ A lightweight Windows text editor supporting **DOCX**, **XLSX**, **MD**, and **T
 ✅ **Multi-format support**
 - Word documents (.docx) — view and edit
 - Excel spreadsheets (.xlsx) — view, edit cells, multiple sheets
-- Markdown files (.md) — full editing
+- PDF files (.pdf) — view, double-page layout, rotation, smart TOC sidebar, native text-to-speech
+- Markdown files (.md) — full editing with split-view HTML preview (WebView2) and rich-text toolbar
 - Plain text (.txt) — full editing
 
 ✅ **Advanced editing features**
+- **Rich Formatting Toolbar** — bold, italic, strikethrough, headings, lists, tables, links (with Lucide icons)
 - **Multi-tab interface** — work with multiple files simultaneously
+- **Vault Sidebar (Alt+V)** — organize and open files easily from designated folder vaults
+- **Web Browser Panel (Ctrl+T)** — side-by-side web browsing directly in the editor using Edge WebView2
+- **PDF & File Bookmarks** — persistent bookmarking system with a dedicated sidebar panel
 - **Session restore** — automatically reopens tabs from your last session
-- **Quick switcher (Ctrl+P)** — fuzzy search and jump to recent/pinned files (VSCode-style)
+- **Quick switcher (Ctrl+Q)** — fuzzy search and jump to recent/pinned files (VSCode-style)
 - **Pinned files** — keep frequently used files at the top for quick access
 - **Recent files menu** — fast access to last 10 files with automatic validation
-- **Autosave** — automatic background saving (optional)
-- **File validation** — removes deleted files from recent list
+- **Default Save Folder** — automatically route all new files to a preferred directory
 
 ✅ **Clean, Dark UI**
 - Professional dark luxury editorial aesthetic
 - Responsive interface built with PySide6
-- Fast and lightweight
+- Crisp white Lucide SVG icons across the app
 
 ## System Requirements
 
@@ -73,13 +77,18 @@ The executable will be generated at `dist/main.exe`.
 
 | Shortcut | Action |
 |---|---|
-| **Ctrl+N** | New tab |
+| **Ctrl+N** | New File picker (dropdown format selection) |
 | **Ctrl+O** | Open file |
 | **Ctrl+S** | Save file |
 | **Ctrl+Shift+S** | Save as |
 | **Ctrl+W** | Close tab |
 | **Ctrl+Shift+T** | Reopen closed tab |
-| **Ctrl+P** | Quick switcher (search files) |
+| **Ctrl+Q** | Quick switcher (search files) |
+| **Alt+V** | Toggle Vault (Folder Explorer) |
+| **Ctrl+Alt+B**| Toggle Bookmarks Panel |
+| **Ctrl+D** | Bookmark current page (PDF) |
+| **Alt+S** | Open Settings |
+| **Ctrl+T** | Open Web Browser Panel / New Web Tab |
 
 ### Features in Action
 
@@ -104,26 +113,37 @@ The executable will be generated at `dist/main.exe`.
 eleviewer/
 ├── main.py                 # Entry point
 ├── ui.py                   # Main window & tab management
-├── editor.py               # Text editor widget
+├── editor.py               # Text/Markdown editor widget with rich toolbar
 ├── file_handler.py         # File type router (factory pattern)
 ├── docx_viewer.py          # DOCX support
 ├── xlsx_viewer.py          # XLSX support
-├── autosave.py             # Automatic saving
+├── pdf_viewer.py           # PDF support with PyMuPDF
+├── vault_explorer.py       # Vault/Folder sidebar management
+├── web_panel.py            # Edge WebView2 browsing panel
+├── bookmark_panel.py       # Bookmarks sidebar
+├── bookmark_manager.py     # Bookmark persistence backend
+├── autosave.py             # Automatic background saving
 ├── recent_files.py         # Recent files with validation
 ├── pinned_files.py         # Pinned files management
 ├── session_manager.py      # Session restore
-├── quick_switcher.py       # Ctrl+P quick switcher
-├── settings.py             # App settings
-├── markdown_renderer.py    # Markdown rendering helpers
-├── requirements.txt        # Python dependencies
-└── assets/                 # App assets (if any)
+├── quick_switcher.py       # Ctrl+Q quick switcher
+├── settings.py             # App settings (JSON)
+├── settings_dialog.py      # Settings GUI
+├── markdown_renderer.py    # Markdown & HTML view toggling
+├── icons.py                # Lucide SVG icon loader
+├── theme.py                # Centralized dark theme stylesheet
+└── icons/                  # SVG assets
 ```
 
 ## Dependencies
 
 - **PySide6** — UI framework
+- **PySide6-WebEngine** — QtWebEngine support for fallback web components
 - **python-docx** — DOCX file handling
 - **openpyxl** — XLSX file handling
+- **PyMuPDF (fitz)** — PDF reading and rendering
+- **Markdown** — Markdown to HTML rendering
+- **pyttsx3** — Native Windows Text-to-Speech
 
 See `requirements.txt` for exact versions.
 

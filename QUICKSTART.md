@@ -87,7 +87,7 @@ eleviewer/
 ├── docx_viewer.py           # DOCX support
 ├── xlsx_viewer.py           # XLSX support
 ├── session_manager.py       # Session persistence
-├── quick_switcher.py        # Ctrl+P dialog
+├── quick_switcher.py        # Ctrl+Q dialog
 ├── recent_files.py          # Recent files menu
 ├── pinned_files.py          # Pinned files
 ├── autosave.py              # Auto-save system (atomic writes, settings-aware)
@@ -102,7 +102,8 @@ eleviewer/
 ├── vault_explorer.py          # Multi-vault folder sidebar
 ├── web_panel.py               # Tabbed web browser panel
 ├── markdown_utils.py          # Plain-text markdown conversion
-├── pdf_tts.py                 # Windows native read-aloud
+├── bookmark_manager.py        # Bookmark storage and persistence
+├── bookmark_panel.py          # Bookmarks GUI sidebar
 ├── icons.py                   # Lucide-style icon loader
 ├── icons/                     # SVG icon assets
 ├── requirements.txt         # Dependencies
@@ -114,8 +115,9 @@ eleviewer/
 - **file_handler.py** — Determines which viewer to use based on file extension
 - **docx_viewer.py** — DOCX file viewing and editing
 - **xlsx_viewer.py** — XLSX file viewing and editing
+- **pdf_viewer.py** — PDF viewing with zoom, TTS, and bookmarking
 - **session_manager.py** — Saves/restores open tabs between sessions
-- **quick_switcher.py** — Ctrl+P fuzzy file search dialog
+- **quick_switcher.py** — Ctrl+Q fuzzy file search dialog
 
 ### Development Tips
 
