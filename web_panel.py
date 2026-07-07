@@ -3,12 +3,31 @@
 try:
     from PySide6.QtCore import Signal, QUrl
     from PySide6.QtWebEngineWidgets import QWebEngineView
+    from PySide6.QtWebEngineCore import QWebEngineProfile, QWebEnginePage
+    from paths import APP_DATA_DIR
     
+    # Create a persistent profile for the web engine
+    _web_profile = None
+
+    def get_persistent_profile():
+        global _web_profile
+        if _web_profile is None:
+            # We must use a named profile to enable persistence (empty string = off-the-record)
+            _web_profile = QWebEngineProfile("eleviewer_web_profile")
+            storage_path = str(APP_DATA_DIR / "web_data")
+            _web_profile.setPersistentStoragePath(storage_path)
+            _web_profile.setCachePath(storage_path)
+            _web_profile.setPersistentCookiesPolicy(QWebEngineProfile.PersistentCookiesPolicy.ForcePersistentCookies)
+        return _web_profile
+
     class WebViewWrapper(QWebEngineView):
         # We define signals to match the old API so we don't have to rewrite the parent container
         
         def __init__(self, parent=None):
             super().__init__(parent)
+            # Assign the persistent profile to this view's page
+            page = QWebEnginePage(get_persistent_profile(), self)
+            self.setPage(page)
         
         def setUrl(self, qurl):
             super().setUrl(qurl)
