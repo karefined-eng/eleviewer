@@ -9,7 +9,13 @@ from PySide6.QtSvg import QSvgRenderer
 
 from theme import ICON_SIZE_TOOLBAR
 
-ICONS_DIR = Path(__file__).parent / "icons"
+import sys
+
+if hasattr(sys, '_MEIPASS'):
+    ICONS_DIR = Path(sys._MEIPASS) / "icons"
+else:
+    ICONS_DIR = Path(__file__).parent / "icons"
+
 _cache: dict[tuple[str, int, str], QIcon] = {}
 
 
