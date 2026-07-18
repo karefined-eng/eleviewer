@@ -51,3 +51,7 @@ build/         # Build artifacts
 # OS
 .DS_Store
 Thumbs.db
+
+# Node
+node_modules/
+.next/
