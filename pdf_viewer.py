@@ -128,6 +128,18 @@ if QTPDF_AVAILABLE:
                 return
             super().keyPressEvent(event)
 
+        def resizeEvent(self, event):
+            super().resizeEvent(event)
+            if hasattr(self, "overlay_label") and self.overlay_label and self.overlay_label.isVisible():
+                padding = 20
+                self.overlay_label.adjustSize()
+                lbl_w = self.overlay_label.width()
+                lbl_h = self.overlay_label.height()
+                self.overlay_label.move(
+                    self.width() - lbl_w - padding,
+                    self.height() - lbl_h - padding
+                )
+
 
 # ── Main PDF Viewer widget ───────────────────────────────────────────
 
@@ -255,6 +267,15 @@ class PdfViewer(QWidget):
             self.pdf_view.setStyleSheet("background: #1e1e1e; border: none;")
             self.pdf_view.setContextMenuPolicy(Qt.CustomContextMenu)
             self.pdf_view.customContextMenuRequested.connect(self._show_context_menu)
+            # Create overlay label
+            self.pdf_view.overlay_label = QLabel(self.pdf_view)
+            self.pdf_view.overlay_label.setStyleSheet(
+                "background-color: rgba(30, 30, 30, 0.85); color: #e0e0e0; "
+                "border: 1px solid #555; border-radius: 4px; padding: 4px 8px; "
+                "font-size: 12px; font-weight: bold;"
+            )
+            self.pdf_view.overlay_label.setText("")
+            self.pdf_view.overlay_label.hide()
             # Wire signals
             self.pdf_view.pageNavigator().currentPageChanged.connect(self._on_page_changed)
             self.pdf_view.page_change.connect(self._on_page_change_key)
@@ -332,6 +353,18 @@ class PdfViewer(QWidget):
             else:
                 self.pdf_view.setZoomMode(QPdfView.ZoomMode.FitToWidth)
 
+            if hasattr(self.pdf_view, "overlay_label") and self.pdf_view.overlay_label:
+                self.pdf_view.overlay_label.setText(f"1 / {self.total_pages}")
+                self.pdf_view.overlay_label.show()
+                self.pdf_view.overlay_label.adjustSize()
+                padding = 20
+                lbl_w = self.pdf_view.overlay_label.width()
+                lbl_h = self.pdf_view.overlay_label.height()
+                self.pdf_view.overlay_label.move(
+                    self.pdf_view.width() - lbl_w - padding,
+                    self.pdf_view.height() - lbl_h - padding
+                )
+
             self.is_modified = False
             self._load_toc(file_path)
 
@@ -345,6 +378,16 @@ class PdfViewer(QWidget):
         self.current_page = page
         self.page_input.setText(str(page + 1))
         self._highlight_toc_item()
+        if hasattr(self.pdf_view, "overlay_label") and self.pdf_view.overlay_label:
+            self.pdf_view.overlay_label.setText(f"{page + 1} / {self.total_pages}")
+            self.pdf_view.overlay_label.adjustSize()
+            padding = 20
+            lbl_w = self.pdf_view.overlay_label.width()
+            lbl_h = self.pdf_view.overlay_label.height()
+            self.pdf_view.overlay_label.move(
+                self.pdf_view.width() - lbl_w - padding,
+                self.pdf_view.height() - lbl_h - padding
+            )
 
     def _on_page_change_key(self, delta):
         """Called by EleViewerPdfView arrow key signals (-1 or +1)."""

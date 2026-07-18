@@ -27,6 +27,7 @@ def main_window_stylesheet():
         QToolBar { background-color: #252526; border-bottom: 1px solid #333; padding: 8px; spacing: 15px; }
         QToolButton { color: #e0e0e0; background-color: transparent; border: none; padding: 6px; border-radius: 4px; min-width: 28px; min-height: 28px; }
         QToolButton:hover { background-color: #3c3c3c; }
+        QToolBar QToolButton { min-width: 70px; min-height: 52px; font-size: 11px; }
         QTabWidget::pane { border: 1px solid #333; background-color: #2d2d2d; }
         QTabBar::tab { background-color: #3c3c3c; color: #ffffff; padding: 8px 15px; margin-right: 2px; font-size: 13px; }
         QTabBar::tab:selected { background-color: #1e1e1e; font-weight: bold; }
