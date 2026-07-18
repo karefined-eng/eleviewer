@@ -160,15 +160,6 @@ class MainWindow(QMainWindow):
         menu.addAction(action)
         return action
 
-    def _build_new_file_menu(self):
-        menu = QMenu(self)
-        self._add_menu_action(menu, "Plain Text (.txt)", lambda: self._create_new_tab(".txt"))
-        self._add_menu_action(menu, "Markdown (.md)", lambda: self._create_new_tab(".md"))
-        self._add_menu_action(menu, "HTML (.html)", lambda: self._create_new_tab(".html"))
-        self._add_menu_action(menu, "Word Document (.docx)", lambda: self._create_new_tab(".docx"))
-        self._add_menu_action(menu, "Excel Spreadsheet (.xlsx)", lambda: self._create_new_tab(".xlsx"))
-        return menu
-
     def _build_popup_menu(self):
         menu = QMenu(self)
         self._add_menu_action(menu, "New Tab", self.new_tab)
@@ -500,6 +491,7 @@ class MainWindow(QMainWindow):
         _add("HTML (.html)", ".html", MarkdownViewer, is_html=True)
         _add("Word Document (.docx)", ".docx", DocxViewer)
         _add("Excel Spreadsheet (.xlsx)", ".xlsx", XlsxViewer)
+        _add("CSV Spreadsheet (.csv)", ".csv", EditorTab)
         return menu
 
     def new_tab(self):
