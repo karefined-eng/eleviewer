@@ -1,0 +1,53 @@
+@import "tailwindcss";
+
+@theme inline {
+  --font-sans: var(--font-geist-sans), system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), "Consolas", monospace;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-panel: var(--panel);
+  --color-panel-2: var(--panel-2);
+  --color-border: var(--border);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+}
+
+:root {
+  --background: #131313;
+  --foreground: #f2f2f0;
+  --panel: #1c1c1c;
+  --panel-2: #242424;
+  --border: #2c2c2c;
+  --muted: #232323;
+  --muted-foreground: #9b9b96;
+  --accent: #6cb6ff;
+  --accent-foreground: #0c1826;
+  --primary: #f2f2f0;
+  --primary-foreground: #131313;
+  --radius: 0.5rem;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
