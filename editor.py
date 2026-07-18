@@ -52,20 +52,13 @@ class EditorTab(QWidget):
             h_menu.addAction(action)
         self.btn_h.setMenu(h_menu)
 
-        # List dropdown
-        self.btn_list = _tb("list", "List")
-        self.btn_list.setPopupMode(QToolButton.InstantPopup)
-        list_menu = QMenu(self.btn_list)
-        bullet_action = QAction(icon("list", size=icon_sz), "Bullet List", self)
-        bullet_action.triggered.connect(lambda: self._on_list_clicked("bullet"))
-        list_menu.addAction(bullet_action)
-        num_action = QAction(icon("list-ordered", size=icon_sz), "Numbered List", self)
-        num_action.triggered.connect(lambda: self._on_list_clicked("numbered"))
-        list_menu.addAction(num_action)
-        self.btn_list.setMenu(list_menu)
+        # Direct list buttons
+        self.btn_bullet = _tb("list", "Bullet List", lambda: self._on_list_clicked("bullet"))
+        self.btn_numbered = _tb("list-ordered", "Numbered List", lambda: self._on_list_clicked("numbered"))
 
         self.btn_bold = _tb("bold", "Bold", self._on_bold_clicked)
         self.btn_italic = _tb("italic", "Italic", self._on_italic_clicked)
+        self.btn_underline = _tb("underline", "Underline", self._on_underline_clicked)
         self.btn_strike = _tb("strikethrough", "Strikethrough", self._on_strike_clicked)
         self.btn_link = _tb("link", "Link", self._on_link_clicked)
         
@@ -90,8 +83,8 @@ class EditorTab(QWidget):
         self.btn_pin.setChecked(is_pinned)
         self._update_pin_icon()
 
-        for w in (self.btn_h, self.btn_list, self.btn_bold, self.btn_italic, 
-                  self.btn_strike, self.btn_link, self.btn_table, self.btn_clear):
+        for w in (self.btn_h, self.btn_bullet, self.btn_numbered, self.btn_bold, self.btn_italic,
+                  self.btn_underline, self.btn_strike, self.btn_link, self.btn_table, self.btn_clear):
             toolbar.addWidget(w)
             
         toolbar.addStretch()
@@ -156,6 +149,10 @@ class EditorTab(QWidget):
         prefix, suffix = ("<i>", "</i>") if self._is_html() else ("*", "*")
         self._insert_format(prefix, suffix)
 
+    def _on_underline_clicked(self):
+        prefix, suffix = ("<u>", "</u>")
+        self._insert_format(prefix, suffix)
+
     def _on_strike_clicked(self):
         prefix, suffix = ("<s>", "</s>") if self._is_html() else ("~~", "~~")
         self._insert_format(prefix, suffix)
@@ -201,6 +198,7 @@ class EditorTab(QWidget):
             text = text.replace("**", "").replace("__", "")
             text = text.replace("*", "").replace("_", "")
             text = text.replace("~~", "")
+            text = text.replace("<u>", "").replace("</u>", "")
             # Removing links [text](url) -> text
             import re
             text = re.sub(r'\[([^\]]+)\]\([^\)]+\)', r'\1', text)
