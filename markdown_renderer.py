@@ -29,31 +29,35 @@ class PreviewEventFilter(QObject):
         self._click_count = 0
         self._click_timer = QTimer()
         self._click_timer.setSingleShot(True)
-        self._click_timer.setInterval(450)
-        self._click_timer.timeout.connect(self._reset_clicks)
+        self._click_timer.setInterval(300)
+        self._click_timer.timeout.connect(self._on_timeout)
 
     def eventFilter(self, obj, event):
         if event.type() in (QEvent.MouseButtonPress, QEvent.MouseButtonDblClick) and isinstance(event, QMouseEvent):
             if event.button() == Qt.LeftButton:
+                if not self._click_timer.isActive():
+                    self._click_count = 0
+
                 if event.type() == QEvent.MouseButtonDblClick:
-                    self._click_count = 2
-                    self._check_double_click()
+                    self._click_count = max(self._click_count + 1, 2)
                 else:
                     self._click_count += 1
-                    self._click_timer.start()
-                    if self._click_count >= 3:
-                        self._viewer.enter_syntax_mode()
-                        self._reset_clicks()
+
+                self._click_timer.start()
+
+                if self._click_count >= 3:
+                    self._viewer.enter_syntax_mode()
+                    self._reset_clicks()
             return False
         return False
 
-    def _check_double_click(self):
+    def _on_timeout(self):
         if self._click_count == 2:
             if self._viewer.is_html:
                 self._viewer.enter_syntax_mode()
             else:
                 self._viewer.enter_simple_mode()
-        self._reset_clicks()
+        self._click_count = 0
 
     def _reset_clicks(self):
         self._click_count = 0
@@ -113,20 +117,13 @@ class MarkdownViewer(QWidget):
             h_menu.addAction(action)
         self.btn_h.setMenu(h_menu)
 
-        # List dropdown
-        self.btn_list = _tb("list", "List")
-        self.btn_list.setPopupMode(QToolButton.InstantPopup)
-        list_menu = QMenu(self.btn_list)
-        bullet_action = QAction(icon("list", size=icon_sz), "Bullet List", self)
-        bullet_action.triggered.connect(lambda: self._on_list_clicked("bullet"))
-        list_menu.addAction(bullet_action)
-        num_action = QAction(icon("list-ordered", size=icon_sz), "Numbered List", self)
-        num_action.triggered.connect(lambda: self._on_list_clicked("numbered"))
-        list_menu.addAction(num_action)
-        self.btn_list.setMenu(list_menu)
+        # Direct list buttons
+        self.btn_bullet = _tb("list", "Bullet List", lambda: self._on_list_clicked("bullet"))
+        self.btn_numbered = _tb("list-ordered", "Numbered List", lambda: self._on_list_clicked("numbered"))
 
         self.btn_bold = _tb("bold", "Bold", self._on_bold_clicked)
         self.btn_italic = _tb("italic", "Italic", self._on_italic_clicked)
+        self.btn_underline = _tb("underline", "Underline", self._on_underline_clicked)
         self.btn_strike = _tb("strikethrough", "Strikethrough", self._on_strike_clicked)
         self.btn_link = _tb("link", "Link", self._on_link_clicked)
         
@@ -151,8 +148,8 @@ class MarkdownViewer(QWidget):
         self.btn_pin.setChecked(is_pinned)
         self._update_pin_icon()
 
-        for w in (self.btn_h, self.btn_list, self.btn_bold, self.btn_italic, 
-                  self.btn_strike, self.btn_link, self.btn_table, self.btn_clear):
+        for w in (self.btn_h, self.btn_bullet, self.btn_numbered, self.btn_bold, self.btn_italic,
+                  self.btn_underline, self.btn_strike, self.btn_link, self.btn_table, self.btn_clear):
             fmt_layout.addWidget(w)
             
         fmt_layout.addStretch()
@@ -181,7 +178,10 @@ class MarkdownViewer(QWidget):
 
         if self.is_html and WEB_AVAILABLE:
             self.viewer = WebViewWrapper()
-            self._preview_filter = None
+            self._preview_filter = PreviewEventFilter(self)
+            self.viewer.installEventFilter(self._preview_filter)
+            for child in self.viewer.findChildren(QWidget):
+                child.installEventFilter(self._preview_filter)
         else:
             self.viewer = QTextBrowser()
             self.viewer.setStyleSheet("QTextBrowser { background: #252526; border: none; }")
@@ -269,6 +269,12 @@ class MarkdownViewer(QWidget):
             prefix, suffix = ("<i>", "</i>") if self.is_html else ("*", "*")
             self._insert_format(ed, prefix, suffix)
 
+    def _on_underline_clicked(self):
+        ed = self._current_edit_widget()
+        if ed:
+            prefix, suffix = ("<u>", "</u>")
+            self._insert_format(ed, prefix, suffix)
+
     def _on_strike_clicked(self):
         ed = self._current_edit_widget()
         if ed:
@@ -320,6 +326,7 @@ class MarkdownViewer(QWidget):
             text = text.replace("**", "").replace("__", "")
             text = text.replace("*", "").replace("_", "")
             text = text.replace("~~", "")
+            text = text.replace("<u>", "").replace("</u>", "")
             text = re.sub(r'\[([^\]]+)\]\([^\)]+\)', r'\1', text)
             text = re.sub(r'^#{1,6}\s+', '', text)
         cursor.insertText(text)
