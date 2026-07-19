@@ -2,6 +2,6 @@
   "name": "eleviewer",
   "version": "1.0.0",
   "description": "Open anything. Edit everything. Nothing to install.",
-  "packageManager": "pnpm@10.x",
+  "packageManager": "pnpm@10.34.5",
   "private": true
 }
