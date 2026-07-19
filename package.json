@@ -10,5 +10,8 @@
     "build": "npm run build --prefix site",
     "dev": "npm run dev --prefix site"
   },
-  "private": true
+  "private": true,
+  "dependencies": {
+    "@vercel/analytics": "^2.0.1"
+  }
 }
