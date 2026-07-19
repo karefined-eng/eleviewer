@@ -1,5 +1,6 @@
-import { Download, Github } from "lucide-react"
+import { Download } from "lucide-react"
 import { AppMockup } from "./app-mockup"
+import { GitHubIcon } from "./github-icon"
 import { GITHUB_URL, RELEASES_URL } from "@/lib/links"
 
 export function Hero() {
@@ -34,7 +35,7 @@ export function Hero() {
             rel="noreferrer"
             className="flex h-11 items-center gap-2 rounded-lg border border-border bg-panel px-6 text-sm font-medium text-foreground transition-colors hover:bg-panel-2"
           >
-            <Github className="h-4 w-4" />
+            <GitHubIcon className="h-4 w-4" />
             View on GitHub
           </a>
         </div>

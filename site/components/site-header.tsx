@@ -1,6 +1,7 @@
 import Link from "next/link"
-import { Github, Download } from "lucide-react"
+import { Download } from "lucide-react"
 import { Logo } from "./logo"
+import { GitHubIcon } from "./github-icon"
 import { GITHUB_URL, RELEASES_URL } from "@/lib/links"
 
 export function SiteHeader() {
@@ -35,7 +36,7 @@ export function SiteHeader() {
             className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-panel hover:text-foreground"
             aria-label="EleViewer on GitHub"
           >
-            <Github className="h-4 w-4" />
+            <GitHubIcon className="h-4 w-4" />
           </a>
           <a
             href={RELEASES_URL}
