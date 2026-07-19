@@ -1,0 +1,16 @@
+{
+  "projectId": "prj_8H9AUPaVxS6IkIjMDz0hFa1gIVpq",
+  "orgId": "team_neAzvMI9VCSJOrtoj5YcccBp",
+  "projectName": "eleviewer",
+  "settings": {
+    "createdAt": 1784417647418,
+    "framework": "node",
+    "devCommand": null,
+    "installCommand": null,
+    "buildCommand": null,
+    "outputDirectory": "site/.next",
+    "rootDirectory": null,
+    "directoryListing": false,
+    "nodeVersion": "20.x"
+  }
+}
