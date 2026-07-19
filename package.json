@@ -3,5 +3,8 @@
   "version": "1.0.0",
   "description": "Open anything. Edit everything. Nothing to install.",
   "packageManager": "pnpm@9.15.4",
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "private": true
 }
