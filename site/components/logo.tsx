@@ -19,7 +19,7 @@ export function LogoMark({ size = 28 }: { size?: number }) {
       />
       {/* E glyph built from three bars — evokes stacked document lines */}
       <rect x="9" y="9" width="14" height="3" rx="1.5" fill="#f2f2f0" />
-      <rect x="9" y="14.5" width="10" height="3" rx="1.5" fill="#6cb6ff" />
+      <rect x="11" y="14.5" width="10" height="3" rx="1.5" fill="#6cb6ff" />
       <rect x="9" y="20" width="14" height="3" rx="1.5" fill="#f2f2f0" />
     </svg>
   )

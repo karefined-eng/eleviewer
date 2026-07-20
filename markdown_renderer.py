@@ -12,7 +12,7 @@ from markdown_utils import markdown_to_simple, simple_to_markdown
 from settings import load_settings, save_settings
 from theme import (
     markdown_editor_stylesheet, MARKDOWN_PREVIEW_CSS, compact_toolbar_stylesheet,
-    resolve_markdown_icon_size,
+    resolve_markdown_icon_size, markdown_preview_stylesheet, BRAND_PANEL, BRAND_PRIMARY, BRAND_MUTED_FG
 )
 
 MODE_VIEW = 0
@@ -85,7 +85,7 @@ class MarkdownViewer(QWidget):
 
         hint_text = "Double-click to edit source · Click 📖 to preview" if self.is_html else "Double-click to edit · Triple-click for syntax"
         self.hint = QLabel(hint_text)
-        self.hint.setStyleSheet("color: #666; font-size: 11px;")
+        self.hint.setStyleSheet(f"color: {BRAND_MUTED_FG}; font-size: 11px;")
         toolbar.addWidget(self.hint)
 
         self.formatting_widget = QWidget()
@@ -184,22 +184,22 @@ class MarkdownViewer(QWidget):
                 child.installEventFilter(self._preview_filter)
         else:
             self.viewer = QTextBrowser()
-            self.viewer.setStyleSheet("QTextBrowser { background: #252526; border: none; }")
+            self.viewer.setStyleSheet(markdown_preview_stylesheet())
             self.viewer.setOpenExternalLinks(True)
             self._preview_filter = PreviewEventFilter(self)
             self.viewer.viewport().installEventFilter(self._preview_filter)
 
         self.simple_editor = QPlainTextEdit()
-        self.simple_editor.setStyleSheet("""
-            QPlainTextEdit {
-                background: #252526;
-                color: #e0e0e0;
+        self.simple_editor.setStyleSheet(f"""
+            QPlainTextEdit {{
+                background: {BRAND_PANEL};
+                color: {BRAND_PRIMARY};
                 font-size: 15px;
                 padding: 16px;
                 border: none;
                 font-family: 'Segoe UI', sans-serif;
                 line-height: 1.6;
-            }
+            }}
         """)
         self.simple_editor.textChanged.connect(self._on_simple_changed)
 

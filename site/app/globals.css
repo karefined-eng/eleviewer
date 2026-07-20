@@ -36,6 +36,10 @@
   --radius: 0.5rem;
 }
 
+body.no-scroll {
+  overflow: hidden;
+}
+
 html {
   scroll-behavior: smooth;
 }

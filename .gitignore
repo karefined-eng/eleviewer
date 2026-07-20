@@ -11,6 +11,7 @@ downloads/
 eggs/
 .eggs/
 lib/
+!site/lib/
 lib64/
 parts/
 sdist/
@@ -38,8 +39,7 @@ env/
 .DS_Store
 Thumbs.db
 
-# PyInstaller
-*.spec
+# PyInstaller — track EleViewer.spec; ignore auto-generated leftovers
 *.manifest
 
 # Project-specific
@@ -47,7 +47,16 @@ Continue.txt   # Personal session notes (not part of the project)
 data/          # User data (recent files, session, settings)
 dist/          # Built executables
 build/         # Build artifacts
+.sixth/        # Build cache
 
 # OS
 .DS_Store
 Thumbs.db
+
+# Node
+node_modules/
+.next/
+
+# Vercel
+.vercel/
+.vercel/output/

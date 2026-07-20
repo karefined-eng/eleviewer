@@ -14,7 +14,10 @@ from settings import (
     get_vault_paths, add_vault_path, remove_vault_path,
     set_active_vault_index, load_settings,
 )
-from theme import compact_toolbar_stylesheet, ICON_SIZE_COMPACT, ICON_SIZE_VAULT_TREE
+from theme import (
+    compact_toolbar_stylesheet, ICON_SIZE_COMPACT, ICON_SIZE_VAULT_TREE,
+    BRAND_PANEL, BRAND_PANEL_2, BRAND_PRIMARY, BRAND_BORDER, BRAND_ACCENT, BRAND_BACKGROUND
+)
 
 SUPPORTED_EXTENSIONS = {".md", ".txt", ".pdf", ".docx", ".xlsx", ".csv"}
 
@@ -40,7 +43,7 @@ class VaultExplorer(QWidget):
 
         self.vault_selector = QComboBox()
         self.vault_selector.setStyleSheet(
-            "QComboBox { background: #2a2a2a; color: #fff; border: 1px solid #444; padding: 4px; }"
+            f"QComboBox {{ background: {BRAND_PANEL_2}; color: {BRAND_PRIMARY}; border: 1px solid {BRAND_BORDER}; padding: 4px; }}"
         )
         self.vault_selector.currentIndexChanged.connect(self._on_vault_selected)
 
@@ -59,16 +62,16 @@ class VaultExplorer(QWidget):
         self.tree.setHeaderHidden(True)
         self.tree.setAnimated(True)
         self.tree.setIndentation(16)
-        self.tree.setStyleSheet("""
-            QTreeWidget {
-                background: #1e1e1e;
-                color: #e0e0e0;
+        self.tree.setStyleSheet(f"""
+            QTreeWidget {{
+                background: {BRAND_PANEL};
+                color: {BRAND_PRIMARY};
                 border: none;
                 font-size: 13px;
-            }
-            QTreeWidget::item { padding: 4px 2px; }
-            QTreeWidget::item:selected { background: #094771; }
-            QTreeWidget::item:hover { background: #2a2d2e; }
+            }}
+            QTreeWidget::item {{ padding: 4px 2px; }}
+            QTreeWidget::item:selected {{ background: {BRAND_ACCENT}; color: {BRAND_BACKGROUND}; }}
+            QTreeWidget::item:hover {{ background: {BRAND_PANEL_2}; }}
         """)
         self.tree.itemExpanded.connect(self._on_item_expanded)
         self.tree.itemDoubleClicked.connect(self._on_item_double_clicked)
