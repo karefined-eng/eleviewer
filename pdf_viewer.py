@@ -9,13 +9,7 @@ import os
 import re
 
 try:
-    import fitz  # PyMuPDF — kept for TTS text extraction and TOC scanning
-    PYMUPDF_AVAILABLE = True
-except ImportError:
-    PYMUPDF_AVAILABLE = False
-
-try:
-    from PySide6.QtPdf import QPdfDocument
+    from PySide6.QtPdf import QPdfDocument, QPdfBookmarkModel
     from PySide6.QtPdfWidgets import QPdfView
     QTPDF_AVAILABLE = True
 except ImportError:
@@ -23,8 +17,8 @@ except ImportError:
 
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QToolButton, QLabel,
-    QMessageBox, QComboBox, QMenu, QLineEdit, QTreeWidget,
-    QTreeWidgetItem, QSplitter, QTreeWidgetItemIterator,
+    QMessageBox, QComboBox, QMenu, QLineEdit, QTreeView,
+    QSplitter,
 )
 from PySide6.QtGui import QIntValidator, QKeyEvent, QWheelEvent
 from PySide6.QtCore import Qt, Signal, QTimer, QSize, QPointF
@@ -34,62 +28,6 @@ from pdf_tts import PdfTts, TTS_AVAILABLE
 from settings import load_settings
 from theme import compact_toolbar_stylesheet, ICON_SIZE_COMPACT
 from paths import APP_DATA_DIR
-
-TOC_CACHE_PATH = APP_DATA_DIR / "pdf_toc_cache.json"
-
-
-# ── TOC cache helpers (unchanged) ────────────────────────────────────
-
-def _load_toc_cache():
-    try:
-        with open(TOC_CACHE_PATH, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except Exception:
-        return {}
-
-
-def _save_toc_cache(cache):
-    try:
-        os.makedirs(os.path.dirname(TOC_CACHE_PATH), exist_ok=True)
-        with open(TOC_CACHE_PATH, "w", encoding="utf-8") as f:
-            json.dump(cache, f, indent=2)
-    except Exception:
-        pass
-
-
-def _scan_toc_from_text(doc):
-    """
-    Scan the first 10 pages for a Table of Contents page.
-    Returns list of (title, page_number_1indexed) tuples, or [].
-    """
-    max_scan = min(10, len(doc))
-    toc_page_text = None
-
-    for i in range(max_scan):
-        page = doc.load_page(i)
-        text = page.get_text()
-        if re.search(r'\b(table\s+of\s+contents?|contents?)\b', text, re.IGNORECASE):
-            toc_page_text = text
-            break
-
-    if not toc_page_text:
-        return []
-
-    entries = []
-    # Match: "Title text .......... 47" or "Title text   47" at line end
-    pattern = re.compile(
-        r'^(.+?)[\.\\s]{2,}(\d{1,4})\s*$',
-        re.MULTILINE,
-    )
-    for m in pattern.finditer(toc_page_text):
-        title = m.group(1).strip()
-        page_num = int(m.group(2))
-        # Filter out noise: title must be at least 3 chars, page must be > 0
-        if len(title) >= 3 and page_num > 0:
-            entries.append((title, page_num))
-
-    return entries
-
 
 # ── Custom QPdfView with Ctrl+Wheel zoom and key navigation ─────────
 
@@ -152,7 +90,6 @@ class PdfViewer(QWidget):
         self.is_modified = False
         self._status_callback = status_callback
         self._bookmark_callback = None
-        self.fitz_doc = None          # PyMuPDF doc — TTS + TOC only
         self.current_page = 0
         self.total_pages = 0
         self._toc_visible = False
@@ -242,15 +179,16 @@ class PdfViewer(QWidget):
             "background:#1a1a1a; color:#888; font-size:11px; font-weight:bold;"
             " padding:6px 8px; border-bottom:1px solid #333;"
         )
-        self.toc_tree = QTreeWidget()
+        self.toc_tree = QTreeView()
         self.toc_tree.setHeaderHidden(True)
+        self.bookmark_model = None
         self.toc_tree.setStyleSheet(
-            "QTreeWidget { background:#1e1e1e; border:none; color:#d0d0d0; font-size:12px; }"
-            "QTreeWidget::item { padding:4px 6px; }"
-            "QTreeWidget::item:selected { background:#37373d; }"
-            "QTreeWidget::item:hover { background:#2a2a2a; }"
+            "QTreeView { background:#1e1e1e; border:none; color:#d0d0d0; font-size:12px; }"
+            "QTreeView::item { padding:4px 6px; }"
+            "QTreeView::item:selected { background:#37373d; }"
+            "QTreeView::item:hover { background:#2a2a2a; }"
         )
-        self.toc_tree.itemClicked.connect(self._on_toc_item_clicked)
+        self.toc_tree.clicked.connect(self._on_toc_item_clicked)
         toc_layout.addWidget(toc_lbl)
         toc_layout.addWidget(self.toc_tree)
         self.toc_widget.setMinimumWidth(160)
@@ -260,6 +198,10 @@ class PdfViewer(QWidget):
         # QPdfView — vector-rendered PDF display
         if QTPDF_AVAILABLE:
             self.pdf_doc_qt = QPdfDocument(self)
+            self.bookmark_model = QPdfBookmarkModel(self)
+            self.bookmark_model.setDocument(self.pdf_doc_qt)
+            self.toc_tree.setModel(self.bookmark_model)
+            
             self.pdf_view = EleViewerPdfView(self)
             self.pdf_view.setDocument(self.pdf_doc_qt)
             self.pdf_view.setPageMode(QPdfView.PageMode.SinglePage)
@@ -341,10 +283,6 @@ class PdfViewer(QWidget):
             self.page_input.setValidator(QIntValidator(1, max(self.total_pages, 1)))
             self.page_input.setText("1")
 
-            # Also open with PyMuPDF for TTS text extraction and TOC scanning
-            if PYMUPDF_AVAILABLE:
-                self.fitz_doc = fitz.open(file_path)
-
             # Apply default fit mode from settings
             settings = load_settings()
             fit = settings.get("pdf_fit_mode", "width")
@@ -366,7 +304,7 @@ class PdfViewer(QWidget):
                 )
 
             self.is_modified = False
-            self._load_toc(file_path)
+            self.toc_tree.expandAll()
 
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Failed to load PDF: {str(e)}")
@@ -377,7 +315,6 @@ class PdfViewer(QWidget):
         """Called by QPdfView's pageNavigator when the visible page changes."""
         self.current_page = page
         self.page_input.setText(str(page + 1))
-        self._highlight_toc_item()
         if hasattr(self.pdf_view, "overlay_label") and self.pdf_view.overlay_label:
             self.pdf_view.overlay_label.setText(f"{page + 1} / {self.total_pages}")
             self.pdf_view.overlay_label.adjustSize()
@@ -396,62 +333,11 @@ class PdfViewer(QWidget):
         else:
             self.next_page()
 
-    # ── TOC ──────────────────────────────────────────────────────────
-
-    def _load_toc(self, file_path):
-        """Load TOC: built-in outline first, then cached scan, then live scan."""
-        self.toc_tree.clear()
-        entries = []  # list of (level, title, page_1indexed)
-
-        if self.fitz_doc:
-            # Tier 1: built-in outline
-            raw = self.fitz_doc.get_toc()
-            if raw:
-                entries = [(lvl, title, pg) for lvl, title, pg in raw]
-            else:
-                # Tier 2: check cache
-                cache = _load_toc_cache()
-                key = os.path.abspath(file_path)
-                if key in cache:
-                    cached = cache[key]
-                    entries = [(1, t, p) for t, p in cached]
-                else:
-                    # Tier 3: live text scan
-                    scanned = _scan_toc_from_text(self.fitz_doc)
-                    if scanned:
-                        cache[key] = scanned
-                        _save_toc_cache(cache)
-                        entries = [(1, t, p) for t, p in scanned]
-
-        if not entries:
-            item = QTreeWidgetItem(["No outline found"])
-            item.setFlags(Qt.ItemIsEnabled)  # not selectable
-            item.setData(0, Qt.UserRole, -1)
-            self.toc_tree.addTopLevelItem(item)
-            return
-
-        # Build tree — level 1 = top-level, level 2+ = children
-        stack = []  # (level, QTreeWidgetItem)
-        for lvl, title, pg in entries:
-            node = QTreeWidgetItem([f"{title}"])
-            node.setData(0, Qt.UserRole, pg - 1)  # store 0-indexed page
-            node.setToolTip(0, f"Page {pg}")
-            if not stack or lvl <= stack[0][0]:
-                self.toc_tree.addTopLevelItem(node)
-                stack = [(lvl, node)]
-            else:
-                # Find parent
-                while len(stack) > 1 and stack[-1][0] >= lvl:
-                    stack.pop()
-                stack[-1][1].addChild(node)
-                stack.append((lvl, node))
-
-        self.toc_tree.expandAll()
-
-    def _on_toc_item_clicked(self, item, _col):
-        page = item.data(0, Qt.UserRole)
-        if page is not None and page >= 0:
-            self.go_to_bookmark(page_number=page)
+    def _on_toc_item_clicked(self, index):
+        if self.bookmark_model:
+            page = self.bookmark_model.data(index, QPdfBookmarkModel.Role.Page)
+            if page is not None and page >= 0:
+                self.go_to_bookmark(page_number=page)
 
     def _toggle_toc(self):
         self._toc_visible = not self._toc_visible
@@ -461,26 +347,6 @@ class PdfViewer(QWidget):
             self.content_splitter.setSizes([220, max(total - 220, 300)])
         else:
             self.content_splitter.setSizes([0, self.content_splitter.width()])
-
-    def _highlight_toc_item(self):
-        """Select the TOC item whose page is closest to the current page."""
-        cur = self.current_page
-        best_item = None
-        best_dist = 99999
-        it = QTreeWidgetItemIterator(self.toc_tree)
-        while it.value():
-            item = it.value()
-            pg = item.data(0, Qt.UserRole)
-            if pg is not None and pg >= 0:
-                dist = abs(pg - cur)
-                if dist < best_dist:
-                    best_dist = dist
-                    best_item = item
-            it += 1
-        if best_item:
-            self.toc_tree.blockSignals(True)
-            self.toc_tree.setCurrentItem(best_item)
-            self.toc_tree.blockSignals(False)
 
     # ── Page jump ────────────────────────────────────────────────────
 
@@ -586,12 +452,11 @@ class PdfViewer(QWidget):
     # ── TTS ──────────────────────────────────────────────────────────
 
     def read_current_page(self):
-        if not self.fitz_doc or not TTS_AVAILABLE:
+        if not self.pdf_doc_qt or not TTS_AVAILABLE:
             if self._status_callback:
-                self._status_callback("TTS requires PyMuPDF (pip install PyMuPDF)", 4000)
+                self._status_callback("TTS unavailable or document not loaded", 4000)
             return
-        page = self.fitz_doc.load_page(self.current_page)
-        text = page.get_text().strip()
+        text = self.pdf_doc_qt.getAllText(self.current_page).text().strip()
         if not text:
             if self._status_callback:
                 self._status_callback("No readable text on this page", 3000)

@@ -2,7 +2,7 @@ from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QToolButton, QTextEdit, QMenu, QSizePolicy
 )
 from PySide6.QtCore import Signal, QSize, Qt
-from PySide6.QtGui import QAction
+from PySide6.QtGui import QAction, QTextDocument
 
 from icons import icon
 from theme import editor_stylesheet, compact_toolbar_stylesheet, resolve_markdown_icon_size
@@ -255,3 +255,59 @@ class EditorTab(QWidget):
 
     def toPlainText(self):
         return self.editor.toPlainText()
+
+    def find_text(self, text, match_case=False, whole_word=False, forward=True):
+        if not text:
+            return False
+            
+        options = QTextDocument.FindFlags()
+        if match_case:
+            options |= QTextDocument.FindCaseSensitively
+        if whole_word:
+            options |= QTextDocument.FindWholeWords
+        if not forward:
+            options |= QTextDocument.FindBackward
+
+        found = self.editor.find(text, options)
+        
+        # Wrap around if not found
+        if not found:
+            cursor = self.editor.textCursor()
+            cursor.movePosition(cursor.Start if forward else cursor.End)
+            self.editor.setTextCursor(cursor)
+            found = self.editor.find(text, options)
+            
+        return found
+
+    def replace_text(self, find_str, replace_str, match_case=False, whole_word=False):
+        cursor = self.editor.textCursor()
+        if cursor.hasSelection() and cursor.selectedText() == find_str:
+            cursor.insertText(replace_str)
+            self.is_modified = True
+            
+        self.find_text(find_str, match_case, whole_word, True)
+
+    def replace_all(self, find_str, replace_str, match_case=False, whole_word=False):
+        if not find_str:
+            return 0
+            
+        options = QTextDocument.FindFlags()
+        if match_case:
+            options |= QTextDocument.FindCaseSensitively
+        if whole_word:
+            options |= QTextDocument.FindWholeWords
+
+        cursor = self.editor.textCursor()
+        cursor.movePosition(cursor.Start)
+        self.editor.setTextCursor(cursor)
+
+        count = 0
+        while self.editor.find(find_str, options):
+            cursor = self.editor.textCursor()
+            cursor.insertText(replace_str)
+            count += 1
+
+        if count > 0:
+            self.is_modified = True
+        return count
+

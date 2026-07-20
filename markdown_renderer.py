@@ -3,7 +3,7 @@ from PySide6.QtWidgets import (
     QPlainTextEdit, QTextBrowser, QToolButton, QHBoxLayout, QLabel, QMenu
 )
 from PySide6.QtCore import Signal, Qt, QEvent, QTimer, QSize, QObject
-from PySide6.QtGui import QMouseEvent, QAction
+from PySide6.QtGui import QMouseEvent, QAction, QTextDocument
 import markdown
 import re
 
@@ -482,3 +482,64 @@ class MarkdownViewer(QWidget):
         self.editor.blockSignals(False)
         self.simple_editor.blockSignals(False)
         self.is_modified = False
+
+    def find_text(self, text, match_case=False, whole_word=False, forward=True):
+        if not text:
+            return False
+            
+        options = QTextDocument.FindFlags()
+        if match_case:
+            options |= QTextDocument.FindCaseSensitively
+        if whole_word:
+            options |= QTextDocument.FindWholeWords
+        if not forward:
+            options |= QTextDocument.FindBackward
+
+        active = self._get_active_widget()
+        found = active.find(text, options)
+        
+        if not found:
+            cursor = active.textCursor()
+            cursor.movePosition(cursor.Start if forward else cursor.End)
+            active.setTextCursor(cursor)
+            found = active.find(text, options)
+            
+        return found
+
+    def replace_text(self, find_str, replace_str, match_case=False, whole_word=False):
+        if self._mode == MODE_VIEW:
+            return # Read-only
+            
+        active = self._get_active_widget()
+        cursor = active.textCursor()
+        if cursor.hasSelection() and cursor.selectedText() == find_str:
+            cursor.insertText(replace_str)
+            self.is_modified = True
+            
+        self.find_text(find_str, match_case, whole_word, True)
+
+    def replace_all(self, find_str, replace_str, match_case=False, whole_word=False):
+        if not find_str or self._mode == MODE_VIEW:
+            return 0
+            
+        options = QTextDocument.FindFlags()
+        if match_case:
+            options |= QTextDocument.FindCaseSensitively
+        if whole_word:
+            options |= QTextDocument.FindWholeWords
+
+        active = self._get_active_widget()
+        cursor = active.textCursor()
+        cursor.movePosition(cursor.Start)
+        active.setTextCursor(cursor)
+
+        count = 0
+        while active.find(find_str, options):
+            cursor = active.textCursor()
+            cursor.insertText(replace_str)
+            count += 1
+
+        if count > 0:
+            self.is_modified = True
+            
+        return count
