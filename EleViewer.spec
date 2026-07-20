@@ -13,7 +13,6 @@ a = Analysis(
         'PySide6.QtPdfWidgets',
         'PySide6.QtPrintSupport',
         'PySide6.QtSvg',
-        'fitz',       # PyMuPDF — PDF text extraction & TOC
         'markdown',
         'docx',
         'openpyxl',

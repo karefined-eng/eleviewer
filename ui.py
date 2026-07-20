@@ -1,14 +1,15 @@
 from PySide6.QtWidgets import (
     QMainWindow, QTabWidget, QFileDialog, QMessageBox,
-    QSplitter, QMenu, QToolBar, QToolButton,
+    QSplitter, QMenu, QToolBar, QToolButton, QVBoxLayout, QWidget
 )
-from PySide6.QtGui import QAction
+from PySide6.QtGui import QAction, QKeySequence
 from PySide6.QtCore import Qt, QSize
 import os
 
 from editor import EditorTab
 from bookmark_manager import add_bookmark, load_bookmarks
 from bookmark_panel import BookmarkPanel
+from find_replace import FindReplaceWidget
 
 try:
     from web_panel import WebPanel, WEB_AVAILABLE
@@ -84,7 +85,23 @@ class MainWindow(QMainWindow):
         self.tabs.tabCloseRequested.connect(self.close_tab)
         self.tabs.setContextMenuPolicy(Qt.CustomContextMenu)
         self.tabs.customContextMenuRequested.connect(self.show_tab_context_menu)
-        self.editor_splitter.addWidget(self.tabs)
+        
+        self.find_replace_panel = FindReplaceWidget()
+        self.find_replace_panel.hide()
+        self.find_replace_panel.find_next_requested.connect(self._on_find_next)
+        self.find_replace_panel.replace_requested.connect(self._on_replace)
+        self.find_replace_panel.replace_all_requested.connect(self._on_replace_all)
+
+        editor_layout = QVBoxLayout()
+        editor_layout.setContentsMargins(0, 0, 0, 0)
+        editor_layout.setSpacing(0)
+        editor_layout.addWidget(self.tabs)
+        editor_layout.addWidget(self.find_replace_panel)
+        
+        editor_container = QWidget()
+        editor_container.setLayout(editor_layout)
+        
+        self.editor_splitter.addWidget(editor_container)
 
         self.bookmarks_panel = BookmarkPanel()
         self.bookmarks_panel.setMinimumWidth(200)
@@ -416,6 +433,10 @@ class MainWindow(QMainWindow):
             file_menu, "Close Tab",
             lambda: self.close_tab(self.tabs.currentIndex()), "Ctrl+W",
         )
+
+        edit_menu = menu.addMenu("Edit")
+        self._add_menu_action(edit_menu, "Find...", self.show_find, "Ctrl+F")
+        self._add_menu_action(edit_menu, "Replace...", self.show_replace, "Ctrl+H")
 
         vault_menu = menu.addMenu("Vault")
         vault_menu.addAction("Add Folder", self.add_vault)
@@ -776,3 +797,34 @@ class MainWindow(QMainWindow):
         web_panel = WebPanel()
         index = self.tabs.addTab(web_panel, "Web Browser")
         self.tabs.setCurrentIndex(index)
+
+    def show_find(self):
+        editor = self.current_editor()
+        if hasattr(editor, "find_text"):
+            self.find_replace_panel.show()
+            self.find_replace_panel.focus_find()
+
+    def show_replace(self):
+        editor = self.current_editor()
+        if hasattr(editor, "replace_text"):
+            self.find_replace_panel.show()
+            self.find_replace_panel.focus_replace()
+
+    def _on_find_next(self, text, match_case, whole_word, forward):
+        editor = self.current_editor()
+        if hasattr(editor, "find_text"):
+            found = editor.find_text(text, match_case, whole_word, forward)
+            if not found:
+                self.show_status_message(f"Cannot find '{text}'", 2000)
+
+    def _on_replace(self, find_text, replace_text, match_case, whole_word):
+        editor = self.current_editor()
+        if hasattr(editor, "replace_text"):
+            editor.replace_text(find_text, replace_text, match_case, whole_word)
+
+    def _on_replace_all(self, find_text, replace_text, match_case, whole_word):
+        editor = self.current_editor()
+        if hasattr(editor, "replace_all"):
+            count = editor.replace_all(find_text, replace_text, match_case, whole_word)
+            self.show_status_message(f"Replaced {count} occurrences.", 3000)
+
