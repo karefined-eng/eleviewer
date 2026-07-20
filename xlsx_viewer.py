@@ -8,7 +8,10 @@ from openpyxl import load_workbook
 from openpyxl.cell.cell import MergedCell
 import io
 
-from theme import xlsx_sheet_tab_stylesheet
+from theme import (
+    xlsx_sheet_tab_stylesheet, BRAND_PANEL, BRAND_PRIMARY, 
+    BRAND_BORDER, BRAND_ACCENT, BRAND_BACKGROUND
+)
 
 
 class XlsxViewer(QWidget):
@@ -30,14 +33,14 @@ class XlsxViewer(QWidget):
         layout.setSpacing(0)
 
         self.table = QTableWidget()
-        self.table.setStyleSheet("""
-            QTableWidget {
-                background: #1e1e1e;
-                color: #fff;
-                gridline-color: #333;
-            }
-            QTableWidget::item { padding: 5px; }
-            QTableWidget::item:selected { background: #0e47a1; }
+        self.table.setStyleSheet(f"""
+            QTableWidget {{
+                background: {BRAND_PANEL};
+                color: {BRAND_PRIMARY};
+                gridline-color: {BRAND_BORDER};
+            }}
+            QTableWidget::item {{ padding: 5px; }}
+            QTableWidget::item:selected {{ background: {BRAND_ACCENT}; color: {BRAND_BACKGROUND}; }}
         """)
         self.table.itemChanged.connect(self._on_cell_changed)
 

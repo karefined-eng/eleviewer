@@ -6,6 +6,7 @@ from PySide6.QtGui import QAction
 from PySide6.QtCore import Qt, QSize
 import os
 
+from editor import EditorTab
 from bookmark_manager import add_bookmark, load_bookmarks
 from bookmark_panel import BookmarkPanel
 
@@ -23,10 +24,14 @@ from session_manager import load_session, save_session
 from quick_switcher import QuickSwitcher
 from settings import load_settings, save_settings
 from settings_dialog import SettingsDialog
-from theme import main_window_stylesheet, ICON_SIZE_TOOLBAR, ICON_SIZE_COMPACT
+from theme import (
+    main_window_stylesheet, ICON_SIZE_TOOLBAR, ICON_SIZE_COMPACT,
+    BRAND_PRIMARY, BRAND_PANEL_2
+)
 from save_utils import atomic_write
 from icons import icon
 from vault_explorer import VaultExplorer
+from branding_logo import create_eleviewer_icon
 
 
 class MainWindow(QMainWindow):
@@ -41,11 +46,11 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.autosaver = None
         self.closed_tabs = []
-        self.web_panel = None
         self.vault_panel = None
         self.bookmarks_panel = None
 
         self.setWindowTitle("EleViewer")
+        self.setWindowIcon(create_eleviewer_icon(64))
         self.resize(1200, 800)
         self.setStyleSheet(main_window_stylesheet())
         self.statusBar().showMessage("Ready")
@@ -101,27 +106,14 @@ class MainWindow(QMainWindow):
         self.toolbar.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
         self.addToolBar(self.toolbar)
 
-        menu_btn = QToolButton()
-        menu_btn.setIconSize(QSize(ICON_SIZE_TOOLBAR, ICON_SIZE_TOOLBAR))
-        menu_btn.setIcon(icon("menu", size=ICON_SIZE_TOOLBAR))
-        menu_btn.setToolTip("Menu")
-        menu_btn.setText("Menu")
-        menu_btn.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
-        menu_btn.setPopupMode(QToolButton.InstantPopup)
-        menu_btn.setMenu(self._build_popup_menu())
-        menu_btn.setStyleSheet("QToolButton { padding: 6px; border: none; } QToolButton:hover { background: #3c3c3c; }")
-        self.toolbar.addWidget(menu_btn)
 
-        new_btn = QToolButton()
-        new_btn.setIconSize(QSize(ICON_SIZE_TOOLBAR, ICON_SIZE_TOOLBAR))
-        new_btn.setIcon(icon("file-plus", size=ICON_SIZE_TOOLBAR))
-        new_btn.setToolTip("New File")
-        new_btn.setText("New File")
-        new_btn.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
-        new_btn.setPopupMode(QToolButton.InstantPopup)
-        new_btn.setMenu(self._build_new_file_menu())
-        new_btn.setStyleSheet("QToolButton { padding: 6px; border: none; } QToolButton:hover { background: #3c3c3c; }")
-        self.toolbar.addWidget(new_btn)
+
+
+
+        new_file_action = QAction(icon("file-plus", size=ICON_SIZE_TOOLBAR), "New File", self)
+        new_file_action.setToolTip("New File")
+        new_file_action.triggered.connect(self._show_new_file_menu_from_toolbar)
+        self.toolbar.addAction(new_file_action)
 
         vault_btn = QAction(icon("panel-left", size=ICON_SIZE_TOOLBAR), "Toggle Vault", self)
         vault_btn.setToolTip("Toggle Vault (Alt+V)")
@@ -454,8 +446,7 @@ class MainWindow(QMainWindow):
             settings = dialog.get_settings()
             self.vault_panel.set_show_all_files(settings.get("vault_show_all_files", False))
             self.vault_panel.restore_from_settings()
-            if self.web_panel is not None:
-                self.web_panel.restore_tabs()
+
             self.show_status_message("Settings saved", 2000)
 
     def update_menus(self):
@@ -495,8 +486,7 @@ class MainWindow(QMainWindow):
         return menu
 
     def new_tab(self):
-        from PySide6.QtGui import QCursor
-        self._build_new_file_menu().exec(QCursor.pos())
+        self._create_untitled_tab(".txt", EditorTab)
 
     def _create_untitled_tab(self, ext, WidgetClass, **kwargs):
         if WidgetClass.__name__ == "EditorTab":
@@ -504,6 +494,19 @@ class MainWindow(QMainWindow):
         else:
             editor = WidgetClass(None, **kwargs) if kwargs else WidgetClass(None)
         self._add_editor_tab(editor, f"Untitled{ext}")
+
+    def _show_new_file_menu_from_toolbar(self):
+        # Determine position for the popup menu
+        # This is a bit of a hack: find the action in the toolbar and get its position
+        action_widget = self.toolbar.widgetForAction(
+            [a for a in self.toolbar.actions() if a.text() == "New File"][0]
+        )
+        if action_widget:
+            pos = action_widget.mapToGlobal(action_widget.rect().bottomLeft())
+            self._build_new_file_menu().exec(pos)
+        else:
+            # Fallback if widget for action not found (shouldn't happen with valid action)
+            self._build_new_file_menu().exec(self.mapToGlobal(self.toolbar.pos()))
 
     def show_tab_context_menu(self, pos):
         index = self.tabs.tabBar().tabAt(pos)
@@ -763,37 +766,13 @@ class MainWindow(QMainWindow):
         self.bookmarks_menu.addSeparator()
         self.bookmarks_menu.addAction("Toggle Bookmarks Panel", self.toggle_bookmarks_panel)
 
-    def toggle_web_panel(self):
+
+
+    def open_web_tab(self):
         if not WEB_AVAILABLE:
             QMessageBox.warning(self, "Missing Module", "QtWebEngine not installed.")
             return
 
-        if self.web_panel is None:
-            self.web_panel = WebPanel()
-            self.web_panel.setMinimumWidth(320)
-            self.editor_splitter.addWidget(self.web_panel)
-            self.editor_splitter.setSizes([700, 500])
-
-        visibility = self.web_panel.isVisible()
-        self.web_panel.setVisible(not visibility)
-
-        if not visibility:
-            self.editor_splitter.setSizes([700, 500])
-        else:
-            self.editor_splitter.setSizes([self.width(), 0])
-
-    def open_web_tab(self):
-        if not WEB_AVAILABLE:
-            QMessageBox.warning(self, "Missing Module", "Edge WebView2 not installed.")
-            return
-
-        if self.web_panel is None:
-            self.web_panel = WebPanel()
-            self.web_panel.setMinimumWidth(320)
-            self.editor_splitter.addWidget(self.web_panel)
-
-        if not self.web_panel.isVisible():
-            self.web_panel.setVisible(True)
-            self.editor_splitter.setSizes([700, 500])
-        else:
-            self.web_panel.add_tab()
+        web_panel = WebPanel()
+        index = self.tabs.addTab(web_panel, "Web Browser")
+        self.tabs.setCurrentIndex(index)

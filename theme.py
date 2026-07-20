@@ -1,5 +1,17 @@
 """Centralized dark theme stylesheets for EleViewer."""
 
+# Branding colors from site
+BRAND_PRIMARY = "#f2f2f0"  # Light off-white
+BRAND_PRIMARY_FG = "#131313"
+BRAND_ACCENT = "#6cb6ff"   # Bright blue
+BRAND_ACCENT_FG = "#0c1826"
+BRAND_BACKGROUND = "#131313"  # Dark black
+BRAND_PANEL = "#1c1c1c"    # Dark panel
+BRAND_PANEL_2 = "#242424"  # Lighter dark panel
+BRAND_BORDER = "#2c2c2c"   # Border
+BRAND_MUTED = "#232323"    # Muted background
+BRAND_MUTED_FG = "#9b9b96" # Gray text
+
 ICON_SIZE_TOOLBAR = 24
 ICON_SIZE_COMPACT = 22
 ICON_SIZE_MARKDOWN = 32
@@ -22,161 +34,161 @@ def resolve_markdown_icon_size(value=None):
 
 
 def main_window_stylesheet():
-    return """
-        QMainWindow { background-color: #1e1e1e; }
-        QToolBar { background-color: #252526; border-bottom: 1px solid #333; padding: 8px; spacing: 15px; }
-        QToolButton { color: #e0e0e0; background-color: transparent; border: none; padding: 6px; border-radius: 4px; min-width: 28px; min-height: 28px; }
-        QToolButton:hover { background-color: #3c3c3c; }
-        QToolBar QToolButton { min-width: 70px; min-height: 52px; font-size: 11px; }
-        QTabWidget::pane { border: 1px solid #333; background-color: #2d2d2d; }
-        QTabBar::tab { background-color: #3c3c3c; color: #ffffff; padding: 8px 15px; margin-right: 2px; font-size: 13px; }
-        QTabBar::tab:selected { background-color: #1e1e1e; font-weight: bold; }
-        QTabBar::tab:!selected { margin-top: 2px; }
-        QTextEdit, QPlainTextEdit { background-color: #2d2d2d; color: #e0e0e0; border: none; padding: 15px; font-family: 'Consolas', monospace; font-size: 14px; }
-        QMenuBar { background-color: #1e1e1e; color: #ffffff; border-bottom: 1px solid #333; font-size: 13px; }
-        QMenuBar::item { padding: 5px 10px; }
-        QMenuBar::item:selected { background-color: #333; }
-        QMenu { background-color: #2d2d2d; color: #ffffff; border: 1px solid #333; font-size: 13px; }
-        QMenu::item { padding: 6px 60px 6px 20px; }
-        QMenu::item:selected { background-color: #3c3c3c; }
-        QMenu::separator { height: 1px; background: #444; margin: 4px 0px; }
-        QStatusBar { background-color: #1e1e1e; color: #aaaaaa; border-top: 1px solid #333; }
-        QFileDialog { background-color: #2d2d2d; color: white; }
-        QMessageBox { background-color: #2d2d2d; color: white; }
-        QPushButton { background-color: #4a4a4a; color: white; border: none; padding: 5px 10px; border-radius: 4px; }
-        QPushButton:hover { background-color: #5a5a5a; }
-        QPushButton:pressed { background-color: #3a3a3a; }
-        QDialog { background-color: #1e1e1e; color: #ffffff; }
-        QLineEdit, QSpinBox, QCheckBox { color: #ffffff; }
-        QLineEdit, QSpinBox { background-color: #2a2a2a; border: 1px solid #444; padding: 6px; border-radius: 3px; }
-        QLabel { color: #cccccc; }
+    return f"""
+        QMainWindow {{ background-color: {BRAND_BACKGROUND}; }}
+        QToolBar {{ background-color: {BRAND_PANEL}; border-bottom: 1px solid {BRAND_BORDER}; padding: 8px; spacing: 15px; }}
+        QToolButton {{ color: {BRAND_PRIMARY}; background-color: transparent; border: none; padding: 6px; border-radius: 4px; min-width: 28px; min-height: 28px; }}
+        QToolButton:hover {{ background-color: {BRAND_PANEL_2}; }}
+        QToolBar QToolButton {{ min-width: 70px; min-height: 52px; font-size: 11px; }}
+        QTabWidget::pane {{ border: 1px solid {BRAND_BORDER}; background-color: {BRAND_PANEL}; }}
+        QTabBar::tab {{ background-color: {BRAND_PANEL_2}; color: {BRAND_PRIMARY}; padding: 8px 15px; margin-right: 2px; font-size: 13px; }}
+        QTabBar::tab:selected {{ background-color: {BRAND_BACKGROUND}; font-weight: bold; }}
+        QTabBar::tab:!selected {{ margin-top: 2px; }}
+        QTextEdit, QPlainTextEdit {{ background-color: {BRAND_PANEL}; color: {BRAND_PRIMARY}; border: none; padding: 15px; font-family: 'Consolas', monospace; font-size: 14px; }}
+        QMenuBar {{ background-color: {BRAND_BACKGROUND}; color: {BRAND_PRIMARY}; border-bottom: 1px solid {BRAND_BORDER}; font-size: 13px; }}
+        QMenuBar::item {{ padding: 5px 10px; }}
+        QMenuBar::item:selected {{ background-color: {BRAND_PANEL}; }}
+        QMenu {{ background-color: {BRAND_PANEL}; color: {BRAND_PRIMARY}; border: 1px solid {BRAND_BORDER}; font-size: 13px; }}
+        QMenu::item {{ padding: 6px 60px 6px 20px; }}
+        QMenu::item:selected {{ background-color: {BRAND_PANEL_2}; }}
+        QMenu::separator {{ height: 1px; background: {BRAND_MUTED}; margin: 4px 0px; }}
+        QStatusBar {{ background-color: {BRAND_BACKGROUND}; color: {BRAND_MUTED_FG}; border-top: 1px solid {BRAND_BORDER}; }}
+        QFileDialog {{ background-color: {BRAND_PANEL}; color: {BRAND_PRIMARY}; }}
+        QMessageBox {{ background-color: {BRAND_PANEL}; color: {BRAND_PRIMARY}; }}
+        QPushButton {{ background-color: {BRAND_ACCENT}; color: {BRAND_BACKGROUND}; border: none; padding: 5px 10px; border-radius: 4px; font-weight: bold; }}
+        QPushButton:hover {{ background-color: #7dc5ff; opacity: 0.9; }}
+        QPushButton:pressed {{ background-color: #5aa7ff; }}
+        QDialog {{ background-color: {BRAND_BACKGROUND}; color: {BRAND_PRIMARY}; }}
+        QLineEdit, QSpinBox, QCheckBox {{ color: {BRAND_PRIMARY}; }}
+        QLineEdit, QSpinBox {{ background-color: {BRAND_MUTED}; border: 1px solid {BRAND_BORDER}; padding: 6px; border-radius: 3px; }}
+        QLabel {{ color: {BRAND_PRIMARY}; }}
     """
 
 
 def editor_stylesheet():
-    return """
-        QTextEdit, QPlainTextEdit {
-            background: #1e1e1e;
-            color: #ffffff;
+    return f"""
+        QTextEdit, QPlainTextEdit {{
+            background: {BRAND_BACKGROUND};
+            color: {BRAND_PRIMARY};
             font-size: 15px;
             padding: 10px;
             border: none;
-        }
+        }}
     """
 
 
 def viewer_header_stylesheet():
-    return """
-        QLabel {
-            color: #888;
+    return f"""
+        QLabel {{
+            color: {BRAND_MUTED_FG};
             font-size: 12px;
             padding: 5px;
-            background: #2a2a2a;
-        }
+            background: {BRAND_MUTED};
+        }}
     """
 
 
 def markdown_editor_stylesheet():
-    return """
-        QPlainTextEdit {
-            background: #1e1e1e;
-            color: #ffffff;
+    return f"""
+        QPlainTextEdit {{
+            background: {BRAND_BACKGROUND};
+            color: {BRAND_PRIMARY};
             font-size: 14px;
             padding: 10px;
             border: none;
             font-family: 'Consolas', monospace;
-        }
+        }}
     """
 
 
 def markdown_preview_stylesheet():
-    return """
-        QTextBrowser {
-            background: #252526;
-            color: #ffffff;
+    return f"""
+        QTextBrowser {{
+            background: {BRAND_PANEL};
+            color: {BRAND_PRIMARY};
             font-size: 15px;
             padding: 10px;
             border: none;
             font-family: 'Segoe UI', sans-serif;
-        }
+        }}
     """
 
 
-MARKDOWN_PREVIEW_CSS = """
-body {
-    background: #252526;
-    color: #e0e0e0;
+MARKDOWN_PREVIEW_CSS = f"""
+body {{
+    background: {BRAND_PANEL};
+    color: {BRAND_PRIMARY};
     font-family: 'Segoe UI', sans-serif;
     font-size: 15px;
     line-height: 1.6;
     margin: 0;
     padding: 8px;
-}
-h1, h2, h3, h4 { color: #ffffff; margin-top: 1.2em; }
-a { color: #6cb6ff; }
-code {
-    background: #1e1e1e;
+}}
+h1, h2, h3, h4 {{ color: {BRAND_PRIMARY}; margin-top: 1.2em; }}
+a {{ color: {BRAND_ACCENT}; }}
+code {{
+    background: {BRAND_BACKGROUND};
     padding: 2px 6px;
     border-radius: 3px;
     font-family: Consolas, monospace;
     font-size: 13px;
-}
-pre {
-    background: #1e1e1e;
+}}
+pre {{
+    background: {BRAND_BACKGROUND};
     padding: 12px;
     border-radius: 6px;
     overflow-x: auto;
-    border: 1px solid #333;
-}
-pre code { background: none; padding: 0; }
-blockquote {
-    border-left: 4px solid #555;
+    border: 1px solid {BRAND_BORDER};
+}}
+pre code {{ background: none; padding: 0; }}
+blockquote {{
+    border-left: 4px solid {BRAND_ACCENT};
     margin: 0;
     padding: 4px 16px;
-    color: #aaa;
-}
-table { border-collapse: collapse; width: 100%; margin: 12px 0; }
-th, td { border: 1px solid #444; padding: 8px 12px; text-align: left; }
-th { background: #333; }
-tr:nth-child(even) { background: #2a2a2a; }
-hr { border: none; border-top: 1px solid #444; margin: 16px 0; }
-ul, ol { padding-left: 24px; }
+    color: {BRAND_MUTED_FG};
+}}
+table {{ border-collapse: collapse; width: 100%; margin: 12px 0; }}
+th, td {{ border: 1px solid {BRAND_BORDER}; padding: 8px 12px; text-align: left; }}
+th {{ background: {BRAND_PANEL_2}; }}
+tr:nth-child(even) {{ background: {BRAND_MUTED}; }}
+hr {{ border: none; border-top: 1px solid {BRAND_BORDER}; margin: 16px 0; }}
+ul, ol {{ padding-left: 24px; }}
 """
 
 
 def compact_toolbar_stylesheet():
-    return """
-        QToolButton {
+    return f"""
+        QToolButton {{
             background: transparent;
             border: none;
             padding: 4px;
             border-radius: 4px;
             min-width: 28px;
             min-height: 28px;
-        }
-        QToolButton:hover { background: #3c3c3c; }
+        }}
+        QToolButton:hover {{ background: {BRAND_PANEL_2}; }}
     """
 
 
 def xlsx_sheet_tab_stylesheet():
-    return """
-        QTabBar {
-            background: #252526;
-            border-top: 1px solid #333;
-        }
-        QTabBar::tab {
-            background: #2d2d2d;
-            color: #ccc;
+    return f"""
+        QTabBar {{
+            background: {BRAND_PANEL};
+            border-top: 1px solid {BRAND_BORDER};
+        }}
+        QTabBar::tab {{
+            background: {BRAND_PANEL_2};
+            color: {BRAND_MUTED_FG};
             padding: 6px 16px;
             margin-right: 1px;
-            border-right: 1px solid #333;
+            border-right: 1px solid {BRAND_BORDER};
             font-size: 12px;
-        }
-        QTabBar::tab:selected {
-            background: #1e1e1e;
-            color: #fff;
+        }}
+        QTabBar::tab:selected {{
+            background: {BRAND_BACKGROUND};
+            color: {BRAND_PRIMARY};
             font-weight: bold;
-            border-top: 2px solid #0e639c;
-        }
-        QTabBar::tab:hover { background: #333; }
+            border-top: 2px solid {BRAND_ACCENT};
+        }}
+        QTabBar::tab:hover {{ background: {BRAND_MUTED}; }}
     """

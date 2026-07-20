@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react'
+
 const shortcuts = [
   { keys: ["Ctrl", "Q"], action: "Quick switcher — fuzzy search your files" },
   { keys: ["Alt", "V"], action: "Toggle the vault sidebar" },
@@ -7,7 +9,7 @@ const shortcuts = [
   { keys: ["Ctrl", "Alt", "B"], action: "Toggle the bookmarks panel" },
 ]
 
-function Kbd({ children }: { children: string }) {
+function Kbd({ children }: { children?: ReactNode }) {
   return (
     <kbd className="rounded-md border border-border bg-panel-2 px-2 py-1 font-mono text-[11px] font-medium text-foreground shadow-[0_2px_0_0_var(--border)]">
       {children}
