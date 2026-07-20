@@ -35,6 +35,7 @@ exe = EXE(
     a.datas,
     [],
     name='EleViewer',
+    icon='icons/eleviewer.ico',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,

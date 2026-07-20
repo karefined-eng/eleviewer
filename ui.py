@@ -1,6 +1,7 @@
 from PySide6.QtWidgets import (
     QMainWindow, QTabWidget, QFileDialog, QMessageBox,
-    QSplitter, QMenu, QToolBar, QToolButton, QVBoxLayout, QWidget
+    QSplitter, QMenu, QToolBar, QToolButton, QVBoxLayout, QWidget,
+    QDockWidget,
 )
 from PySide6.QtGui import QAction, QKeySequence
 from PySide6.QtCore import Qt, QSize
@@ -33,6 +34,29 @@ from save_utils import atomic_write
 from icons import icon
 from vault_explorer import VaultExplorer
 from branding_logo import create_eleviewer_icon
+from file_handler import get_file_extension
+
+
+# ── File-type icon helper ───────────────────────────────────────────
+_TAB_ICON_MAP = {
+    "md": "book-open",
+    "txt": "type",
+    "csv": "table",
+    "pdf": "book-open",
+    "docx": "file-plus",
+    "xlsx": "table",
+    "html": "globe",
+    "htm": "globe",
+}
+
+
+def _tab_icon_for(path):
+    """Return a small QIcon appropriate for the file extension."""
+    if not path:
+        return icon("file-plus", size=ICON_SIZE_COMPACT)
+    ext = get_file_extension(path)
+    name = _TAB_ICON_MAP.get(ext, "type")
+    return icon(name, size=ICON_SIZE_COMPACT)
 
 
 class MainWindow(QMainWindow):
@@ -48,6 +72,7 @@ class MainWindow(QMainWindow):
         self.autosaver = None
         self.closed_tabs = []
         self.vault_panel = None
+        self._web_dock = None
         self.bookmarks_panel = None
 
         self.setWindowTitle("EleViewer")
@@ -296,13 +321,31 @@ class MainWindow(QMainWindow):
     def update_status_bar(self):
         editor = self.current_editor()
         if not editor:
+            self.setWindowTitle("EleViewer")
             self.show_status_message("Ready")
             return
         path = getattr(editor, "file_path", None)
         name = os.path.basename(path) if path else "Untitled"
         modified = " • Modified" if getattr(editor, "is_modified", False) else ""
-        location = path if path else "Unsaved document"
-        self.show_status_message(f"{name}{modified} — {location}")
+
+        # Dynamic window title  (matches site mockup: "EleViewer — filename.ext")
+        self.setWindowTitle(f"EleViewer — {name}")
+
+        # Rich status bar: tab count · shortcuts hint · file type
+        tab_count = self.tabs.count()
+        ext = get_file_extension(path) if path else ""
+        ext_label = ext.upper() if ext else "TXT"
+        parts = [
+            f"{tab_count} tab{'s' if tab_count != 1 else ''}",
+        ]
+        if modified:
+            parts.append("Modified")
+        else:
+            parts.append("session saved")
+        shortcuts_hint = "Ctrl+Q quick switch · Alt+V vault"
+        encoding = "UTF-8"
+        left = " · ".join(parts)
+        self.show_status_message(f"{left}    {shortcuts_hint}    {ext_label} · {encoding}")
 
     def _connect_editor_signals(self, editor):
         if hasattr(editor, "textChanged"):
@@ -314,7 +357,9 @@ class MainWindow(QMainWindow):
 
     def _add_editor_tab(self, editor, name):
         self._connect_editor_signals(editor)
-        index = self.tabs.addTab(editor, name)
+        path = getattr(editor, "file_path", None)
+        tab_icon = _tab_icon_for(path)
+        index = self.tabs.addTab(editor, tab_icon, name)
         self.tabs.setCurrentIndex(index)
         self.update_status_bar()
         return index
@@ -794,9 +839,24 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "Missing Module", "QtWebEngine not installed.")
             return
 
+        # Toggle: if the web dock already exists, show/hide it
+        if self._web_dock is not None:
+            vis = self._web_dock.isVisible()
+            self._web_dock.setVisible(not vis)
+            return
+
+        # First time: create as a dockable side panel (matches site's
+        # "side-by-side" promise — the web panel is NOT a tab)
         web_panel = WebPanel()
-        index = self.tabs.addTab(web_panel, "Web Browser")
-        self.tabs.setCurrentIndex(index)
+        self._web_dock = QDockWidget("Web Browser", self)
+        self._web_dock.setWidget(web_panel)
+        self._web_dock.setMinimumWidth(360)
+        self._web_dock.setFeatures(
+            QDockWidget.DockWidgetClosable
+            | QDockWidget.DockWidgetMovable
+            | QDockWidget.DockWidgetFloatable
+        )
+        self.addDockWidget(Qt.RightDockWidgetArea, self._web_dock)
 
     def show_find(self):
         editor = self.current_editor()
