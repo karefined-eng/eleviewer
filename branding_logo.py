@@ -1,7 +1,7 @@
 """EleViewer branding logo generator."""
 
 from PySide6.QtGui import QIcon, QPixmap, QPainter, QColor
-from PySide6.QtCore import Qt, QRect
+from PySide6.QtCore import Qt, QRect, QRectF
 
 from theme import BRAND_PANEL, BRAND_PRIMARY, BRAND_ACCENT
 
@@ -20,29 +20,42 @@ def create_eleviewer_icon(size: int = 32) -> QIcon:
     painter = QPainter(pixmap)
     painter.setRenderHint(QPainter.RenderHint.Antialiasing)
 
-    # Calculate bar dimensions
-    bar_height = max(3, size // 10)
-    bar_x = size // 4
-    bar_width = size // 2
+    # Calculate scale factor relative to 32x32 reference
+    scale = size / 32.0
 
-    # Top bar (white)
-    painter.fillRect(
-        QRect(bar_x, size // 4, bar_width, bar_height),
-        QColor(BRAND_PRIMARY)
+    def scaled(val):
+        return val * scale
+
+    # Background is already filled with BRAND_PANEL
+    
+    # Border (optional but good for consistency with SVG)
+    painter.setPen(QColor("#2c2c2c"))
+    painter.setBrush(Qt.NoBrush)
+    painter.drawRoundedRect(
+        QRectF(scaled(0.5), scaled(0.5), scaled(31), scaled(31)),
+        scaled(6.5), scaled(6.5)
     )
 
-    # Middle bar (accent blue) - centered and slightly narrower
-    middle_bar_width = bar_width - (bar_width // 5)
-    middle_bar_x = bar_x + (bar_width - middle_bar_width) // 2
-    painter.fillRect(
-        QRect(middle_bar_x, (size // 2) - (bar_height // 2), middle_bar_width, bar_height),
-        QColor(BRAND_ACCENT)
+    # Top bar (white)
+    painter.setPen(Qt.NoPen)
+    painter.setBrush(QColor(BRAND_PRIMARY))
+    painter.drawRoundedRect(
+        QRectF(scaled(9), scaled(9), scaled(14), scaled(3)),
+        scaled(1.5), scaled(1.5)
+    )
+
+    # Middle bar (accent blue)
+    painter.setBrush(QColor(BRAND_ACCENT))
+    painter.drawRoundedRect(
+        QRectF(scaled(11), scaled(14.5), scaled(10), scaled(3)),
+        scaled(1.5), scaled(1.5)
     )
 
     # Bottom bar (white)
-    painter.fillRect(
-        QRect(bar_x, (size * 3) // 4, bar_width, bar_height),
-        QColor(BRAND_PRIMARY)
+    painter.setBrush(QColor(BRAND_PRIMARY))
+    painter.drawRoundedRect(
+        QRectF(scaled(9), scaled(20), scaled(14), scaled(3)),
+        scaled(1.5), scaled(1.5)
     )
 
     painter.end()
