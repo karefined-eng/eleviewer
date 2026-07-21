@@ -7,6 +7,8 @@ from PySide6.QtGui import QAction, QKeySequence
 from PySide6.QtCore import Qt, QSize
 import os
 
+APP_VERSION = "1.2.0"
+
 from editor import EditorTab
 from bookmark_manager import add_bookmark, load_bookmarks
 from bookmark_panel import BookmarkPanel
@@ -75,7 +77,7 @@ class MainWindow(QMainWindow):
         self._web_dock = None
         self.bookmarks_panel = None
 
-        self.setWindowTitle("EleViewer")
+        self.setWindowTitle(f"EleViewer v{APP_VERSION}")
         self.setWindowIcon(create_eleviewer_icon(64))
         self.resize(1200, 800)
         self.setStyleSheet(main_window_stylesheet())
@@ -321,7 +323,7 @@ class MainWindow(QMainWindow):
     def update_status_bar(self):
         editor = self.current_editor()
         if not editor:
-            self.setWindowTitle("EleViewer")
+            self.setWindowTitle(f"EleViewer v{APP_VERSION}")
             self.show_status_message("Ready")
             return
         path = getattr(editor, "file_path", None)
@@ -329,7 +331,7 @@ class MainWindow(QMainWindow):
         modified = " • Modified" if getattr(editor, "is_modified", False) else ""
 
         # Dynamic window title  (matches site mockup: "EleViewer — filename.ext")
-        self.setWindowTitle(f"EleViewer — {name}")
+        self.setWindowTitle(f"EleViewer v{APP_VERSION} — {name}")
 
         # Rich status bar: tab count · shortcuts hint · file type
         tab_count = self.tabs.count()
