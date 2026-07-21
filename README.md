@@ -1,5 +1,9 @@
 # EleViewer
 
+![Version](https://img.shields.io/github/v/release/karefined-eng/eleviewer?label=version)
+![License](https://img.shields.io/github/license/karefined-eng/eleviewer)
+![Downloads](https://img.shields.io/github/downloads/karefined-eng/eleviewer/total)
+
 A lightweight Windows document editor supporting **DOCX**, **XLSX**, **MD**, **TXT**, **CSV**, **HTML/HTM**, and **PDF**. Built with Python and PySide6.
 
 ## ✨ Features
@@ -11,6 +15,7 @@ A lightweight Windows document editor supporting **DOCX**, **XLSX**, **MD**, **T
 - **Vault Sidebar (Alt+V)**: Organize and open files directly from designated folder vaults. Caches seamlessly between sessions.
 - **Web Browser Panel (Ctrl+T)**: Side-by-side web browsing directly in the editor using native QtWebEngine. Tabs persist between sessions.
 - **Workspace Management**: Session restore, quick switcher (Ctrl+Q), pinned files, and recent files with automatic validation.
+- **Single-Instance Locking**: Opening a file when EleViewer is already running passes it to the existing window.
 - **Clean, Dark UI**: Professional dark luxury editorial aesthetic.
 - **Find & Replace**: Ctrl+F to find and Ctrl+H to replace across any text-based document.
 - **Autosave**: Automatic background saving with configurable intervals.
@@ -88,13 +93,15 @@ EleViewer uses a **factory pattern** for file handling. `file_handler.py` routes
 Key directories and modules:
 - `main.py` & `ui.py` — Entry point and main window tab management.
 - `editor.py` & `markdown_renderer.py` — Text and markdown editors.
+- `pdf_viewer.py`, `docx_viewer.py`, `xlsx_viewer.py` — Format-specific viewers.
 - `vault_explorer.py`, `web_panel.py`, `bookmark_panel.py` — Sidebar panels.
+- `find_replace.py`, `instance_lock.py` — Cross-editor find/replace and single-instance locking.
 - `session_manager.py`, `autosave.py`, `settings.py` — State and persistence.
 - Data is stored in `%APPDATA%\EleViewer\` (`recent_files.json`, `settings.json`, etc.)
 
 ## 🔧 Troubleshooting
 
-- **ModuleNotFoundError (e.g., 'PySide6', 'docx', 'fitz')**: Ensure you've run `pip install -r requirements.txt`. For `fitz`, install `PyMuPDF`.
+- **ModuleNotFoundError (e.g., 'PySide6', 'docx')**: Ensure you've run `pip install -r requirements.txt`.
 - **Web panel not available**: Run `pip install PySide6-WebEngine`.
 - **PDF read-aloud not working**: Ensure `pyttsx3` is installed and Windows speech voices are enabled in OS settings.
 
