@@ -11,7 +11,6 @@ a = Analysis(
         'PySide6.QtWebEngineCore',
         'PySide6.QtPdf',
         'PySide6.QtPdfWidgets',
-        'PySide6.QtPrintSupport',
         'PySide6.QtSvg',
         'markdown',
         'docx',
