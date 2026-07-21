@@ -1,10 +1,10 @@
 # EleViewer
 
-A lightweight Windows document editor supporting **DOCX**, **XLSX**, **MD**, **TXT**, **CSV**, and **PDF**. Built with Python and PySide6.
+A lightweight Windows document editor supporting **DOCX**, **XLSX**, **MD**, **TXT**, **CSV**, **HTML/HTM**, and **PDF**. Built with Python and PySide6.
 
 ## ✨ Features
 
-- **Multi-format Support**: Edit Word (.docx), Excel (.xlsx), Markdown (.md), and Plain Text (.txt/.csv) files. View and interact with PDFs.
+- **Multi-format Support**: Edit Word (.docx), Excel (.xlsx), Markdown (.md), HTML (.html/.htm), and Plain Text (.txt/.csv) files. View and interact with PDFs.
 - **Advanced Editing**: Rich formatting toolbar (Lucide icons), multi-tab interface, and draggable tabs.
 - **Markdown Editing**: Split-view HTML preview. Double-click the preview for a simple text edit, or triple-click for a raw syntax edit.
 - **PDF Viewer**: Vector rendering, high-DPI support, smart TOC sidebar, native Windows Text-to-Speech (read aloud), and persistent bookmarks.
@@ -12,6 +12,8 @@ A lightweight Windows document editor supporting **DOCX**, **XLSX**, **MD**, **T
 - **Web Browser Panel (Ctrl+T)**: Side-by-side web browsing directly in the editor using native QtWebEngine. Tabs persist between sessions.
 - **Workspace Management**: Session restore, quick switcher (Ctrl+Q), pinned files, and recent files with automatic validation.
 - **Clean, Dark UI**: Professional dark luxury editorial aesthetic.
+- **Find & Replace**: Ctrl+F to find and Ctrl+H to replace across any text-based document.
+- **Autosave**: Automatic background saving with configurable intervals.
 
 ## 🚀 Quick Start
 
@@ -52,8 +54,11 @@ A lightweight Windows document editor supporting **DOCX**, **XLSX**, **MD**, **T
 |---|---|
 | **Ctrl+N** | New File picker |
 | **Ctrl+O** / **Ctrl+S** | Open file / Save file |
+| **Ctrl+Shift+S** | Save As |
 | **Ctrl+W** | Close tab |
 | **Ctrl+Shift+T** | Reopen closed tab |
+| **Ctrl+F** | Find in document |
+| **Ctrl+H** | Find and Replace |
 | **Ctrl+Q** | Quick switcher (search files) |
 | **Alt+V** | Toggle Vault (Folder Explorer) |
 | **Ctrl+Alt+B**| Toggle Bookmarks Panel |
