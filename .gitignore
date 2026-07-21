@@ -61,3 +61,4 @@ node_modules/
 # Vercel
 .vercel/
 .vercel/output/
+PROJECT_LOG.md
