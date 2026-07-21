@@ -7,6 +7,8 @@ from ui import MainWindow
 from autosave import AutoSaver
 from instance_lock import SingleInstanceServer
 
+APP_VERSION = "1.2.0"
+
 app = QApplication(sys.argv)
 
 # Attempt to lock single instance
