@@ -583,7 +583,7 @@ class MainWindow(QMainWindow):
 
         help_menu = menu.addMenu("Help")
         self._add_menu_action(help_menu, "Submit Feedback...", self.open_feedback_dialog)
-        self._add_menu_action(help_menu, "Leave a Review 🌟", self.open_review_page)
+        self._add_menu_action(help_menu, "Tell us what you think 💭", self.open_review_page)
 
         self.update_menus()
 
