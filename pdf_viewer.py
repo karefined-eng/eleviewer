@@ -143,10 +143,10 @@ class PdfViewer(QWidget):
         self.lbl_total.setStyleSheet("color:#9b9b96; font-weight:bold; padding:0 6px 0 2px; font-size:12px;")
 
         self.btn_zoom_out  = _tb("zoom-out",   "Zoom out",                lambda: self._apply_zoom(1 / 1.2))
-        self.btn_fit_page  = _tb("maximize",   "Fit to page",             self.fit_page)
-        self.btn_fit_width = _tb("monitor",    "Fit to width",            self.fit_to_width)
+        self.btn_fit_page  = _tb("minimize-2",   "Fit to page",             self.fit_page)
+        self.btn_fit_width = _tb("maximize-2",    "Fit to width",            self.fit_to_width)
         self.btn_zoom_in   = _tb("zoom-in",    "Zoom in",                 lambda: self._apply_zoom(1.2))
-        self.btn_multi     = _tb("columns",    "Two-page view",           self._toggle_multi_page)
+        self.btn_multi     = _tb("columns-2",    "Two-page view",           self._toggle_multi_page)
         self.btn_bookmark  = _tb("bookmark",   "Bookmark this page",      self._add_bookmark_here, "Bookmark")
 
         toolbar.addWidget(self.btn_toc)
