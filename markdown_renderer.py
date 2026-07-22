@@ -11,7 +11,7 @@ from icons import icon
 from markdown_utils import markdown_to_simple, simple_to_markdown
 from settings import load_settings, save_settings
 from theme import (
-    markdown_editor_stylesheet, MARKDOWN_PREVIEW_CSS, compact_toolbar_stylesheet,
+    markdown_editor_stylesheet, markdown_preview_css, compact_toolbar_stylesheet,
     resolve_markdown_icon_size, markdown_preview_stylesheet, BRAND_PANEL, BRAND_PRIMARY, BRAND_MUTED_FG
 )
 
@@ -206,6 +206,9 @@ class MarkdownViewer(QWidget):
         self.editor = QPlainTextEdit()
         self.editor.setStyleSheet(markdown_editor_stylesheet())
         self.editor.textChanged.connect(self._on_syntax_changed)
+        
+        from syntax_highlighter import MarkdownHighlighter
+        self.highlighter = MarkdownHighlighter(self.editor.document())
 
         self.stack.addWidget(self.viewer)
         self.stack.addWidget(self.simple_editor)
@@ -374,7 +377,7 @@ class MarkdownViewer(QWidget):
             text,
             extensions=["tables", "fenced_code", "nl2br", "sane_lists"],
         )
-        return f"<html><head><style>{MARKDOWN_PREVIEW_CSS}</style></head><body>{html_body}</body></html>"
+        return f"<html><head><style>{markdown_preview_css()}</style></head><body>{html_body}</body></html>"
 
     def _sync_from_syntax(self):
         text = self.editor.toPlainText()

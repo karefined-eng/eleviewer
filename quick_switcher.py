@@ -2,8 +2,10 @@ from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QLineEdit, QListWidget, QListWidgetItem, QLabel
 )
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QIcon
+from PySide6.QtGui import QIcon, QColor
 from pathlib import Path
+from theme import BRAND_BACKGROUND, BRAND_PANEL, BRAND_BORDER, BRAND_PRIMARY, BRAND_MUTED, BRAND_MUTED_FG, get_brand_accent
+from file_icons import file_type_icon
 
 
 class QuickSwitcher(QDialog):
@@ -15,38 +17,48 @@ class QuickSwitcher(QDialog):
     
     file_selected = Signal(str)  # Emits file path when selected
     
-    def __init__(self, recent_files, pinned_files, parent=None):
+    def __init__(self, recent_files, pinned_files, open_tabs=None, parent=None):
         super().__init__(parent)
         
         self.recent_files = recent_files
         self.pinned_files = pinned_files
-        self.all_files = list(dict.fromkeys(pinned_files + recent_files))  # Pinned first, deduplicated
+        self.open_tabs = open_tabs or []
+        
+        self.all_files = []
+        seen = set()
+        for lst in [self.open_tabs, self.pinned_files, self.recent_files]:
+            for f in lst:
+                if f not in seen:
+                    self.all_files.append(f)
+                    seen.add(f)
         
         self.setWindowTitle("Quick Switcher")
-        self.setStyleSheet("""
-            QDialog {
-                background: #1e1e1e;
-                color: #fff;
-            }
-            QLineEdit {
-                background: #2a2a2a;
-                color: #fff;
-                border: 1px solid #444;
+        accent = get_brand_accent()
+        self.setStyleSheet(f"""
+            QDialog {{
+                background: {BRAND_BACKGROUND};
+                color: {BRAND_PRIMARY};
+            }}
+            QLineEdit {{
+                background: {BRAND_PANEL};
+                color: {BRAND_PRIMARY};
+                border: 1px solid {BRAND_BORDER};
                 padding: 8px;
                 font-size: 14px;
-                selection-background-color: #0e47a1;
-            }
-            QListWidget {
-                background: #2a2a2a;
-                color: #fff;
-                border: 1px solid #444;
-            }
-            QListWidget::item:selected {
-                background: #0e47a1;
-            }
-            QListWidget::item:hover {
-                background: #333;
-            }
+                selection-background-color: {accent};
+            }}
+            QListWidget {{
+                background: {BRAND_PANEL};
+                color: {BRAND_PRIMARY};
+                border: 1px solid {BRAND_BORDER};
+            }}
+            QListWidget::item:selected {{
+                background: {accent};
+                color: {BRAND_BACKGROUND};
+            }}
+            QListWidget::item:hover {{
+                background: {BRAND_MUTED};
+            }}
         """)
         
         self.resize(600, 400)
@@ -61,7 +73,7 @@ class QuickSwitcher(QDialog):
         
         # Help text
         help_label = QLabel("↑↓ Navigate  Enter Select  Esc Cancel")
-        help_label.setStyleSheet("color: #888; font-size: 11px; padding: 5px;")
+        help_label.setStyleSheet(f"color: {BRAND_MUTED_FG}; font-size: 11px; padding: 5px;")
         
         # File list
         self.file_list = QListWidget()
@@ -76,37 +88,61 @@ class QuickSwitcher(QDialog):
         
         self.setLayout(layout)
         
-        # Populate initial list
-        self.populate_list(self.all_files)
+        # Populate initial list with sections
+        self.populate_list(self.all_files, show_sections=True)
         
         # Focus on search
         self.search_input.setFocus()
     
-    def populate_list(self, files):
+    def populate_list(self, files, show_sections=False):
         """Populate the file list."""
         self.file_list.clear()
         
-        for file_path in files:
-            item = QListWidgetItem(Path(file_path).name)
-            item.setData(Qt.UserRole, file_path)
+        if show_sections:
+            groups = [
+                ("📂 Open Tabs", [f for f in files if f in self.open_tabs]),
+                ("📌 Pinned", [f for f in files if f in self.pinned_files and f not in self.open_tabs]),
+                ("🕐 Recent", [f for f in files if f in self.recent_files and f not in self.open_tabs and f not in self.pinned_files])
+            ]
             
-            # Show pinned indicator
-            if file_path in self.pinned_files:
-                item.setText("📌 " + item.text())
-            
-            self.file_list.addItem(item)
+            for header, group_files in groups:
+                if not group_files: continue
+                h_item = QListWidgetItem(header)
+                h_item.setFlags(h_item.flags() & ~Qt.ItemIsSelectable)
+                h_item.setForeground(QColor(BRAND_MUTED_FG))
+                self.file_list.addItem(h_item)
+                
+                for f in group_files:
+                    item = QListWidgetItem("   " + Path(f).name)
+                    item.setData(Qt.UserRole, f)
+                    ext = Path(f).suffix
+                    item.setIcon(file_type_icon(ext, 16))
+                    self.file_list.addItem(item)
+        else:
+            for file_path in files:
+                item = QListWidgetItem(Path(file_path).name)
+                item.setData(Qt.UserRole, file_path)
+                ext = Path(file_path).suffix
+                item.setIcon(file_type_icon(ext, 16))
+                if file_path in self.open_tabs:
+                    item.setText("📂 " + item.text())
+                elif file_path in self.pinned_files:
+                    item.setText("📌 " + item.text())
+                self.file_list.addItem(item)
         
-        # Select first item
-        if self.file_list.count() > 0:
-            self.file_list.setCurrentRow(0)
+        # Select first selectable item
+        for i in range(self.file_list.count()):
+            if self.file_list.item(i).flags() & Qt.ItemIsSelectable:
+                self.file_list.setCurrentRow(i)
+                break
     
     def filter_files(self):
         """Filter files based on search input (fuzzy match)."""
         search_text = self.search_input.text().lower().strip()
         
         if not search_text:
-            # Show all files
-            self.populate_list(self.all_files)
+            # Show all files with sections
+            self.populate_list(self.all_files, show_sections=True)
             return
         
         # Fuzzy filter
@@ -127,7 +163,7 @@ class QuickSwitcher(QDialog):
     def select_current(self):
         """Select the currently highlighted item."""
         current_item = self.file_list.currentItem()
-        if current_item:
+        if current_item and (current_item.flags() & Qt.ItemIsSelectable):
             self.on_item_selected(current_item)
     
     def on_item_selected(self, item):

@@ -24,7 +24,7 @@ from PySide6.QtGui import QIntValidator, QKeyEvent, QWheelEvent
 from PySide6.QtCore import Qt, Signal, QTimer, QSize, QPointF
 
 from icons import icon
-from pdf_tts import PdfTts, TTS_AVAILABLE
+from tts_engine import TtsEngine as PdfTts, TTS_AVAILABLE
 from settings import load_settings
 from theme import compact_toolbar_stylesheet, ICON_SIZE_COMPACT
 from paths import APP_DATA_DIR
@@ -105,7 +105,8 @@ class PdfViewer(QWidget):
 
         # ── Toolbar ─────────────────────────────────────────────────
         toolbar = QHBoxLayout()
-        toolbar.setContentsMargins(4, 4, 4, 4)
+        toolbar.setContentsMargins(6, 4, 6, 4)
+        toolbar.setSpacing(4)
         icon_sz = ICON_SIZE_COMPACT
         icon_qsize = QSize(icon_sz, icon_sz)
 
@@ -125,16 +126,16 @@ class PdfViewer(QWidget):
 
         # Page input  ─ editable box + "/ N" label
         self.page_input = QLineEdit()
-        self.page_input.setFixedWidth(48)
+        self.page_input.setFixedWidth(44)
         self.page_input.setAlignment(Qt.AlignCenter)
         self.page_input.setValidator(QIntValidator(1, 99999))
         self.page_input.setStyleSheet(
-            "QLineEdit { background:#2d2d2d; color:#e0e0e0; border:1px solid #444;"
-            " border-radius:3px; padding:1px 4px; font-weight:bold; }"
+            "QLineEdit { background:#242424; color:#f2f2f0; border:1px solid #2c2c2c;"
+            " border-radius:4px; padding:2px 4px; font-weight:bold; font-size:12px; }"
         )
         self.page_input.returnPressed.connect(self._jump_to_page)
         self.lbl_total = QLabel(" / 0")
-        self.lbl_total.setStyleSheet("color:#aaa; font-weight:bold; padding:0 6px 0 0;")
+        self.lbl_total.setStyleSheet("color:#9b9b96; font-weight:bold; padding:0 6px 0 2px; font-size:12px;")
 
         self.btn_zoom_out  = _tb("zoom-out",   "Zoom out",                lambda: self._apply_zoom(1 / 1.2))
         self.btn_fit_page  = _tb("minimize-2", "Fit page",                self.fit_page)
@@ -142,13 +143,6 @@ class PdfViewer(QWidget):
         self.btn_zoom_in   = _tb("zoom-in",    "Zoom in",                 lambda: self._apply_zoom(1.2))
         self.btn_multi     = _tb("columns-2",  "Toggle continuous scroll", self._toggle_multi_page)
         self.btn_bookmark  = _tb("book-open",  "Bookmark this page",      self._add_bookmark_here)
-
-        self.voice_combo = QComboBox()
-        self.voice_combo.setMinimumWidth(140)
-        self._populate_voices()
-
-        self.btn_speak = _tb("volume-2", "Read current page aloud", self.read_current_page)
-        self.btn_stop  = _tb("square",   "Stop reading",            self.tts.stop)
 
         toolbar.addWidget(self.btn_toc)
         toolbar.addWidget(self.btn_prev)
@@ -162,9 +156,6 @@ class PdfViewer(QWidget):
         toolbar.addWidget(self.btn_zoom_in)
         toolbar.addWidget(self.btn_multi)
         toolbar.addWidget(self.btn_bookmark)
-        toolbar.addWidget(self.voice_combo)
-        toolbar.addWidget(self.btn_speak)
-        toolbar.addWidget(self.btn_stop)
 
         # ── Content area: TOC splitter + QPdfView ───────────────────
         self.content_splitter = QSplitter(Qt.Horizontal)

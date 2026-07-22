@@ -10,7 +10,7 @@ except ImportError:
     TTS_AVAILABLE = False
 
 
-class PdfTts:
+class TtsEngine:
 
     def __init__(self, on_error=None):
         self._on_error = on_error
@@ -77,3 +77,5 @@ class PdfTts:
     def stop(self):
         if TTS_AVAILABLE:
             self._queue.put(("stop", None))
+
+PdfTts = TtsEngine  # Backward compatibility alias

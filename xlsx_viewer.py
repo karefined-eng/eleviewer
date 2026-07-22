@@ -10,7 +10,7 @@ import io
 
 from theme import (
     xlsx_sheet_tab_stylesheet, BRAND_PANEL, BRAND_PRIMARY, 
-    BRAND_BORDER, BRAND_ACCENT, BRAND_BACKGROUND
+    BRAND_BORDER, get_brand_accent, BRAND_BACKGROUND
 )
 
 
@@ -40,7 +40,7 @@ class XlsxViewer(QWidget):
                 gridline-color: {BRAND_BORDER};
             }}
             QTableWidget::item {{ padding: 5px; }}
-            QTableWidget::item:selected {{ background: {BRAND_ACCENT}; color: {BRAND_BACKGROUND}; }}
+            QTableWidget::item:selected {{ background: {get_brand_accent()}; color: {BRAND_BACKGROUND}; }}
         """)
         self.table.itemChanged.connect(self._on_cell_changed)
 

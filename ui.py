@@ -1,13 +1,13 @@
 from PySide6.QtWidgets import (
     QMainWindow, QTabWidget, QFileDialog, QMessageBox,
     QSplitter, QMenu, QToolBar, QToolButton, QVBoxLayout, QWidget,
-    QDockWidget,
+    QDockWidget, QLabel,
 )
-from PySide6.QtGui import QAction, QKeySequence
+from PySide6.QtGui import QAction, QKeySequence, QShortcut
 from PySide6.QtCore import Qt, QSize
 import os
 
-APP_VERSION = "1.2.0"
+APP_VERSION = "1.3.0"
 
 from editor import EditorTab
 from bookmark_manager import add_bookmark, load_bookmarks
@@ -37,6 +37,8 @@ from icons import icon
 from vault_explorer import VaultExplorer
 from branding_logo import create_eleviewer_icon
 from file_handler import get_file_extension
+from tts_reader_bar import TtsReaderBar
+from tts_engine import TtsEngine
 
 
 # ── File-type icon helper ───────────────────────────────────────────
@@ -54,11 +56,11 @@ _TAB_ICON_MAP = {
 
 def _tab_icon_for(path):
     """Return a small QIcon appropriate for the file extension."""
+    from file_icons import file_type_icon
     if not path:
-        return icon("file-plus", size=ICON_SIZE_COMPACT)
-    ext = get_file_extension(path)
-    name = _TAB_ICON_MAP.get(ext, "type")
-    return icon(name, size=ICON_SIZE_COMPACT)
+        return file_type_icon(".txt", size=ICON_SIZE_COMPACT)
+    ext = os.path.splitext(path)[1].lower()
+    return file_type_icon(ext, size=ICON_SIZE_COMPACT)
 
 
 class MainWindow(QMainWindow):
@@ -76,12 +78,13 @@ class MainWindow(QMainWindow):
         self.vault_panel = None
         self._web_dock = None
         self.bookmarks_panel = None
+        self.tts_engine = TtsEngine()
 
-        self.setWindowTitle(f"EleViewer v{APP_VERSION}")
+        self.setWindowTitle(f"EleViewer — Untitled")
         self.setWindowIcon(create_eleviewer_icon(64))
         self.resize(1200, 800)
         self.setStyleSheet(main_window_stylesheet())
-        self.statusBar().showMessage("Ready")
+        self._setup_status_bar()
 
         self._build_layout()
         self._build_toolbar()
@@ -93,6 +96,24 @@ class MainWindow(QMainWindow):
             self.new_tab()
 
         self.tabs.currentChanged.connect(self.update_status_bar)
+        self.update_status_bar()
+
+    def _setup_status_bar(self):
+        status_bar = self.statusBar()
+        status_bar.setSizeGripEnabled(False)
+
+        self.status_left = QLabel("0 tabs · session saved")
+        self.status_left.setStyleSheet("color: #9b9b96; font-size: 11px; padding-left: 8px;")
+
+        self.status_center = QLabel("Ctrl+Q quick switch · Alt+V vault")
+        self.status_center.setStyleSheet("color: #666666; font-size: 11px;")
+
+        self.status_right = QLabel("md · UTF-8")
+        self.status_right.setStyleSheet("color: #9b9b96; font-size: 11px; padding-right: 12px;")
+
+        status_bar.addWidget(self.status_left, 1)
+        status_bar.addWidget(self.status_center, 1)
+        status_bar.addPermanentWidget(self.status_right)
 
     def _build_layout(self):
         self.main_splitter = QSplitter(Qt.Horizontal)
@@ -119,11 +140,18 @@ class MainWindow(QMainWindow):
         self.find_replace_panel.replace_requested.connect(self._on_replace)
         self.find_replace_panel.replace_all_requested.connect(self._on_replace_all)
 
+        self.tts_bar = TtsReaderBar()
+        self.tts_bar.hide()
+        self.tts_bar.populate_voices(self.tts_engine.list_voices())
+        self.tts_bar.speak_requested.connect(self._speak_current_tab)
+        self.tts_bar.stop_requested.connect(self._stop_tts)
+
         editor_layout = QVBoxLayout()
         editor_layout.setContentsMargins(0, 0, 0, 0)
         editor_layout.setSpacing(0)
         editor_layout.addWidget(self.tabs)
         editor_layout.addWidget(self.find_replace_panel)
+        editor_layout.addWidget(self.tts_bar)
         
         editor_container = QWidget()
         editor_container.setLayout(editor_layout)
@@ -140,8 +168,19 @@ class MainWindow(QMainWindow):
         self.main_splitter.addWidget(self.editor_splitter)
         self.main_splitter.setSizes([0, 1200])
         self.vault_panel.hide()
+        self.vault_panel.search_requested.connect(self.open_vault_search)
 
         self.setCentralWidget(self.main_splitter)
+
+        self.status_file_type = QLabel()
+        self.status_encoding = QLabel("UTF-8")
+        self.statusBar().addPermanentWidget(self.status_file_type)
+        self.statusBar().addPermanentWidget(self.status_encoding)
+
+        for i in range(1, 10):
+            QShortcut(QKeySequence(f"Ctrl+{i}"), self).activated.connect(
+                lambda idx=i-1: self.tabs.setCurrentIndex(min(idx, self.tabs.count()-1)) if self.tabs.count() > 0 else None
+            )
 
     def _build_toolbar(self):
         self.toolbar = QToolBar("Main Toolbar")
@@ -317,6 +356,11 @@ class MainWindow(QMainWindow):
         else:
             self.editor_splitter.setSizes([self.width(), 0])
 
+    def open_feedback_dialog(self):
+        from feedback_dialog import FeedbackDialog
+        dlg = FeedbackDialog(self)
+        dlg.exec()
+
     def show_status_message(self, message, timeout_ms=0):
         self.statusBar().showMessage(message, timeout_ms)
 
@@ -330,24 +374,21 @@ class MainWindow(QMainWindow):
         name = os.path.basename(path) if path else "Untitled"
         modified = " • Modified" if getattr(editor, "is_modified", False) else ""
 
-        # Dynamic window title  (matches site mockup: "EleViewer — filename.ext")
         self.setWindowTitle(f"EleViewer v{APP_VERSION} — {name}")
 
-        # Rich status bar: tab count · shortcuts hint · file type
         tab_count = self.tabs.count()
         ext = get_file_extension(path) if path else ""
         ext_label = ext.upper() if ext else "TXT"
-        parts = [
-            f"{tab_count} tab{'s' if tab_count != 1 else ''}",
-        ]
-        if modified:
-            parts.append("Modified")
-        else:
-            parts.append("session saved")
+        
+        parts = [f"{tab_count} tab{'s' if tab_count != 1 else ''}"]
+        parts.append("Modified" if modified else "session saved")
         shortcuts_hint = "Ctrl+Q quick switch · Alt+V vault"
-        encoding = "UTF-8"
+        
         left = " · ".join(parts)
-        self.show_status_message(f"{left}    {shortcuts_hint}    {ext_label} · {encoding}")
+        self.show_status_message(f"{left}    {shortcuts_hint}")
+        
+        self.status_file_type.setText(f" {ext_label} ")
+        self.status_encoding.setText(" UTF-8 ")
 
     def _connect_editor_signals(self, editor):
         if hasattr(editor, "textChanged"):
@@ -385,6 +426,12 @@ class MainWindow(QMainWindow):
                 return
 
         self.save_current_session()
+
+        from settings import load_settings, save_settings
+        settings = load_settings()
+        settings["window_geometry"] = self.saveGeometry().toBase64().data().decode()
+        save_settings(settings)
+
         event.accept()
 
     def save_all_modified(self):
@@ -475,6 +522,7 @@ class MainWindow(QMainWindow):
         file_menu.addSeparator()
         if WEB_AVAILABLE:
             self._add_menu_action(file_menu, "New Web Tab", self.open_web_tab, "Ctrl+T")
+            self._add_menu_action(file_menu, "Toggle Web Panel", self.toggle_web_panel, "Ctrl+Shift+W")
             file_menu.addSeparator()
         self._add_menu_action(
             file_menu, "Close Tab",
@@ -484,6 +532,7 @@ class MainWindow(QMainWindow):
         edit_menu = menu.addMenu("Edit")
         self._add_menu_action(edit_menu, "Find...", self.show_find, "Ctrl+F")
         self._add_menu_action(edit_menu, "Replace...", self.show_replace, "Ctrl+H")
+        self._add_menu_action(edit_menu, "Search in Vault...", self.open_vault_search, "Ctrl+Shift+F")
 
         vault_menu = menu.addMenu("Vault")
         vault_menu.addAction("Add Folder", self.add_vault)
@@ -618,6 +667,9 @@ class MainWindow(QMainWindow):
                     return
             elif reply == QMessageBox.Cancel:
                 return
+            elif reply == QMessageBox.No:
+                if hasattr(self, "draft_manager"):
+                    self.draft_manager.cleanup(path=getattr(editor, "file_path", None), editor_id=id(editor))
 
         self.closed_tabs.append({
             "content": editor.toPlainText() if hasattr(editor, "toPlainText") else "",
@@ -661,9 +713,32 @@ class MainWindow(QMainWindow):
     def open_quick_switcher(self):
         recent = load_recent_files(validate=True)
         pinned = load_pinned_files(validate=True)
-        switcher = QuickSwitcher(recent, pinned, self)
+        open_tabs = []
+        for i in range(self.tabs.count()):
+            editor = self.tabs.widget(i)
+            path = getattr(editor, "file_path", None)
+            if path: open_tabs.append(path)
+            
+        switcher = QuickSwitcher(recent, pinned, open_tabs, self)
         switcher.file_selected.connect(self.open_recent_file)
         switcher.exec()
+
+    def open_vault_search(self, active_vault=None):
+        if not active_vault or not isinstance(active_vault, str):
+            if hasattr(self, 'vault_panel') and self.vault_panel.vault_selector.currentData():
+                active_vault = self.vault_panel.vault_selector.currentData()
+            else:
+                active_vault = None
+                
+        all_vaults = load_settings().get("vaults", [])
+        if not all_vaults and not active_vault:
+            QMessageBox.information(self, "No Vaults", "You don't have any vaults opened.")
+            return
+            
+        from vault_search import VaultSearchDialog
+        dlg = VaultSearchDialog(active_vault, all_vaults, self)
+        dlg.file_selected.connect(self.open_file)
+        dlg.exec()
 
     def current_editor(self):
         return self.tabs.currentWidget()
@@ -717,6 +792,8 @@ class MainWindow(QMainWindow):
             content = get_file_content(editor, path)
             atomic_write(path, content)
             editor.is_modified = False
+            if hasattr(self, "draft_manager"):
+                self.draft_manager.cleanup(path=path, editor_id=id(editor))
             self.update_tab_title(editor)
             self.show_status_message(f"Saved {os.path.basename(path)}", 3000)
             self.update_status_bar()
@@ -784,6 +861,8 @@ class MainWindow(QMainWindow):
             atomic_write(path, content)
             editor.file_path = path
             editor.is_modified = False
+            if hasattr(self, "draft_manager"):
+                self.draft_manager.cleanup(path=path, editor_id=id(editor))
             save_recent_file(path)
             self.update_menus()
             self.update_tab_title(editor)
@@ -836,15 +915,24 @@ class MainWindow(QMainWindow):
 
 
 
+    def toggle_web_panel(self):
+        if not WEB_AVAILABLE:
+            QMessageBox.warning(self, "Missing Module", "QtWebEngine not installed.")
+            return
+        if self._web_dock is not None:
+            self._web_dock.setVisible(not self._web_dock.isVisible())
+        else:
+            self.open_web_tab()
+
     def open_web_tab(self):
         if not WEB_AVAILABLE:
             QMessageBox.warning(self, "Missing Module", "QtWebEngine not installed.")
             return
 
-        # Toggle: if the web dock already exists, show/hide it
         if self._web_dock is not None:
-            vis = self._web_dock.isVisible()
-            self._web_dock.setVisible(not vis)
+            if not self._web_dock.isVisible():
+                self._web_dock.setVisible(True)
+            self._web_dock.widget().add_tab()
             return
 
         # First time: create as a dockable side panel (matches site's
@@ -889,4 +977,63 @@ class MainWindow(QMainWindow):
         if hasattr(editor, "replace_all"):
             count = editor.replace_all(find_text, replace_text, match_case, whole_word)
             self.show_status_message(f"Replaced {count} occurrences.", 3000)
+
+    def update_status_bar(self):
+        count = self.tabs.count()
+        self.status_left.setText(f"{count} tab{'s' if count != 1 else ''} · session saved")
+        
+        current_widget = self.tabs.currentWidget()
+        if current_widget:
+            file_path = getattr(current_widget, "file_path", None)
+            if file_path:
+                filename = os.path.basename(file_path)
+                self.setWindowTitle(f"EleViewer — {filename}")
+                ext = os.path.splitext(file_path)[1].lstrip(".").lower() or "txt"
+                self.status_right.setText(f"{ext} · UTF-8")
+            else:
+                self.setWindowTitle(f"EleViewer — Untitled")
+                self.status_right.setText("txt · UTF-8")
+        else:
+            self.setWindowTitle(f"EleViewer v{APP_VERSION}")
+            self.status_right.setText("UTF-8")
+
+    def toggle_tts_bar(self):
+        if self.tts_bar.isVisible():
+            self.tts_bar.hide()
+            self._stop_tts()
+        else:
+            self.tts_bar.show()
+            self._speak_current_tab()
+
+    def _speak_current_tab(self):
+        current = self.tabs.currentWidget()
+        if not current:
+            return
+        
+        filename = "Untitled"
+        if hasattr(current, "file_path") and current.file_path:
+            filename = os.path.basename(current.file_path)
+            
+        if filename.endswith(".pdf") and hasattr(current, "read_current_page"):
+            current.read_current_page()
+            self.tts_bar.show()
+            self.tts_bar.set_status(filename, f"page {current.current_page + 1} of {current.total_pages}")
+            return
+
+        text = ""
+        if hasattr(current, "toPlainText"):
+            text = current.toPlainText()
+        elif hasattr(current, "editor") and hasattr(current.editor, "toPlainText"):
+            text = current.editor.toPlainText()
+
+        if text and text.strip():
+            self.tts_bar.show()
+            voice_id = self.tts_bar.get_selected_voice_id()
+            self.tts_engine.speak(text, voice_id)
+            self.tts_bar.set_status(filename)
+        else:
+            self.show_status_message("No text available for TTS in current tab", 2000)
+
+    def _stop_tts(self):
+        self.tts_engine.stop()
 

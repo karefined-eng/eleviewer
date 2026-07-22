@@ -4,7 +4,10 @@ import os
 from paths import SETTINGS_FILE_PATH
 from theme import ICON_SIZE_MARKDOWN
 
-DEFAULT_WEB_TABS = [{"title": "Google", "url": "https://www.google.com"}]
+DEFAULT_WEB_TABS = [
+    {"title": "EleViewer", "url": "https://eleviewer.vercel.app"},
+    {"title": "Google", "url": "https://www.google.com"}
+]
 
 DEFAULT_SETTINGS = {
     "autosave_enabled": True,
@@ -19,6 +22,15 @@ DEFAULT_SETTINGS = {
     "markdown_icon_size": ICON_SIZE_MARKDOWN,
     "pdf_fit_mode": "width",
     "pdf_render_quality": "high",
+    "launch_behavior": "remembered",
+    "window_geometry": None,
+    "draft_autosave_enabled": True,
+    "draft_autosave_interval_seconds": 60,
+    "theme_accent": "blue",
+    "tts_voice_id": None,
+    "tts_read_mode": "page",
+    "onboarding_completed": False,
+    "file_search_scope": "active_vault",
 }
 
 
