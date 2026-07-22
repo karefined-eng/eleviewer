@@ -1,0 +1,24 @@
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.defaultLocale.1.6.0.schema.json
+
+PackageIdentifier: karefined-eng.EleViewer
+PackageVersion: 1.2.0
+PackageLocale: en-US
+Publisher: Elevon (ka.refined)
+PublisherUrl: https://eleviewer.vercel.app
+PublisherSupportUrl: https://github.com/karefined-eng/eleviewer/issues
+Author: Elevon (ka.refined)
+PackageName: EleViewer
+PackageUrl: https://eleviewer.vercel.app
+License: MIT
+LicenseUrl: https://github.com/karefined-eng/eleviewer/blob/main/LICENSE
+Copyright: Copyright (c) 2026 Elevon
+ShortDescription: A lightweight, portable Windows document editor and study workspace supporting DOCX, XLSX, PDF, and Markdown.
+Description: EleViewer is a lightweight, open-source productivity tool designed specifically for students to manage various academic file formats within a single Windows application. It allows users to view and edit Word, Excel, Markdown, and plain text documents while providing a robust reader for PDF files that includes a text-to-speech function. Features a portable design requiring no installation, a keyboard-centric interface, and a built-in web panel.
+Tags:
+  - document-viewer
+  - pdf-reader
+  - markdown-editor
+  - text-to-speech
+  - offline-workspace
+ManifestType: defaultLocale
+ManifestVersion: 1.6.0
