@@ -19,6 +19,54 @@ try:
 except Exception:
     pass
 
+import traceback
+def global_exception_handler(exc_type, exc_value, exc_traceback):
+    if issubclass(exc_type, KeyboardInterrupt):
+        sys.__excepthook__(exc_type, exc_value, exc_traceback)
+        return
+        
+    tb_lines = traceback.format_exception(exc_type, exc_value, exc_traceback)
+    tb_text = "".join(tb_lines)
+    
+    from PySide6.QtWidgets import QMessageBox
+    import urllib.request
+    import json
+    
+    msg = QMessageBox()
+    msg.setIcon(QMessageBox.Critical)
+    msg.setWindowTitle("EleViewer - Fatal Error")
+    msg.setText("Oops! EleViewer encountered a critical error and needs to close.")
+    msg.setInformativeText("Would you like to send this crash report securely to the developer so it can be fixed?")
+    msg.setDetailedText(tb_text)
+    
+    send_btn = msg.addButton("Send Report", QMessageBox.ActionRole)
+    msg.addButton("Close App", QMessageBox.RejectRole)
+    msg.setDefaultButton(send_btn)
+    
+    msg.exec()
+    
+    if msg.clickedButton() == send_btn:
+        try:
+            data = {
+                "type": "Bug",
+                "description": f"**FATAL CRASH**\n\n```python\n{tb_text}\n```",
+                "version": APP_VERSION,
+                "os_name": os.name,
+                "platform": sys.platform
+            }
+            req = urllib.request.Request(
+                "https://eleviewer.vercel.app/api/feedback", 
+                data=json.dumps(data).encode('utf-8'),
+                headers={'Content-Type': 'application/json'}
+            )
+            urllib.request.urlopen(req, timeout=5)
+        except Exception:
+            pass
+            
+    sys.exit(1)
+
+sys.excepthook = global_exception_handler
+
 app = QApplication(sys.argv)
 
 # Attempt to lock single instance

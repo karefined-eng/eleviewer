@@ -376,6 +376,11 @@ class MainWindow(QMainWindow):
         dlg = FeedbackDialog(self)
         dlg.exec()
 
+    def open_review_page(self):
+        from PySide6.QtGui import QDesktopServices
+        from PySide6.QtCore import QUrl
+        QDesktopServices.openUrl(QUrl("https://eleviewer.vercel.app/review"))
+
     def show_status_message(self, message, timeout_ms=0):
         self.statusBar().showMessage(message, timeout_ms)
 
@@ -564,6 +569,10 @@ class MainWindow(QMainWindow):
         self.bookmarks_menu = session_menu.addMenu("Bookmarks")
 
         self._add_menu_action(menu, "Settings...", self.open_settings, "Alt+S")
+
+        help_menu = menu.addMenu("Help")
+        self._add_menu_action(help_menu, "Submit Feedback...", self.open_feedback_dialog)
+        self._add_menu_action(help_menu, "Leave a Review 🌟", self.open_review_page)
 
         self.update_menus()
 
