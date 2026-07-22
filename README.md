@@ -12,7 +12,7 @@ A lightweight Windows document editor supporting **DOCX**, **XLSX**, **MD**, **T
 Opens & edits **DOCX, XLSX, PDF, MD, TXT and HTML** — all in one workspace.
 
 ### 🔊 Reading & Study Tools
-- **PDF text-to-speech** — reads lectures/PDFs aloud for hands-free studying.
+- **PDF text-to-speech** — reads lectures/PDFs aloud for hands-free studying (Toggle with `F9` or the toolbar button).
 - **Persistent bookmarks** — never lose your place, even in 400-page textbooks.
 
 ### 🗂️ Organization
@@ -24,11 +24,12 @@ Opens & edits **DOCX, XLSX, PDF, MD, TXT and HTML** — all in one workspace.
 ### ✨ Extras
 - **Built-in web browser panel**, side-by-side with notes (Ctrl+T).
 - **Bookmarks panel toggle** (Ctrl+Alt+B).
+- **Dynamic UI Accents** — Status bar and active icons pop with your chosen theme color.
 
 ### 💻 Specs
 - 16 MB, single portable `.exe` — no install needed.
 - Windows 10/11.
-- No account, no telemetry — files stay local.
+- No account, **zero telemetry** — your files stay local. Includes an opt-in secure crash reporter straight to GitHub.
 - MIT licensed, open source (Python + PySide6).
 - Free forever, no ads.
 
@@ -80,6 +81,7 @@ Opens & edits **DOCX, XLSX, PDF, MD, TXT and HTML** — all in one workspace.
 | **Alt+V** | Toggle Vault (Folder Explorer) |
 | **Ctrl+Alt+B**| Toggle Bookmarks Panel |
 | **Ctrl+D** | Bookmark current PDF page |
+| **F9** | Read Aloud / Toggle TTS Bar |
 | **Ctrl+T** | Open Web Browser Panel / New Web Tab |
 | **Alt+S** | Open Settings |
 

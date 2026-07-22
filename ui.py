@@ -139,16 +139,19 @@ class MainWindow(QMainWindow):
     def _setup_status_bar(self):
         status_bar = self.statusBar()
         status_bar.setSizeGripEnabled(False)
+        
+        from theme import get_active_accent
+        accent_color = get_active_accent()["accent"]
 
         self.status_left = QLabel("0 tabs · session saved")
-        self.status_left.setStyleSheet("color: #777777; font-family: monospace; font-size: 11px; padding-left: 8px;")
+        self.status_left.setStyleSheet(f"color: {accent_color}; font-family: monospace; font-size: 11px; padding-left: 8px; font-weight: bold;")
 
         self.status_center = QLabel("Ctrl+Q quick switch · Alt+V vault")
-        self.status_center.setStyleSheet("color: #777777; font-family: monospace; font-size: 11px;")
+        self.status_center.setStyleSheet(f"color: {accent_color}; font-family: monospace; font-size: 11px; font-weight: bold;")
         self.status_center.setAlignment(Qt.AlignCenter)
 
         self.status_right = QLabel("md · UTF-8")
-        self.status_right.setStyleSheet("color: #777777; font-family: monospace; font-size: 11px; padding-right: 12px;")
+        self.status_right.setStyleSheet(f"color: {accent_color}; font-family: monospace; font-size: 11px; padding-right: 12px; font-weight: bold;")
 
         status_bar.addWidget(self.status_left)
         status_bar.addWidget(self.status_center, 1)
@@ -253,7 +256,6 @@ class MainWindow(QMainWindow):
 
         vault_btn = QAction(icon("panel-left", size=ICON_SIZE_TOOLBAR), "Toggle Vault", self)
         vault_btn.setToolTip("Toggle Vault (Alt+V)")
-        vault_btn.setShortcut("Alt+V")
         vault_btn.triggered.connect(self.toggle_vault_panel)
         self.toolbar.addAction(vault_btn)
 
@@ -268,6 +270,12 @@ class MainWindow(QMainWindow):
         save_btn.setShortcut("Ctrl+S")
         save_btn.triggered.connect(self.save_file)
         self.toolbar.addAction(save_btn)
+        
+        tts_btn = QAction(icon("volume-2", size=ICON_SIZE_TOOLBAR), "Read Aloud", self)
+        tts_btn.setToolTip("Read Aloud / Toggle TTS (F9)")
+        tts_btn.setShortcut("F9")
+        tts_btn.triggered.connect(self.toggle_tts_bar)
+        self.toolbar.addAction(tts_btn)
 
         if WEB_AVAILABLE:
             web_btn = QAction(icon("globe", size=ICON_SIZE_TOOLBAR), "Web Panel", self)
@@ -639,7 +647,7 @@ class MainWindow(QMainWindow):
         vault_menu = menu.addMenu("Vault")
         vault_menu.addAction("Add Folder", self.add_vault)
         vault_menu.addAction("Remove Folder", self.vault_panel.remove_current_vault)
-        self._add_menu_action(vault_menu, "Toggle Panel", self.toggle_vault_panel, "Alt+V")
+        vault_menu.addAction("Toggle Panel", self.toggle_vault_panel)
 
         session_menu = menu.addMenu("Session")
         self._add_menu_action(session_menu, "Restore Tab", self.reopen_closed_tab, "Ctrl+Shift+T")

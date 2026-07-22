@@ -48,12 +48,12 @@ class FeedbackDialog(QDialog):
         cancel_btn = QPushButton("Cancel")
         cancel_btn.clicked.connect(self.reject)
         
-        submit_btn = QPushButton("Submit")
-        submit_btn.setObjectName("submitBtn")
-        submit_btn.clicked.connect(self.submit)
+        self.submit_btn = QPushButton("Submit")
+        self.submit_btn.setObjectName("submitBtn")
+        self.submit_btn.clicked.connect(self.submit)
         
         btn_layout.addWidget(cancel_btn)
-        btn_layout.addWidget(submit_btn)
+        btn_layout.addWidget(self.submit_btn)
         
         layout.addLayout(btn_layout)
         

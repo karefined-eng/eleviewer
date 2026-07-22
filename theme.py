@@ -56,6 +56,8 @@ def main_window_stylesheet():
         QToolBar {{ background-color: {BRAND_PANEL}; border-bottom: 1px solid {BRAND_BORDER}; padding: 8px; spacing: 15px; }}
         QToolButton {{ color: {BRAND_PRIMARY}; background-color: transparent; border: none; padding: 6px; border-radius: 4px; min-width: 28px; min-height: 28px; }}
         QToolButton:hover {{ background-color: {BRAND_PANEL_2}; }}
+        QToolButton:pressed {{ background-color: {accent['pressed']}; color: {BRAND_BACKGROUND}; }}
+        QToolButton:checked {{ background-color: {accent['accent']}; color: {BRAND_BACKGROUND}; }}
         QToolBar QToolButton {{ min-width: 70px; min-height: 52px; font-size: 11px; }}
         QTabWidget::pane {{ border: 1px solid {BRAND_BORDER}; background-color: {BRAND_PANEL}; }}
         QTabBar {{ background-color: #252526; border-bottom: 1px solid {BRAND_BORDER}; }}
@@ -187,6 +189,8 @@ def compact_toolbar_stylesheet():
             min-height: 28px;
         }}
         QToolButton:hover {{ background: {BRAND_PANEL_2}; }}
+        QToolButton:pressed {{ background: {get_active_accent()['pressed']}; color: {BRAND_BACKGROUND}; }}
+        QToolButton:checked {{ background: {get_active_accent()['accent']}; color: {BRAND_BACKGROUND}; }}
     """
 
 

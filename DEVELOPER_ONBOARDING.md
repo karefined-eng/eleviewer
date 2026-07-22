@@ -5,7 +5,7 @@ If you are reading this, you are contributing to **EleViewer**—a minimalist, m
 Before you write a single line of code, you must understand our philosophy.
 
 ## The Prime Directives
-1. **Zero Telemetry**: No analytics, no tracking, no hidden pings home. User data is sacred and lives locally.
+1. **Zero Telemetry**: No analytics, no tracking, no hidden pings home. User data is sacred and lives locally. (Note: Unhandled crashes are caught by a secure `sys.excepthook` which allows the user to *opt-in* to reporting the stack trace directly to our Vercel feedback API.)
 2. **Speed over Features**: If a feature requires a 5-second loading screen or a 200MB dependency, we don't build it. The app must run on old student laptops without lag.
 3. **Offline First**: The app must function 100% offline. The Web Panel is an *augmentative* feature, not a core dependency.
 
@@ -16,11 +16,11 @@ Before you write a single line of code, you must understand our philosophy.
 EleViewer relies heavily on standard PySide6 widgets and custom components to keep the footprint small.
 
 ### The Entry Point
-- `main.py`: Bootstraps the application, enforces single-instance locking (so clicking a file opens it in the *existing* window), and handles global unhandled exceptions securely.
+- `main.py`: Bootstraps the application, enforces single-instance locking (so clicking a file opens it in the *existing* window), and binds `sys.excepthook` to route global unhandled exceptions securely to the feedback dialog.
 
 ### UI & Shell
 - `ui.py`: The `MainWindow` class. Manages the tab widget, toolbars, and the side panels.
-- `theme.py`: **CRITICAL**. Do not hardcode hex colors in any UI file. Use the centralized constants (`BRAND_PRIMARY`, `BRAND_PANEL`, etc.) here to ensure the desktop app visually matches the website.
+- `theme.py`: **CRITICAL**. Do not hardcode hex colors in any UI file. Use the centralized constants (`BRAND_PRIMARY`, `BRAND_PANEL`, etc.) here to ensure the desktop app visually matches the website. Additionally, this module powers the **Dynamic UI Accents** (via `get_active_accent()`) which dynamically injects the user's chosen accent color into active states like `:pressed` and `:checked` buttons.
 
 ### Core File Factory
 - `file_handler.py`: The heart of the viewer. It reads a file extension and dynamically instantiates the correct viewer (e.g., `MarkdownViewer`, `XlsxViewer`, `PdfViewer`).
