@@ -433,7 +433,36 @@ class MainWindow(QMainWindow):
         index = self.tabs.addTab(editor, tab_icon, name)
         self.tabs.setCurrentIndex(index)
         self.update_status_bar()
+        
+        self._check_file_load_milestone()
+        
         return index
+
+    def _check_file_load_milestone(self):
+        settings = load_settings()
+        count = settings.get("files_opened", 0) + 1
+        settings["files_opened"] = count
+        save_settings(settings)
+        if count == 5:
+            self._show_whatsapp_invite()
+
+    def _show_whatsapp_invite(self):
+        msg = QMessageBox(self)
+        msg.setIcon(QMessageBox.Information)
+        msg.setWindowTitle("EleViewer - Nightly Insiders")
+        msg.setText("Enjoying EleViewer?")
+        msg.setInformativeText("Join our 'Nightly Insiders' WhatsApp Group to vote on next updates and chat directly with the developer!")
+        
+        join_btn = msg.addButton("Join WhatsApp Group", QMessageBox.ActionRole)
+        msg.addButton("Maybe Later", QMessageBox.RejectRole)
+        msg.setDefaultButton(join_btn)
+        
+        msg.exec()
+        
+        if msg.clickedButton() == join_btn:
+            from PySide6.QtGui import QDesktopServices
+            from PySide6.QtCore import QUrl
+            QDesktopServices.openUrl(QUrl("https://chat.whatsapp.com/FeofuieK0Ae51KdUZEvwTQ"))
 
     def closeEvent(self, event):
         has_modified = any(
