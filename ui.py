@@ -103,14 +103,14 @@ class MainWindow(QMainWindow):
         status_bar.setSizeGripEnabled(False)
 
         self.status_left = QLabel("0 tabs · session saved")
-        self.status_left.setStyleSheet("color: #9b9b96; font-size: 11px; padding-left: 8px;")
+        self.status_left.setStyleSheet("color: #777777; font-family: monospace; font-size: 11px; padding-left: 8px;")
 
         self.status_center = QLabel("Ctrl+Q quick switch · Alt+V vault")
-        self.status_center.setStyleSheet("color: #666666; font-size: 11px;")
+        self.status_center.setStyleSheet("color: #777777; font-family: monospace; font-size: 11px;")
         self.status_center.setAlignment(Qt.AlignCenter)
 
         self.status_right = QLabel("md · UTF-8")
-        self.status_right.setStyleSheet("color: #9b9b96; font-size: 11px; padding-right: 12px;")
+        self.status_right.setStyleSheet("color: #777777; font-family: monospace; font-size: 11px; padding-right: 12px;")
 
         status_bar.addWidget(self.status_left)
         status_bar.addWidget(self.status_center, 1)
