@@ -62,3 +62,5 @@ node_modules/
 .vercel/
 .vercel/output/
 PROJECT_LOG.md
+context/feature improvements.md
+.gitignore

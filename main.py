@@ -7,7 +7,17 @@ from ui import MainWindow
 from autosave import AutoSaver
 from instance_lock import SingleInstanceServer
 
-APP_VERSION = "1.2.0"
+import ctypes
+from PySide6.QtCore import QByteArray
+from settings import load_settings
+
+APP_VERSION = "1.3.0"
+
+# Set AppUserModelID so taskbar grouping and jump lists work correctly
+try:
+    ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(f"eleviewer.app.{APP_VERSION}")
+except Exception:
+    pass
 
 app = QApplication(sys.argv)
 
@@ -19,6 +29,14 @@ if not instance_server.try_to_start():
     sys.exit(0)
 
 window = MainWindow()
+
+settings = load_settings()
+launch_behavior = settings.get("launch_behavior", "remembered")
+if launch_behavior == "remembered" and settings.get("window_geometry"):
+    window.restoreGeometry(QByteArray.fromBase64(settings["window_geometry"].encode()))
+elif launch_behavior == "maximized":
+    window.showMaximized()
+
 window.autosaver = AutoSaver(window)
 
 # If another instance tries to start with a file, open it in this instance
@@ -31,5 +49,20 @@ if len(sys.argv) > 1:
         window._open_vault_file(file_path)
 
 window.show()
+
+if not settings.get("onboarding_completed", False):
+    from onboarding import OnboardingDialog
+    from settings import save_settings
+    from pathlib import Path
+    
+    dlg = OnboardingDialog(window)
+    dlg.exec()
+    
+    settings["onboarding_completed"] = True
+    save_settings(settings)
+    
+    welcome_file = Path("getting_started/Welcome to EleViewer.md").absolute()
+    if welcome_file.exists():
+        window.open_file(str(welcome_file))
 
 sys.exit(app.exec())

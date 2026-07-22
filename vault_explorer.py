@@ -16,7 +16,7 @@ from settings import (
 )
 from theme import (
     compact_toolbar_stylesheet, ICON_SIZE_COMPACT, ICON_SIZE_VAULT_TREE,
-    BRAND_PANEL, BRAND_PANEL_2, BRAND_PRIMARY, BRAND_BORDER, BRAND_ACCENT, BRAND_BACKGROUND
+    BRAND_PANEL, BRAND_PANEL_2, BRAND_PRIMARY, BRAND_BORDER, get_brand_accent, BRAND_BACKGROUND
 )
 
 SUPPORTED_EXTENSIONS = {".md", ".txt", ".pdf", ".docx", ".xlsx", ".csv"}
@@ -24,6 +24,8 @@ SUPPORTED_EXTENSIONS = {".md", ".txt", ".pdf", ".docx", ".xlsx", ".csv"}
 
 class VaultExplorer(QWidget):
     file_opened = Signal(str)
+    file_activated = Signal(str)
+    search_requested = Signal(str)
     vaults_changed = Signal()
 
     def __init__(self, parent=None):
@@ -54,7 +56,25 @@ class VaultExplorer(QWidget):
         self.btn_add.setStyleSheet(compact_toolbar_stylesheet())
         self.btn_add.setAutoRaise(True)
 
+        self.btn_refresh = QToolButton()
+        self.btn_refresh.setIconSize(icon_qsize)
+        self.btn_refresh.setIcon(icon("rotate-cw", size=icon_sz))
+        self.btn_refresh.setToolTip("Refresh vault")
+        self.btn_refresh.setStyleSheet(compact_toolbar_stylesheet())
+        self.btn_refresh.setAutoRaise(True)
+        self.btn_refresh.clicked.connect(self.refresh_active_vault)
+
+        self.btn_search = QToolButton()
+        self.btn_search.setIconSize(icon_qsize)
+        self.btn_search.setIcon(icon("search", size=icon_sz))
+        self.btn_search.setToolTip("Search vault")
+        self.btn_search.setStyleSheet(compact_toolbar_stylesheet())
+        self.btn_search.setAutoRaise(True)
+        self.btn_search.clicked.connect(self._emit_search)
+
         header_row.addWidget(self.vault_selector, stretch=1)
+        header_row.addWidget(self.btn_search)
+        header_row.addWidget(self.btn_refresh)
         header_row.addWidget(self.btn_add)
 
         self.tree = QTreeWidget()
@@ -70,7 +90,7 @@ class VaultExplorer(QWidget):
                 font-size: 13px;
             }}
             QTreeWidget::item {{ padding: 4px 2px; }}
-            QTreeWidget::item:selected {{ background: {BRAND_ACCENT}; color: {BRAND_BACKGROUND}; }}
+            QTreeWidget::item:selected {{ background: {get_brand_accent()}; color: {BRAND_BACKGROUND}; }}
             QTreeWidget::item:hover {{ background: {BRAND_PANEL_2}; }}
         """)
         self.tree.itemExpanded.connect(self._on_item_expanded)
@@ -136,12 +156,25 @@ class VaultExplorer(QWidget):
         set_active_vault_index(index)
         self._load_vault_tree(self._vault_paths[index])
 
+    def refresh_active_vault(self):
+        idx = self.vault_selector.currentIndex()
+        if idx >= 0:
+            self._on_vault_selected(idx)
+
+    def _emit_search(self):
+        vault_path = self.vault_selector.currentData()
+        if vault_path:
+            self.search_requested.emit(vault_path)
+
     def _load_vault_tree(self, path):
         self.tree.clear()
         root = Path(path)
         root_item = QTreeWidgetItem([root.name or str(root)])
         root_item.setData(0, Qt.UserRole, str(root))
         root_item.setData(0, Qt.UserRole + 1, "dir")
+        from icons import icon
+        from theme import ICON_SIZE_COMPACT
+        root_item.setIcon(0, icon("folder", size=ICON_SIZE_COMPACT))
         self.tree.addTopLevelItem(root_item)
         self._populate_dir(root_item, str(root))
         root_item.setExpanded(True)
@@ -157,6 +190,10 @@ class VaultExplorer(QWidget):
         except PermissionError:
             return
 
+        from icons import icon
+        from file_icons import file_type_icon
+        from theme import ICON_SIZE_COMPACT
+        
         for entry in entries:
             if entry.name.startswith("."):
                 continue
@@ -164,6 +201,7 @@ class VaultExplorer(QWidget):
                 child = QTreeWidgetItem([entry.name])
                 child.setData(0, Qt.UserRole, entry.path)
                 child.setData(0, Qt.UserRole + 1, "dir")
+                child.setIcon(0, icon("folder", size=ICON_SIZE_COMPACT))
                 parent_item.addChild(child)
                 placeholder = QTreeWidgetItem(["…"])
                 placeholder.setData(0, Qt.UserRole + 1, "placeholder")
@@ -172,6 +210,8 @@ class VaultExplorer(QWidget):
                 child = QTreeWidgetItem([entry.name])
                 child.setData(0, Qt.UserRole, entry.path)
                 child.setData(0, Qt.UserRole + 1, "file")
+                ext = Path(entry.name).suffix
+                child.setIcon(0, file_type_icon(ext, size=ICON_SIZE_COMPACT))
                 parent_item.addChild(child)
 
     def _on_item_expanded(self, item):

@@ -41,23 +41,33 @@ class SettingsDialog(QDialog):
         buttons.addWidget(save_btn)
         layout.addLayout(buttons)
 
-    def changeEvent(self, event):
-        """Auto-close (keeping existing settings) when the dialog loses focus."""
-        super().changeEvent(event)
-        if event.type() == QEvent.ActivationChange and not self.isActiveWindow():
-            self.reject()
+
 
     def _build_general_tab(self):
         w = QWidget()
         form = QFormLayout(w)
-        self.autosave_check = QCheckBox("Enable automatic background saving")
+        self.launch_combo = QComboBox()
+        self.launch_combo.addItems(["remembered", "maximized", "default"])
+        self.launch_combo.setCurrentText(self.settings.get("launch_behavior", "remembered"))
+        form.addRow("Launch window size:", self.launch_combo)
+        
+        self.theme_combo = QComboBox()
+        self.theme_combo.addItems(["blue", "purple", "green"])
+        self.theme_combo.setCurrentText(self.settings.get("theme_accent", "blue"))
+        form.addRow("Theme accent color:", self.theme_combo)
+
+        self.autosave_check = QCheckBox("Enable background auto-save to file")
         self.autosave_check.setChecked(self.settings.get("autosave_enabled", True))
         self.interval_spin = QSpinBox()
         self.interval_spin.setRange(2, 300)
         self.interval_spin.setSuffix(" sec")
         self.interval_spin.setValue(self.settings.get("autosave_interval_seconds", 5))
         form.addRow(self.autosave_check)
-        form.addRow("Autosave interval:", self.interval_spin)
+        form.addRow("Auto-save interval:", self.interval_spin)
+
+        self.draft_autosave_check = QCheckBox("Enable draft recovery buffer (power-loss safety net)")
+        self.draft_autosave_check.setChecked(self.settings.get("draft_autosave_enabled", True))
+        form.addRow(self.draft_autosave_check)
         return w
 
     def _build_editor_tab(self):
@@ -169,8 +179,11 @@ class SettingsDialog(QDialog):
             vaults.append(self.vault_list.item(i).text())
             
         self.settings.update({
+            "launch_behavior": self.launch_combo.currentText(),
+            "theme_accent": self.theme_combo.currentText(),
             "autosave_enabled": self.autosave_check.isChecked(),
             "autosave_interval_seconds": self.interval_spin.value(),
+            "draft_autosave_enabled": self.draft_autosave_check.isChecked(),
             "markdown_default_mode": self.md_mode_combo.currentText(),
             "markdown_icon_size": self.md_icon_spin.value(),
             "pdf_fit_mode": self.pdf_fit_combo.currentText(),

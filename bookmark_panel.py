@@ -10,7 +10,7 @@ from PySide6.QtCore import Signal, Qt, QSize
 
 from bookmark_manager import load_bookmarks, remove_bookmark, rename_bookmark
 from icons import icon
-from theme import compact_toolbar_stylesheet
+from theme import compact_toolbar_stylesheet, BRAND_PANEL, BRAND_PRIMARY, BRAND_MUTED, BRAND_MUTED_FG, get_brand_accent, BRAND_BACKGROUND
 
 
 class BookmarkItemWidget(QWidget):
@@ -98,20 +98,21 @@ class BookmarkPanel(QWidget):
         layout.setSpacing(4)
 
         header = QLabel("BOOKMARKS")
-        header.setStyleSheet("color: #888; font-size: 11px; font-weight: bold; padding: 4px;")
+        header.setStyleSheet(f"color: {BRAND_MUTED_FG}; font-size: 11px; font-weight: bold; padding: 4px;")
         layout.addWidget(header)
 
         self.list_widget = QListWidget()
-        self.list_widget.setStyleSheet("""
-            QListWidget {
-                background: #1e1e1e;
-                color: #e0e0e0;
+        accent = get_brand_accent()
+        self.list_widget.setStyleSheet(f"""
+            QListWidget {{
+                background: {BRAND_PANEL};
+                color: {BRAND_PRIMARY};
                 border: none;
                 font-size: 13px;
-            }
-            QListWidget::item { padding: 2px; }
-            QListWidget::item:selected { background: #094771; }
-            QListWidget::item:hover { background: #2a2d2e; }
+            }}
+            QListWidget::item {{ padding: 2px; }}
+            QListWidget::item:selected {{ background: {accent}; color: {BRAND_BACKGROUND}; }}
+            QListWidget::item:hover {{ background: {BRAND_MUTED}; }}
         """)
         self.list_widget.itemDoubleClicked.connect(self._on_item_double_clicked)
         self.list_widget.setContextMenuPolicy(Qt.CustomContextMenu)

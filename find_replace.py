@@ -4,7 +4,7 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Signal, Qt
 from icons import icon
-from theme import BRAND_PANEL_2, BRAND_BORDER, BRAND_PRIMARY
+from theme import BRAND_PANEL_2, BRAND_BORDER, BRAND_PRIMARY, BRAND_PANEL, BRAND_MUTED
 
 class FindReplaceWidget(QWidget):
     find_next_requested = Signal(str, bool, bool, bool)  # text, match_case, whole_word, forward
@@ -21,19 +21,19 @@ class FindReplaceWidget(QWidget):
                 border-top: 1px solid {BRAND_BORDER};
             }}
             QLineEdit {{
-                background: #1c1c1c;
+                background: {BRAND_PANEL};
                 border: 1px solid {BRAND_BORDER};
                 padding: 4px;
                 color: {BRAND_PRIMARY};
             }}
             QPushButton, QToolButton {{
-                background: #2a2a2a;
+                background: {BRAND_PANEL_2};
                 border: 1px solid {BRAND_BORDER};
                 padding: 4px 8px;
                 border-radius: 4px;
             }}
             QPushButton:hover, QToolButton:hover {{
-                background: #3a3a3a;
+                background: {BRAND_MUTED};
             }}
         """)
 
@@ -146,3 +146,9 @@ class FindReplaceWidget(QWidget):
             self.chk_case.isChecked(),
             self.chk_word.isChecked()
         )
+
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key_Escape:
+            self.hide_panel()
+        else:
+            super().keyPressEvent(event)
