@@ -97,6 +97,22 @@ class MainWindow(QMainWindow):
 
         self.tabs.currentChanged.connect(self.update_status_bar)
         self.update_status_bar()
+        self._check_for_updates_async()
+
+    def _check_for_updates_async(self):
+        try:
+            from updater import CheckUpdateThread
+            self._update_thread = CheckUpdateThread(current_version="1.2.0", parent=self)
+            self._update_thread.update_available.connect(self._on_update_found)
+            self._update_thread.start()
+        except Exception:
+            pass
+
+    def _on_update_found(self, tag_name, release_notes, download_url):
+        from updater import UpdateDialog
+        dlg = UpdateDialog(tag_name, release_notes, download_url, self)
+        dlg.exec()
+
 
     def _setup_status_bar(self):
         status_bar = self.statusBar()
@@ -449,11 +465,18 @@ class MainWindow(QMainWindow):
     def _show_whatsapp_invite(self):
         msg = QMessageBox(self)
         msg.setIcon(QMessageBox.Information)
-        msg.setWindowTitle("EleViewer - Nightly Insiders")
+        msg.setWindowTitle("EleViewer — Join Nightly Insiders 🚀")
         msg.setText("Enjoying EleViewer?")
-        msg.setInformativeText("Join our 'Nightly Insiders' WhatsApp Group to vote on next updates and chat directly with the developer!")
+        msg.setInformativeText(
+            "What is 'Nightly Insiders'?\n\n"
+            "It's our official early-access community! As a Nightly Insider, you get:\n"
+            "• Bleeding-edge unreleased feature previews\n"
+            "• Direct voting on upcoming app updates & features\n"
+            "• Instant feedback & chat directly with the developer\n\n"
+            "Would you like to join our WhatsApp Insiders group?"
+        )
         
-        join_btn = msg.addButton("Join WhatsApp Group", QMessageBox.ActionRole)
+        join_btn = msg.addButton("Join Nightly Insiders", QMessageBox.ActionRole)
         msg.addButton("Maybe Later", QMessageBox.RejectRole)
         msg.setDefaultButton(join_btn)
         
