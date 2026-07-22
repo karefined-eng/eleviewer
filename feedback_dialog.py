@@ -63,12 +63,36 @@ class FeedbackDialog(QDialog):
             QMessageBox.warning(self, "Error", "Description cannot be empty.")
             return
             
-        type_str = self.type_combo.currentText()
-        title = urllib.parse.quote(f"[{type_str}] Feedback from App")
-        body = urllib.parse.quote(f"**Version**: {APP_VERSION}\n**OS**: {sys.platform}\n\n**Description**:\n{desc}")
+        self.submit_btn.setText("Submitting...")
+        self.submit_btn.setEnabled(False)
+        self.repaint()
         
-        url = f"https://github.com/karefined-eng/eleviewer/issues/new?title={title}&body={body}"
-        QDesktopServices.openUrl(QUrl(url))
-        
-        QMessageBox.information(self, "Success", "Opened your browser to submit the issue on GitHub. Thank you!")
-        self.accept()
+        try:
+            import json
+            import urllib.request
+            
+            data = {
+                "type": self.type_combo.currentText(),
+                "description": desc,
+                "version": APP_VERSION,
+                "os_name": os.name,
+                "platform": sys.platform
+            }
+            
+            req = urllib.request.Request(
+                "https://eleviewer.vercel.app/api/feedback", 
+                data=json.dumps(data).encode('utf-8'),
+                headers={'Content-Type': 'application/json'}
+            )
+            
+            with urllib.request.urlopen(req, timeout=10) as response:
+                if response.status == 200:
+                    QMessageBox.information(self, "Success", "Your feedback was sent successfully! Thank you.")
+                    self.accept()
+                else:
+                    raise Exception(f"Server returned {response.status}")
+                    
+        except Exception as e:
+            QMessageBox.warning(self, "Network Error", f"Failed to send feedback securely to server.\n\nError: {str(e)}")
+            self.submit_btn.setText("Submit Feedback")
+            self.submit_btn.setEnabled(True)
