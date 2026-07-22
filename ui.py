@@ -98,6 +98,28 @@ class MainWindow(QMainWindow):
         self.tabs.currentChanged.connect(self.update_status_bar)
         self.update_status_bar()
         self._check_for_updates_async()
+        
+        # Global Esc shortcut for closing popups and sidebars
+        self.esc_shortcut = QShortcut(QKeySequence(Qt.Key_Escape), self)
+        self.esc_shortcut.activated.connect(self.handle_escape)
+
+    def handle_escape(self):
+        # Hide Find/Replace if open in current editor
+        current_widget = self.tabs.currentWidget()
+        if isinstance(current_widget, EditorTab):
+            if current_widget.find_replace_widget.isVisible():
+                current_widget.find_replace_widget.hide_panel()
+                return
+
+        # Hide Vault Sidebar if open
+        if self.vault_panel and self.vault_panel.isVisible():
+            self.vault_panel.hide()
+            return
+            
+        # Hide Bookmarks Sidebar if open
+        if self.bookmarks_panel and self.bookmarks_panel.isVisible():
+            self.bookmarks_panel.hide()
+            return
 
     def _check_for_updates_async(self):
         try:
@@ -249,7 +271,7 @@ class MainWindow(QMainWindow):
 
         if WEB_AVAILABLE:
             web_btn = QAction(icon("globe", size=ICON_SIZE_TOOLBAR), "Web Panel", self)
-            web_btn.setToolTip("Open Web Browser (Ctrl+T)")
+            web_btn.setToolTip("Open Web Browser Panel / New Web Tab (Ctrl+T)")
             web_btn.triggered.connect(self.open_web_tab)
             self.toolbar.addAction(web_btn)
 
@@ -275,7 +297,7 @@ class MainWindow(QMainWindow):
         menu.addAction("Open Folder", self.add_vault)
         self._add_menu_action(menu, "Toggle Vault", self.toggle_vault_panel, "Alt+V")
         menu.addSeparator()
-        self._add_menu_action(menu, "Restore Tab", self.reopen_closed_tab, "Ctrl+Shift+T")
+        self._add_menu_action(menu, "Reopen Closed Tab", self.reopen_closed_tab, "Ctrl+Shift+T")
         self._add_menu_action(menu, "Quick Switcher", self.open_quick_switcher, "Ctrl+Q")
         menu.addSeparator()
         self._add_menu_action(menu, "Settings...", self.open_settings, "Alt+S")

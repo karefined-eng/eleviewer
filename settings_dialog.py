@@ -20,6 +20,7 @@ class SettingsDialog(QDialog):
         self.settings = load_settings()
         # Close (reject / keep existing settings) when window loses focus
         self.setAttribute(Qt.WA_DeleteOnClose, False)
+        self.setWindowModality(Qt.ApplicationModal)
 
         layout = QVBoxLayout(self)
         tabs = QTabWidget()
