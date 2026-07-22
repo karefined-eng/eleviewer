@@ -11,9 +11,8 @@ BRAND_MUTED = "#232323"    # Muted background
 BRAND_MUTED_FG = "#9b9b96" # Gray text
 
 THEME_ACCENTS = {
-    "blue":   {"accent": "#6cb6ff", "accent_fg": "#0c1826", "hover": "#7dc5ff", "pressed": "#5aa7ff"},
-    "purple": {"accent": "#b39ddb", "accent_fg": "#1a1025", "hover": "#c4b0e8", "pressed": "#9575cd"},
-    "green":  {"accent": "#81c784", "accent_fg": "#0d1f0e", "hover": "#a5d6a7", "pressed": "#66bb6a"},
+    "blue": {"accent": "#6cb6ff", "accent_fg": "#0c1826", "hover": "#7dc5ff", "pressed": "#5aa7ff"},
+    "grey": {"accent": "#9b9b96", "accent_fg": "#131313", "hover": "#b5b5b0", "pressed": "#82827d"},
 }
 
 def get_active_accent():

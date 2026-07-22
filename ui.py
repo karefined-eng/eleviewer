@@ -140,18 +140,17 @@ class MainWindow(QMainWindow):
         status_bar = self.statusBar()
         status_bar.setSizeGripEnabled(False)
         
-        from theme import get_active_accent
-        accent_color = get_active_accent()["accent"]
+        from theme import BRAND_MUTED_FG
 
         self.status_left = QLabel("0 tabs · session saved")
-        self.status_left.setStyleSheet(f"color: {accent_color}; font-family: monospace; font-size: 11px; padding-left: 8px; font-weight: bold;")
+        self.status_left.setStyleSheet(f"color: {BRAND_MUTED_FG}; font-family: monospace; font-size: 11px; padding-left: 8px;")
 
         self.status_center = QLabel("Ctrl+Q quick switch · Alt+V vault")
-        self.status_center.setStyleSheet(f"color: {accent_color}; font-family: monospace; font-size: 11px; font-weight: bold;")
+        self.status_center.setStyleSheet(f"color: {BRAND_MUTED_FG}; font-family: monospace; font-size: 11px;")
         self.status_center.setAlignment(Qt.AlignCenter)
 
         self.status_right = QLabel("md · UTF-8")
-        self.status_right.setStyleSheet(f"color: {accent_color}; font-family: monospace; font-size: 11px; padding-right: 12px; font-weight: bold;")
+        self.status_right.setStyleSheet(f"color: {BRAND_MUTED_FG}; font-family: monospace; font-size: 11px; padding-right: 12px;")
 
         status_bar.addWidget(self.status_left)
         status_bar.addWidget(self.status_center, 1)
