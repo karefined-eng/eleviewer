@@ -377,9 +377,20 @@ class MainWindow(QMainWindow):
         dlg.exec()
 
     def open_review_page(self):
-        from PySide6.QtGui import QDesktopServices
-        from PySide6.QtCore import QUrl
-        QDesktopServices.openUrl(QUrl("https://eleviewer.vercel.app/review"))
+        if not WEB_AVAILABLE:
+            from PySide6.QtGui import QDesktopServices
+            from PySide6.QtCore import QUrl
+            QDesktopServices.openUrl(QUrl("https://eleviewer.vercel.app/review"))
+            return
+
+        if self._web_dock is None:
+            self.open_web_tab()
+            
+        if not self._web_dock.isVisible():
+            self._web_dock.setVisible(True)
+            
+        # Add the specific URL as a new tab in the web panel
+        self._web_dock.widget()._add_tab_widget("https://eleviewer.vercel.app/review", "Leave a Review")
 
     def show_status_message(self, message, timeout_ms=0):
         self.statusBar().showMessage(message, timeout_ms)
