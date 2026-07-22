@@ -53,7 +53,7 @@ class SettingsDialog(QDialog):
         form.addRow("Launch window size:", self.launch_combo)
         
         self.theme_combo = QComboBox()
-        self.theme_combo.addItems(["blue", "purple", "green"])
+        self.theme_combo.addItems(["blue", "grey"])
         self.theme_combo.setCurrentText(self.settings.get("theme_accent", "blue"))
         form.addRow("Theme accent color:", self.theme_combo)
 
