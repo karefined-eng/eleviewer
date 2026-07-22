@@ -4,7 +4,7 @@ from PySide6.QtWidgets import (
     QDockWidget, QLabel,
 )
 from PySide6.QtGui import QAction, QKeySequence, QShortcut
-from PySide6.QtCore import Qt, QSize
+from PySide6.QtCore import Qt, QSize, QTimer
 import os
 
 APP_VERSION = "1.3.0"

@@ -6,19 +6,31 @@
 
 A lightweight Windows document editor supporting **DOCX**, **XLSX**, **MD**, **TXT**, **CSV**, **HTML/HTM**, and **PDF**. Built with Python and PySide6.
 
-## ✨ Features
+## 📚 Features
 
-- **Multi-format Support**: Edit Word (.docx), Excel (.xlsx), Markdown (.md), HTML (.html/.htm), and Plain Text (.txt/.csv) files. View and interact with PDFs.
-- **Advanced Editing**: Rich formatting toolbar (Lucide icons), multi-tab interface, and draggable tabs.
-- **Markdown Editing**: Split-view HTML preview. Double-click the preview for a simple text edit, or triple-click for a raw syntax edit.
-- **PDF Viewer**: Vector rendering, high-DPI support, smart TOC sidebar, native Windows Text-to-Speech (read aloud), and persistent bookmarks.
-- **Vault Sidebar (Alt+V)**: Organize and open files directly from designated folder vaults. Caches seamlessly between sessions.
-- **Web Browser Panel (Ctrl+T)**: Side-by-side web browsing directly in the editor using native QtWebEngine. Tabs persist between sessions.
-- **Workspace Management**: Session restore, quick switcher (Ctrl+Q), pinned files, and recent files with automatic validation.
-- **Single-Instance Locking**: Opening a file when EleViewer is already running passes it to the existing window.
-- **Clean, Dark UI**: Professional dark luxury editorial aesthetic.
-- **Find & Replace**: Ctrl+F to find and Ctrl+H to replace across any text-based document.
-- **Autosave**: Automatic background saving with configurable intervals.
+### 📁 File Support
+Opens & edits **DOCX, XLSX, PDF, MD, TXT and HTML** — all in one workspace.
+
+### 🔊 Reading & Study Tools
+- **PDF text-to-speech** — reads lectures/PDFs aloud for hands-free studying.
+- **Persistent bookmarks** — never lose your place, even in 400-page textbooks.
+
+### 🗂️ Organization
+- **Vault sidebar** — one-click access to course folders (Alt+V).
+- **Quick switcher** — fuzzy file search like VSCode (Ctrl+Q).
+- **Session restore** — reopens all tabs right where you left off.
+- **Reopen closed tab** (Ctrl+Shift+T).
+
+### ✨ Extras
+- **Built-in web browser panel**, side-by-side with notes (Ctrl+T).
+- **Bookmarks panel toggle** (Ctrl+Alt+B).
+
+### 💻 Specs
+- 16 MB, single portable `.exe` — no install needed.
+- Windows 10/11.
+- No account, no telemetry — files stay local.
+- MIT licensed, open source (Python + PySide6).
+- Free forever, no ads.
 
 ## 🚀 Quick Start
 
