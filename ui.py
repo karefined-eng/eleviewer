@@ -107,13 +107,33 @@ class MainWindow(QMainWindow):
 
         self.status_center = QLabel("Ctrl+Q quick switch · Alt+V vault")
         self.status_center.setStyleSheet("color: #666666; font-size: 11px;")
+        self.status_center.setAlignment(Qt.AlignCenter)
 
         self.status_right = QLabel("md · UTF-8")
         self.status_right.setStyleSheet("color: #9b9b96; font-size: 11px; padding-right: 12px;")
 
-        status_bar.addWidget(self.status_left, 1)
+        status_bar.addWidget(self.status_left)
         status_bar.addWidget(self.status_center, 1)
         status_bar.addPermanentWidget(self.status_right)
+
+        self.shortcut_hints = [
+            "Ctrl+Q quick switch",
+            "Alt+V toggle vault",
+            "Ctrl+T web browser",
+            "Ctrl+D bookmark page",
+            "Ctrl+Shift+F search vault",
+            "Ctrl+Shift+T reopen tab",
+        ]
+        self.shortcut_index = 0
+        self.shortcut_timer = QTimer(self)
+        self.shortcut_timer.timeout.connect(self._rotate_shortcuts)
+        self.shortcut_timer.start(4000)
+        self._rotate_shortcuts()
+
+    def _rotate_shortcuts(self):
+        self.shortcut_index = (self.shortcut_index + 1) % len(self.shortcut_hints)
+        next_idx = (self.shortcut_index + 1) % len(self.shortcut_hints)
+        self.status_center.setText(f"{self.shortcut_hints[self.shortcut_index]}  ·  {self.shortcut_hints[next_idx]}")
 
     def _build_layout(self):
         self.main_splitter = QSplitter(Qt.Horizontal)
@@ -171,11 +191,6 @@ class MainWindow(QMainWindow):
         self.vault_panel.search_requested.connect(self.open_vault_search)
 
         self.setCentralWidget(self.main_splitter)
-
-        self.status_file_type = QLabel()
-        self.status_encoding = QLabel("UTF-8")
-        self.statusBar().addPermanentWidget(self.status_file_type)
-        self.statusBar().addPermanentWidget(self.status_encoding)
 
         for i in range(1, 10):
             QShortcut(QKeySequence(f"Ctrl+{i}"), self).activated.connect(
@@ -368,7 +383,8 @@ class MainWindow(QMainWindow):
         editor = self.current_editor()
         if not editor:
             self.setWindowTitle(f"EleViewer v{APP_VERSION}")
-            self.show_status_message("Ready")
+            self.status_left.setText("Ready")
+            self.status_right.setText("")
             return
         path = getattr(editor, "file_path", None)
         name = os.path.basename(path) if path else "Untitled"
@@ -382,13 +398,9 @@ class MainWindow(QMainWindow):
         
         parts = [f"{tab_count} tab{'s' if tab_count != 1 else ''}"]
         parts.append("Modified" if modified else "session saved")
-        shortcuts_hint = "Ctrl+Q quick switch · Alt+V vault"
         
-        left = " · ".join(parts)
-        self.show_status_message(f"{left}    {shortcuts_hint}")
-        
-        self.status_file_type.setText(f" {ext_label} ")
-        self.status_encoding.setText(" UTF-8 ")
+        self.status_left.setText(" · ".join(parts))
+        self.status_right.setText(f"{ext_label} · UTF-8")
 
     def _connect_editor_signals(self, editor):
         if hasattr(editor, "textChanged"):

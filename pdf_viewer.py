@@ -110,17 +110,22 @@ class PdfViewer(QWidget):
         icon_sz = ICON_SIZE_COMPACT
         icon_qsize = QSize(icon_sz, icon_sz)
 
-        def _tb(icon_name, tooltip, slot):
+        def _tb(icon_name, tooltip, slot, text=None):
             btn = QToolButton()
             btn.setIconSize(icon_qsize)
             btn.setIcon(icon(icon_name, size=icon_sz))
+            if text:
+                btn.setText(f" {text}")
+                btn.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+                btn.setStyleSheet(compact_toolbar_stylesheet() + " QToolButton { font-size: 11px; padding: 2px 6px; }")
+            else:
+                btn.setStyleSheet(compact_toolbar_stylesheet())
             btn.setToolTip(tooltip)
-            btn.setStyleSheet(compact_toolbar_stylesheet())
             btn.setAutoRaise(True)
             btn.clicked.connect(slot)
             return btn
 
-        self.btn_toc      = _tb("list",         "Toggle Table of Contents", self._toggle_toc)
+        self.btn_toc      = _tb("list",         "Table of Contents", self._toggle_toc, "Contents")
         self.btn_prev     = _tb("chevron-left",  "Previous page",           self.prev_page)
         self.btn_next     = _tb("chevron-right", "Next page",               self.next_page)
 
@@ -138,13 +143,14 @@ class PdfViewer(QWidget):
         self.lbl_total.setStyleSheet("color:#9b9b96; font-weight:bold; padding:0 6px 0 2px; font-size:12px;")
 
         self.btn_zoom_out  = _tb("zoom-out",   "Zoom out",                lambda: self._apply_zoom(1 / 1.2))
-        self.btn_fit_page  = _tb("minimize-2", "Fit page",                self.fit_page)
-        self.btn_fit_width = _tb("maximize-2", "Fit width",               self.fit_to_width)
+        self.btn_fit_page  = _tb("maximize",   "Fit to page",             self.fit_page)
+        self.btn_fit_width = _tb("monitor",    "Fit to width",            self.fit_to_width)
         self.btn_zoom_in   = _tb("zoom-in",    "Zoom in",                 lambda: self._apply_zoom(1.2))
-        self.btn_multi     = _tb("columns-2",  "Toggle continuous scroll", self._toggle_multi_page)
-        self.btn_bookmark  = _tb("book-open",  "Bookmark this page",      self._add_bookmark_here)
+        self.btn_multi     = _tb("columns",    "Two-page view",           self._toggle_multi_page)
+        self.btn_bookmark  = _tb("bookmark",   "Bookmark this page",      self._add_bookmark_here, "Bookmark")
 
         toolbar.addWidget(self.btn_toc)
+        toolbar.addSpacing(8)
         toolbar.addWidget(self.btn_prev)
         toolbar.addWidget(self.page_input)
         toolbar.addWidget(self.lbl_total)
@@ -154,6 +160,7 @@ class PdfViewer(QWidget):
         toolbar.addWidget(self.btn_fit_page)
         toolbar.addWidget(self.btn_fit_width)
         toolbar.addWidget(self.btn_zoom_in)
+        toolbar.addSpacing(8)
         toolbar.addWidget(self.btn_multi)
         toolbar.addWidget(self.btn_bookmark)
 
@@ -376,7 +383,7 @@ class PdfViewer(QWidget):
             self.pdf_view.setPageMode(QPdfView.PageMode.MultiPage)
         else:
             self.pdf_view.setPageMode(QPdfView.PageMode.SinglePage)
-        style = "background:#3c3c3c;" if self._multi_page else ""
+        style = " QToolButton { background:#3c3c3c; font-size: 11px; padding: 2px 6px; }" if self._multi_page else " QToolButton { font-size: 11px; padding: 2px 6px; }"
         self.btn_multi.setStyleSheet(compact_toolbar_stylesheet() + style)
 
     # ── Navigation ───────────────────────────────────────────────────
