@@ -6,7 +6,9 @@ from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel, QComboBox, QTextEdit, 
     QPushButton, QMessageBox
 )
-from PySide6.QtCore import Qt
+from PySide6.QtGui import QDesktopServices
+from PySide6.QtCore import Qt, QUrl
+import urllib.parse
 from theme import BRAND_BACKGROUND, BRAND_PANEL, BRAND_BORDER, BRAND_PRIMARY, get_brand_accent
 from paths import APP_DATA_DIR
 from main import APP_VERSION
@@ -61,21 +63,12 @@ class FeedbackDialog(QDialog):
             QMessageBox.warning(self, "Error", "Description cannot be empty.")
             return
             
-        feedback_dir = APP_DATA_DIR / "feedback"
-        feedback_dir.mkdir(parents=True, exist_ok=True)
+        type_str = self.type_combo.currentText()
+        title = urllib.parse.quote(f"[{type_str}] Feedback from App")
+        body = urllib.parse.quote(f"**Version**: {APP_VERSION}\n**OS**: {sys.platform}\n\n**Description**:\n{desc}")
         
-        data = {
-            "timestamp": datetime.now().isoformat(),
-            "type": self.type_combo.currentText(),
-            "description": desc,
-            "version": APP_VERSION,
-            "os": os.name,
-            "platform": sys.platform
-        }
+        url = f"https://github.com/karefined-eng/eleviewer/issues/new?title={title}&body={body}"
+        QDesktopServices.openUrl(QUrl(url))
         
-        filename = f"feedback_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
-        with open(feedback_dir / filename, "w", encoding="utf-8") as f:
-            json.dump(data, f, indent=4)
-            
-        QMessageBox.information(self, "Success", "Thank you! Your feedback has been saved locally.")
+        QMessageBox.information(self, "Success", "Opened your browser to submit the issue on GitHub. Thank you!")
         self.accept()
