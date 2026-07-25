@@ -12,7 +12,7 @@ from PySide6.QtWidgets import (
 
 REPO_OWNER = "karefined-eng"
 REPO_NAME = "eleviewer"
-CURRENT_VERSION = "1.0.0"  # Fallback current version
+CURRENT_VERSION = "1.3.0"  # Fallback current version
 
 def parse_version(v_str: str):
     """Clean version string like 'v1.3.0' -> (1, 3, 0)."""
