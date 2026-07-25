@@ -449,20 +449,27 @@ class PdfViewer(QWidget):
 
     # ── TTS ──────────────────────────────────────────────────────────
 
-    def read_current_page(self):
+    def read_current_page(self, voice_id=None):
         if not self.pdf_doc_qt or not TTS_AVAILABLE:
             if self._status_callback:
                 self._status_callback("TTS unavailable or document not loaded", 4000)
-            return
-        text = self.pdf_doc_qt.getAllText(self.current_page).text().strip()
+            return ""
+        try:
+            selection = self.pdf_doc_qt.getAllText(self.current_page)
+            text = selection.text().strip() if hasattr(selection, "text") else ""
+        except Exception as e:
+            print(f"[PDF] Text extraction error: {e}")
+            text = ""
+
         if not text:
             if self._status_callback:
                 self._status_callback("No readable text on this page", 3000)
-            return
-        voice_id = self.voice_combo.currentData()
-        self.tts.speak(text, voice_id=voice_id or None)
+            return ""
+
+        self.tts.speak(text, voice_id=voice_id)
         if self._status_callback:
-            self._status_callback("Reading page aloud...", 2000)
+            self._status_callback(f"Reading page {self.current_page + 1} aloud...", 2000)
+        return text
 
     # ── Compatibility stubs ──────────────────────────────────────────
 

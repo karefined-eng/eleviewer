@@ -99,6 +99,44 @@ class TtsReaderBar(QFrame):
         self.btn_close.clicked.connect(self._on_close)
         layout.addWidget(self.btn_close)
 
+    def apply_style(self, active=False):
+        accent = get_active_accent()["accent"]
+        bg = "#121e2b" if active else BRAND_PANEL
+        border = f"1.5px solid {accent}" if active else f"1px solid {BRAND_BORDER}"
+        self.setStyleSheet(f"""
+            QFrame#TtsReaderBar {{
+                background-color: {bg};
+                border: {border};
+                border-radius: 8px;
+                padding: 2px 8px;
+            }}
+            QLabel {{
+                color: {BRAND_PRIMARY};
+                font-size: 12px;
+            }}
+            QComboBox {{
+                background-color: #262626;
+                color: {BRAND_PRIMARY};
+                border: 1px solid {BRAND_BORDER};
+                border-radius: 4px;
+                padding: 2px 6px;
+                font-size: 11px;
+                min-width: 130px;
+            }}
+            QToolButton {{
+                background: transparent;
+                border: none;
+                border-radius: 4px;
+                padding: 3px;
+            }}
+            QToolButton:hover {{
+                background-color: #2a2a2a;
+            }}
+        """)
+
+    def set_active_reading(self, is_reading=True):
+        self.apply_style(active=is_reading)
+
     def populate_voices(self, voices):
         """Populate the voice combo box with (voice_id, name) tuples."""
         self.voice_combo.blockSignals(True)
@@ -107,13 +145,16 @@ class TtsReaderBar(QFrame):
             self.voice_combo.addItem(name, vid)
         self.voice_combo.blockSignals(False)
 
-    def set_status(self, filename: str, page_info: str = ""):
+    def set_status(self, filename: str, page_info: str = "", is_reading: bool = True):
         """Update status label, e.g. 'Reading aloud: lecture-04.pdf — page 12 of 38'."""
+        accent = get_active_accent()["accent"]
+        prefix = "Reading aloud:" if is_reading else "Text-To-Speech:"
         if page_info:
-            msg = f"Reading aloud: <span style='color:#ffffff; font-weight:bold;'>{filename}</span> — <span style='color:#a0a0a0;'>{page_info}</span>"
+            msg = f"<span style='color:{accent}; font-weight:bold;'>{prefix}</span> <span style='color:#ffffff; font-weight:bold;'>{filename}</span> — <span style='color:#a0a0a0;'>{page_info}</span>"
         else:
-            msg = f"Reading aloud: <span style='color:#ffffff; font-weight:bold;'>{filename}</span>"
+            msg = f"<span style='color:{accent}; font-weight:bold;'>{prefix}</span> <span style='color:#ffffff; font-weight:bold;'>{filename}</span>"
         self.status_label.setText(msg)
+        self.set_active_reading(is_reading)
 
     def get_selected_voice_id(self):
         return self.voice_combo.currentData()
@@ -125,5 +166,6 @@ class TtsReaderBar(QFrame):
 
     def _on_close(self):
         self.stop_requested.emit()
+        self.set_active_reading(False)
         self.hide()
         self.closed.emit()

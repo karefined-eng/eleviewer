@@ -119,10 +119,23 @@ if not settings.get("onboarding_completed", False):
     dlg.exec()
     
     settings["onboarding_completed"] = True
+    settings["last_run_version"] = APP_VERSION
     save_settings(settings)
     
     welcome_file = Path("getting_started/Welcome to EleViewer.md").absolute()
     if welcome_file.exists():
         window.open_file(str(welcome_file))
+else:
+    # Check for updates to show What's New
+    last_ver = settings.get("last_run_version", "0.0.0")
+    if last_ver != APP_VERSION:
+        from whats_new import WhatsNewDialog
+        from settings import save_settings
+        
+        dlg = WhatsNewDialog(window)
+        dlg.exec()
+        
+        settings["last_run_version"] = APP_VERSION
+        save_settings(settings)
 
 sys.exit(app.exec())

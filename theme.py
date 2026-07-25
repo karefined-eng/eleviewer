@@ -59,10 +59,10 @@ def main_window_stylesheet():
         QToolButton:checked {{ background-color: {accent['accent']}; color: {BRAND_BACKGROUND}; }}
         QToolBar QToolButton {{ min-width: 70px; min-height: 52px; font-size: 11px; }}
         QTabWidget::pane {{ border: 1px solid {BRAND_BORDER}; background-color: {BRAND_PANEL}; }}
-        QTabBar {{ background-color: #252526; border-bottom: 1px solid {BRAND_BORDER}; }}
-        QTabBar::tab {{ background-color: #2d2d2d; color: #999999; padding: 7px 14px; margin-right: 1px; font-size: 12px; font-family: 'Segoe UI', sans-serif; border-top: 2px solid transparent; }}
+        QTabBar {{ background-color: #1a1a1a; border-bottom: 1px solid {BRAND_BORDER}; }}
+        QTabBar::tab {{ background-color: #242424; color: {BRAND_MUTED_FG}; padding: 7px 16px; margin-right: 2px; font-size: 12px; font-family: 'Segoe UI', sans-serif; border-top: 2px solid transparent; border-top-left-radius: 4px; border-top-right-radius: 4px; }}
         QTabBar::tab:selected {{ background-color: {BRAND_BACKGROUND}; color: #ffffff; font-weight: bold; border-top: 2px solid {accent['accent']}; }}
-        QTabBar::tab:hover:!selected {{ background-color: #333333; color: #e0e0e0; }}
+        QTabBar::tab:hover:!selected {{ background-color: #2a2a2a; color: #e0e0e0; }}
         QTextEdit, QPlainTextEdit {{ background-color: {BRAND_PANEL}; color: {BRAND_PRIMARY}; border: none; padding: 15px; font-family: 'Consolas', monospace; font-size: 14px; }}
         QMenuBar {{ background-color: {BRAND_BACKGROUND}; color: {BRAND_PRIMARY}; border-bottom: 1px solid {BRAND_BORDER}; font-size: 13px; }}
         QMenuBar::item {{ padding: 5px 10px; }}

@@ -5,7 +5,7 @@
 [Setup]
 AppName=EleViewer
 AppVersion=1.3.0
-AppPublisher=Elevon (ka.refined)
+AppPublisher=karefined-eng
 AppPublisherURL=https://eleviewer.vercel.app
 AppSupportURL=https://github.com/karefined-eng/eleviewer/issues
 AppUpdatesURL=https://github.com/karefined-eng/eleviewer/releases
@@ -26,7 +26,7 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
-Name: "associate"; Description: "Register as default editor for .md, .pdf, .txt, .docx, .xlsx"; GroupDescription: "File Associations"
+Name: "associate"; Description: "Register as default editor for .md, .pdf, .docx, .xlsx, .pptx, .csv, .txt"; GroupDescription: "File Associations"
 Name: "contextmenu"; Description: "Add 'Open with EleViewer' to right-click menu"; GroupDescription: "Windows Explorer"
 
 [Files]
@@ -55,3 +55,21 @@ Root: HKCR; Subkey: ".pdf"; ValueType: string; ValueName: ""; ValueData: "EleVie
 Root: HKCR; Subkey: "EleViewer.PDF"; ValueType: string; ValueName: ""; ValueData: "PDF Document"; Flags: uninsdeletekey; Tasks: associate
 Root: HKCR; Subkey: "EleViewer.PDF\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: "{app}\EleViewer.exe,0"; Tasks: associate
 Root: HKCR; Subkey: "EleViewer.PDF\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\EleViewer.exe"" ""%1"""; Tasks: associate
+
+; File Associations (.docx)
+Root: HKCR; Subkey: ".docx"; ValueType: string; ValueName: ""; ValueData: "EleViewer.Docx"; Flags: uninsdeletevalue; Tasks: associate
+Root: HKCR; Subkey: "EleViewer.Docx"; ValueType: string; ValueName: ""; ValueData: "Word Document"; Flags: uninsdeletekey; Tasks: associate
+Root: HKCR; Subkey: "EleViewer.Docx\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: "{app}\EleViewer.exe,0"; Tasks: associate
+Root: HKCR; Subkey: "EleViewer.Docx\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\EleViewer.exe"" ""%1"""; Tasks: associate
+
+; File Associations (.xlsx)
+Root: HKCR; Subkey: ".xlsx"; ValueType: string; ValueName: ""; ValueData: "EleViewer.Xlsx"; Flags: uninsdeletevalue; Tasks: associate
+Root: HKCR; Subkey: "EleViewer.Xlsx"; ValueType: string; ValueName: ""; ValueData: "Excel Spreadsheet"; Flags: uninsdeletekey; Tasks: associate
+Root: HKCR; Subkey: "EleViewer.Xlsx\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: "{app}\EleViewer.exe,0"; Tasks: associate
+Root: HKCR; Subkey: "EleViewer.Xlsx\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\EleViewer.exe"" ""%1"""; Tasks: associate
+
+; File Associations (.pptx)
+Root: HKCR; Subkey: ".pptx"; ValueType: string; ValueName: ""; ValueData: "EleViewer.Pptx"; Flags: uninsdeletevalue; Tasks: associate
+Root: HKCR; Subkey: "EleViewer.Pptx"; ValueType: string; ValueName: ""; ValueData: "PowerPoint Presentation"; Flags: uninsdeletekey; Tasks: associate
+Root: HKCR; Subkey: "EleViewer.Pptx\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: "{app}\EleViewer.exe,0"; Tasks: associate
+Root: HKCR; Subkey: "EleViewer.Pptx\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\EleViewer.exe"" ""%1"""; Tasks: associate
