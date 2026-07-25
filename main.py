@@ -28,6 +28,19 @@ def global_exception_handler(exc_type, exc_value, exc_traceback):
     tb_lines = traceback.format_exception(exc_type, exc_value, exc_traceback)
     tb_text = "".join(tb_lines)
     
+    # SECURITY: Strip PII (User's home directory path) from the traceback
+    try:
+        user_home = os.path.expanduser("~")
+        tb_text = tb_text.replace(user_home, "~")
+    except Exception:
+        pass
+        
+    # Automatic clipboard log grabber
+    clipboard = QApplication.clipboard()
+    if clipboard:
+        clipboard.setText(f"--- EleViewer Crash Report ---\n{tb_text}")
+
+    
     # Log exception to APP_DATA_DIR / logs / app.log
     try:
         from paths import APP_DATA_DIR
@@ -48,7 +61,7 @@ def global_exception_handler(exc_type, exc_value, exc_traceback):
     msg.setIcon(QMessageBox.Critical)
     msg.setWindowTitle("EleViewer - Fatal Error")
     msg.setText("Oops! EleViewer encountered a critical error and needs to close.")
-    msg.setInformativeText("Would you like to send this crash report securely to the developer so it can be fixed?")
+    msg.setInformativeText("To help fix this, the error log has been automatically copied to your clipboard.\n\nWould you like to send this crash report securely to the developer (No PII is included)?")
     msg.setDetailedText(tb_text)
     
     send_btn = msg.addButton("Send Report", QMessageBox.ActionRole)

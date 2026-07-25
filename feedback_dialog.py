@@ -98,6 +98,14 @@ class FeedbackDialog(QDialog):
             QMessageBox.warning(self, "Error", "Description cannot be empty.")
             return
             
+        # SECURITY: Strip PII (User's home directory path) from the description
+        try:
+            import os
+            user_home = os.path.expanduser("~")
+            desc = desc.replace(user_home, "~")
+        except Exception:
+            pass
+            
         self.submit_btn.setText("Submitting...")
         self.submit_btn.setEnabled(False)
         
