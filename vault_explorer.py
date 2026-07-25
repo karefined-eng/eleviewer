@@ -184,11 +184,19 @@ class VaultExplorer(QWidget):
             return True
         return Path(name).suffix.lower() in SUPPORTED_EXTENSIONS
 
+    # SECURITY: canonicalize paths to prevent symlink traversal
     def _populate_dir(self, parent_item, dir_path):
         try:
             entries = sorted(os.scandir(dir_path), key=lambda e: (not e.is_dir(), e.name.lower()))
         except PermissionError:
             return
+
+        vault_root_resolved = None
+        if self._vault_paths and 0 <= self._active_index < len(self._vault_paths):
+            try:
+                vault_root_resolved = Path(self._vault_paths[self._active_index]).resolve()
+            except Exception:
+                vault_root_resolved = None
 
         from icons import icon
         from file_icons import file_type_icon
@@ -197,6 +205,14 @@ class VaultExplorer(QWidget):
         for entry in entries:
             if entry.name.startswith("."):
                 continue
+            if vault_root_resolved:
+                try:
+                    resolved_entry = Path(entry.path).resolve()
+                    if not str(resolved_entry).startswith(str(vault_root_resolved)):
+                        continue
+                except Exception:
+                    continue
+
             if entry.is_dir():
                 child = QTreeWidgetItem([entry.name])
                 child.setData(0, Qt.UserRole, entry.path)

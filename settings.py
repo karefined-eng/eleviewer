@@ -2,6 +2,7 @@ import json
 import os
 
 from paths import SETTINGS_FILE_PATH
+from save_utils import atomic_write
 from theme import ICON_SIZE_MARKDOWN
 
 DEFAULT_WEB_TABS = [
@@ -62,9 +63,9 @@ def load_settings():
         return DEFAULT_SETTINGS.copy()
 
 
+# FIX: atomic write prevents 0-byte corruption on crash
 def save_settings(settings):
-    with open(SETTINGS_FILE_PATH, "w", encoding="utf-8") as f:
-        json.dump(settings, f, indent=4)
+    atomic_write(SETTINGS_FILE_PATH, json.dumps(settings, indent=4))
 
 
 def get_vault_paths():

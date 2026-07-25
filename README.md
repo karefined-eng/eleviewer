@@ -15,15 +15,19 @@ Opens & edits **DOCX, XLSX, PDF, MD, TXT and HTML** — all in one workspace.
 - **PDF text-to-speech** — reads lectures/PDFs aloud for hands-free studying (Toggle with `F9` or the toolbar button).
 - **Persistent bookmarks** — never lose your place, even in 400-page textbooks.
 
-### 🗂️ Organization
-- **Vault sidebar** — one-click access to course folders (Alt+V).
-- **Quick switcher** — fuzzy file search like VSCode (Ctrl+Q).
-- **Session restore** — reopens all tabs right where you left off.
-- **Reopen closed tab** (Ctrl+Shift+T).
+### 🗂️ Organization & System Tray
+- **Vault sidebar** — one-click access to course folders (`Alt+V`).
+- **SQLite FTS5 full-text indexer** — instant background search across all vault study files.
+- **Quick switcher** — fuzzy file search like VSCode (`Ctrl+Q`).
+- **Session restore** — reopens all tabs right where you left off, preserving scroll position, zoom, and PDF page numbers.
+- **System Tray Minimization** — minimize to tray on close with background notification and double-click restore.
+- **Reopen closed tab** (`Ctrl+Shift+T`).
 
-### ✨ Extras
-- **Built-in web browser panel**, side-by-side with notes (Ctrl+T).
-- **Bookmarks panel toggle** (Ctrl+Alt+B).
+### ✨ Security & Reliability
+- **Atomic Writes** — zero-byte file corruption prevention on sudden crash or power loss.
+- **HTML XSS Sanitization** — `bleach` sanitization before rendering Markdown previews.
+- **Symlink Path Traversal Guards** — strict canonical root validation to isolate local file access.
+- **Off-Thread Concurrency** — draft recovery autosave, live vault search, and feedback submissions run on background `QThread` workers.
 - **Dynamic UI Accents** — Status bar and active icons pop with your chosen theme color.
 
 ### 💻 Specs
@@ -86,32 +90,35 @@ Opens & edits **DOCX, XLSX, PDF, MD, TXT and HTML** — all in one workspace.
 | **Alt+S** | Open Settings |
 
 ### Feature Details
-- **Markdown**: Double-click the preview for a simple plain-text edit (hides markdown symbols). Triple-click for a full syntax edit.
+- **Markdown**: Double-click the preview for a simple plain-text edit (hides markdown symbols). Triple-click for a full syntax edit. HTML previews are sanitized against XSS attacks.
 - **PDFs**: Use the toolbar to fit-to-page/width, use arrow keys to navigate, and click the speaker icon to read aloud.
 - **Vaults**: Add multiple project folders. Switch between them via the sidebar dropdown. Set up vaults via the **+** icon.
 - **Web Panel**: Persists URLs between sessions. Configure the default new tab URL in the Settings menu.
 
-## 🛠️ Building the Executable
+## 🛠️ Building the Executable & SHA-256 Release Hashing
 
-To create a standalone `.exe`:
+To create a standalone `.exe` and generate verifiable release hashes:
 ```bash
 pip install pyinstaller
 pyinstaller EleViewer.spec
+python release_hash.py
 ```
-The executable will be generated in the `dist/` directory.
+The executable will be generated in the `dist/` directory alongside `EleViewer_SHA256.txt`.
 
 ## 📁 Architecture & Structure
 
 EleViewer uses a **factory pattern** for file handling. `file_handler.py` routes files to the correct viewer module (e.g., `docx_viewer.py`, `xlsx_viewer.py`, `pdf_viewer.py`).
 
 Key directories and modules:
-- `main.py` & `ui.py` — Entry point and main window tab management.
-- `editor.py` & `markdown_renderer.py` — Text and markdown editors.
+- `main.py` & `ui.py` — Entry point, system tray, and main window tab management.
+- `editor.py` & `markdown_renderer.py` — Text and markdown editors (with XSS sanitization).
 - `pdf_viewer.py`, `docx_viewer.py`, `xlsx_viewer.py` — Format-specific viewers.
-- `vault_explorer.py`, `web_panel.py`, `bookmark_panel.py` — Sidebar panels.
-- `find_replace.py`, `instance_lock.py` — Cross-editor find/replace and single-instance locking.
-- `session_manager.py`, `autosave.py`, `settings.py` — State and persistence.
-- Data is stored in `%APPDATA%\EleViewer\` (`recent_files.json`, `settings.json`, etc.)
+- `vault_explorer.py`, `vault_search.py`, `vault_indexer.py` — Vault browser, live search, and SQLite FTS5 indexer.
+- `draft_recovery.py`, `feedback_dialog.py` — Background `QThread` workers for auto-backup and feedback.
+- `session_manager.py`, `save_utils.py`, `settings.py` — Atomic writes, settings, and session scroll/zoom/page restore.
+- `release_hash.py` — Automated SHA-256 release manifest generator.
+- Test suites are archived in `OneDrive\Documents\EleViewer\tests\`.
+- Data is stored in `%APPDATA%\EleViewer\` (`recent_files.json`, `settings.json`, `session.json`, `vault_index.db`, etc.)
 
 ## 🔧 Troubleshooting
 

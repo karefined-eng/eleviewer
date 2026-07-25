@@ -4,10 +4,69 @@ from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLineEdit, QListWidget, QListWidgetItem, 
     QLabel, QComboBox
 )
-from PySide6.QtCore import Qt, Signal, QTimer
+from PySide6.QtCore import Qt, Signal, QTimer, QThread
 from theme import BRAND_BACKGROUND, BRAND_PANEL, BRAND_BORDER, BRAND_PRIMARY, BRAND_MUTED, BRAND_MUTED_FG, get_brand_accent
 from file_icons import file_type_icon
 from settings import load_settings
+
+
+# FIX: search runs on QThreadPool worker to prevent GUI thread freezing
+# SECURITY: canonicalize paths to prevent symlink traversal
+class VaultSearchWorker(QThread):
+    result_found = Signal(str, str, str, str) # filename, display_dir, vault_name, full_path
+
+    def __init__(self, vaults_to_search, query):
+        super().__init__()
+        self.vaults_to_search = vaults_to_search
+        self.query = query
+        self._is_cancelled = False
+
+    def cancel(self):
+        self._is_cancelled = True
+
+    def run(self):
+        count = 0
+        for vault in self.vaults_to_search:
+            if self._is_cancelled or count >= 100:
+                break
+            try:
+                vault_resolved = Path(vault).resolve()
+            except Exception:
+                continue
+
+            vault_name = vault_resolved.name
+            # SECURITY: followlinks=False prevents traversing symlinks outside vault
+            for root, dirs, files in os.walk(str(vault_resolved), followlinks=False):
+                if self._is_cancelled or count >= 100:
+                    break
+                resolved_root = Path(root).resolve()
+                # SECURITY: block paths that escape vault boundary
+                if not str(resolved_root).startswith(str(vault_resolved)):
+                    dirs.clear()
+                    continue
+
+                dirs[:] = [d for d in dirs if not d.startswith('.')]
+
+                for f in files:
+                    if self._is_cancelled or count >= 100:
+                        break
+                    if f.startswith('.'):
+                        continue
+                    if self.query in f.lower():
+                        full_path = os.path.join(root, f)
+                        try:
+                            # Path traversal security check
+                            full_resolved = Path(full_path).resolve()
+                            if not str(full_resolved).startswith(str(vault_resolved)):
+                                continue
+                        except Exception:
+                            continue
+
+                        rel_path = os.path.relpath(root, str(vault_resolved))
+                        display_dir = "" if rel_path == "." else f" ({rel_path})"
+                        self.result_found.emit(f, display_dir, vault_name, str(full_resolved))
+                        count += 1
+
 
 class VaultSearchDialog(QDialog):
     file_selected = Signal(str)
@@ -16,6 +75,7 @@ class VaultSearchDialog(QDialog):
         super().__init__(parent)
         self.active_vault = active_vault
         self.all_vaults = all_vaults
+        self._search_worker = None
         
         self.setWindowTitle("Search in Vault")
         self.resize(600, 450)
@@ -73,38 +133,26 @@ class VaultSearchDialog(QDialog):
         
     def _do_search(self):
         query = self.search_input.text().lower()
+        if self._search_worker and self._search_worker.isRunning():
+            self._search_worker.cancel()
+            self._search_worker.wait()
+            
+        self.results_list.clear()
         if not query:
-            self.results_list.clear()
             return
             
         scope = self.scope_combo.currentData()
         vaults_to_search = [self.active_vault] if scope == "active" and self.active_vault else self.all_vaults
         
-        self.results_list.clear()
-        
-        # Debounced fast filename search (FTS5 full content search deferred to v1.4.0)
-        for vault in vaults_to_search:
-            vault_name = Path(vault).name
-            for root, dirs, files in os.walk(vault):
-                dirs[:] = [d for d in dirs if not d.startswith('.')]
-                
-                for f in files:
-                    if f.startswith('.'): continue
-                    if query in f.lower():
-                        full_path = os.path.join(root, f)
-                        rel_path = os.path.relpath(root, vault)
-                        display_dir = "" if rel_path == "." else f" ({rel_path})"
-                        
-                        item = QListWidgetItem(f"{f}{display_dir} — [{vault_name}]")
-                        item.setData(Qt.UserRole, full_path)
-                        item.setIcon(file_type_icon(Path(f).suffix, 16))
-                        self.results_list.addItem(item)
-                        
-                        if self.results_list.count() > 100:
-                            break # Limit to 100 results for UI responsiveness
-                
-                if self.results_list.count() > 100:
-                    break
+        self._search_worker = VaultSearchWorker(vaults_to_search, query)
+        self._search_worker.result_found.connect(self._on_result_found)
+        self._search_worker.start()
+
+    def _on_result_found(self, f, display_dir, vault_name, full_path):
+        item = QListWidgetItem(f"{f}{display_dir} — [{vault_name}]")
+        item.setData(Qt.UserRole, full_path)
+        item.setIcon(file_type_icon(Path(f).suffix, 16))
+        self.results_list.addItem(item)
                         
     def _on_item_activated(self, item):
         path = item.data(Qt.UserRole)

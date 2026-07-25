@@ -7,17 +7,52 @@ from PySide6.QtWidgets import (
     QPushButton, QMessageBox
 )
 from PySide6.QtGui import QDesktopServices
-from PySide6.QtCore import Qt, QUrl
+from PySide6.QtCore import Qt, QUrl, QThread, Signal
 import urllib.parse
-from theme import BRAND_BACKGROUND, BRAND_PANEL, BRAND_BORDER, BRAND_PRIMARY, get_brand_accent
-from paths import APP_DATA_DIR
-from main import APP_VERSION
+import urllib.request
+import json
+
+
+# FIX: HTTP POST moved to QThread to prevent 10s GUI freeze on timeout
+class FeedbackSubmitThread(QThread):
+    finished_signal = Signal(bool, str)
+    success = Signal(str)
+    error = Signal(str)
+
+    def __init__(self, data):
+        super().__init__()
+        self.data = data
+
+    def run(self):
+        try:
+            req = urllib.request.Request(
+                "https://eleviewer.vercel.app/api/feedback", 
+                data=json.dumps(self.data).encode('utf-8'),
+                headers={'Content-Type': 'application/json'}
+            )
+            with urllib.request.urlopen(req, timeout=10) as response:
+                if response.status == 200:
+                    msg = response.read().decode() or "Your feedback was sent successfully! Thank you."
+                    self.finished_signal.emit(True, msg)
+                    self.success.emit(msg)
+                else:
+                    msg = f"Server returned status code {response.status}"
+                    self.finished_signal.emit(False, msg)
+                    self.error.emit(msg)
+        except Exception as e:
+            self.finished_signal.emit(False, str(e))
+            self.error.emit(str(e))
+
+
+FeedbackSubmitWorker = FeedbackSubmitThread  # Alias for backward compatibility
+
 
 class FeedbackDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Report Issue / Feedback")
         self.resize(500, 400)
+        self._submit_thread = None
         
         accent = get_brand_accent()
         self.setStyleSheet(f"""
@@ -65,34 +100,24 @@ class FeedbackDialog(QDialog):
             
         self.submit_btn.setText("Submitting...")
         self.submit_btn.setEnabled(False)
-        self.repaint()
         
-        try:
-            import json
-            import urllib.request
-            
-            data = {
-                "type": self.type_combo.currentText(),
-                "description": desc,
-                "version": APP_VERSION,
-                "os_name": os.name,
-                "platform": sys.platform
-            }
-            
-            req = urllib.request.Request(
-                "https://eleviewer.vercel.app/api/feedback", 
-                data=json.dumps(data).encode('utf-8'),
-                headers={'Content-Type': 'application/json'}
-            )
-            
-            with urllib.request.urlopen(req, timeout=10) as response:
-                if response.status == 200:
-                    QMessageBox.information(self, "Success", "Your feedback was sent successfully! Thank you.")
-                    self.accept()
-                else:
-                    raise Exception(f"Server returned {response.status}")
-                    
-        except Exception as e:
-            QMessageBox.warning(self, "Network Error", f"Failed to send feedback securely to server.\n\nError: {str(e)}")
+        data = {
+            "type": self.type_combo.currentText(),
+            "description": desc,
+            "version": APP_VERSION,
+            "os_name": os.name,
+            "platform": sys.platform
+        }
+        
+        self._submit_thread = FeedbackSubmitThread(data)
+        self._submit_thread.finished_signal.connect(self._on_submit_finished)
+        self._submit_thread.start()
+
+    def _on_submit_finished(self, success, message):
+        if success:
+            QMessageBox.information(self, "Success", message)
+            self.accept()
+        else:
+            QMessageBox.warning(self, "Network Error", f"Failed to send feedback securely to server.\n\nError: {message}")
             self.submit_btn.setText("Submit Feedback")
             self.submit_btn.setEnabled(True)

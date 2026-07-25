@@ -28,9 +28,21 @@ def global_exception_handler(exc_type, exc_value, exc_traceback):
     tb_lines = traceback.format_exception(exc_type, exc_value, exc_traceback)
     tb_text = "".join(tb_lines)
     
+    # Log exception to APP_DATA_DIR / logs / app.log
+    try:
+        from paths import APP_DATA_DIR
+        logs_dir = APP_DATA_DIR / "logs"
+        logs_dir.mkdir(parents=True, exist_ok=True)
+        log_file = logs_dir / "app.log"
+        with open(log_file, "a", encoding="utf-8") as f:
+            f.write(f"\n--- FATAL CRASH [{datetime.now().isoformat()}] ---\n{tb_text}\n")
+    except Exception:
+        pass
+    
     from PySide6.QtWidgets import QMessageBox
     import urllib.request
     import json
+    from datetime import datetime
     
     msg = QMessageBox()
     msg.setIcon(QMessageBox.Critical)
