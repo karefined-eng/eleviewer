@@ -12,8 +12,8 @@ A lightweight Windows document editor supporting **DOCX**, **XLSX**, **PPTX**, *
 Opens & edits **DOCX, XLSX, PPTX, PDF, MD, TXT and HTML** — all in one workspace.
 
 ### 🔊 Reading & Study Tools
-- **PDF text-to-speech** — reads lectures/PDFs aloud for hands-free studying (Toggle with `F9` or the toolbar button).
-- **Persistent bookmarks** — never lose your place, even in 400-page textbooks.
+- **Universal Text-to-Speech** — reads lectures, notes, Word docs, Markdown, and PDFs aloud for hands-free studying (Toggle with `F9` or the toolbar button). Reads highlighted text selection or the full document.
+- **Persistent Bookmarks** — drop a bookmark anywhere in your documents (`Ctrl+D`), even in 400-page textbooks or lengthy notes, and jump back instantly.
 
 ### 🗂️ Organization & System Tray
 - **Vault sidebar** — one-click access to course folders (`Alt+V`).
@@ -33,7 +33,7 @@ Opens & edits **DOCX, XLSX, PPTX, PDF, MD, TXT and HTML** — all in one workspa
 ### 💻 Specs
 - 16 MB, single portable `.exe` — no install needed.
 - Windows 10/11.
-- No account, **zero telemetry** — your files stay local. Includes an opt-in secure crash reporter straight to GitHub.
+- No account, **zero telemetry** — your files stay local. Includes an opt-in, **PII-stripped secure crash reporter** that automatically copies technical logs to your clipboard without exposing your personal username or file paths.
 - **GNU GPLv3 licensed**, open source (Python + PySide6).
 - Free forever, no ads.
 
@@ -84,8 +84,9 @@ Opens & edits **DOCX, XLSX, PPTX, PDF, MD, TXT and HTML** — all in one workspa
 | **Ctrl+Q** | Quick switcher (search files) |
 | **Alt+V** | Toggle Vault (Folder Explorer) |
 | **Ctrl+Alt+B**| Toggle Bookmarks Panel |
-| **Ctrl+D** | Bookmark current PDF page |
+| **Ctrl+D** | Bookmark current file position / page |
 | **F9** | Read Aloud / Toggle TTS Bar |
+| **F1** | Open Getting Started Guide |
 | **Ctrl+T** | Open Web Browser Panel / New Web Tab |
 | **Alt+S** | Open Settings |
 

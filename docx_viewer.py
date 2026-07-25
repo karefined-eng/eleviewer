@@ -142,6 +142,14 @@ class DocxViewer(QWidget):
         """Compatibility method - returns text content."""
         return self.editor.toPlainText()
 
+    def read_current_page(self, voice_id=None):
+        """Duck-typed method for TTS engine. Reads selection or full text."""
+        cursor = self.editor.textCursor()
+        text = cursor.selectedText()
+        if not text:
+            text = self.editor.toPlainText()
+        return text
+
     def setPlainText(self, text):
         """Compatibility method - set text content (for reopening tabs)."""
         self.editor.blockSignals(True)

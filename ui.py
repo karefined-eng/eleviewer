@@ -282,6 +282,7 @@ class MainWindow(QMainWindow):
 
         vault_btn = QAction(icon("panel-left", size=ICON_SIZE_TOOLBAR), "Toggle Vault", self)
         vault_btn.setToolTip("Toggle Vault (Alt+V)")
+        vault_btn.setShortcut("Alt+V")
         vault_btn.triggered.connect(self.toggle_vault_panel)
         self.toolbar.addAction(vault_btn)
 
@@ -432,6 +433,15 @@ class MainWindow(QMainWindow):
             )
         self.show_status_message(f"Opened bookmark: {bookmark.get('label', '')}", 2000)
 
+    def bookmark_current_tab(self):
+        editor = self.current_editor()
+        if not editor:
+            return
+        if hasattr(editor, "_add_bookmark_here"):
+            editor._add_bookmark_here()
+        else:
+            self.show_status_message("Current file cannot be bookmarked", 3000)
+
     def toggle_bookmarks_panel(self):
         if self.bookmarks_panel is None:
             return
@@ -463,6 +473,14 @@ class MainWindow(QMainWindow):
             
         # Add the specific URL as a new tab in the web panel
         self._web_dock.widget()._add_tab_widget("https://eleviewer.vercel.app/review", "Leave a Review")
+
+    def open_getting_started(self):
+        from pathlib import Path
+        welcome_file = Path("getting_started/Welcome to EleViewer.md").absolute()
+        if welcome_file.exists():
+            self._open_vault_file(str(welcome_file))
+        else:
+            self.show_status_message("Getting Started guide not found", 3000)
 
     def show_status_message(self, message, timeout_ms=0):
         self.statusBar().showMessage(message, timeout_ms)
@@ -723,7 +741,7 @@ class MainWindow(QMainWindow):
         vault_menu = menu.addMenu("Vault")
         vault_menu.addAction("Add Folder", self.add_vault)
         vault_menu.addAction("Remove Folder", self.vault_panel.remove_current_vault)
-        vault_menu.addAction("Toggle Panel", self.toggle_vault_panel)
+        self._add_menu_action(vault_menu, "Toggle Panel", self.toggle_vault_panel, "Alt+V")
 
         session_menu = menu.addMenu("Session")
         self._add_menu_action(session_menu, "Restore Tab", self.reopen_closed_tab, "Ctrl+Shift+T")
@@ -736,10 +754,13 @@ class MainWindow(QMainWindow):
         self.recent_menu = session_menu.addMenu("Recent Files")
         self.pinned_menu = session_menu.addMenu("Pinned Files")
         self.bookmarks_menu = session_menu.addMenu("Bookmarks")
+        self._add_menu_action(self.bookmarks_menu, "Bookmark Current Tab", self.bookmark_current_tab, "Ctrl+D")
 
         self._add_menu_action(menu, "Settings...", self.open_settings, "Alt+S")
 
         help_menu = menu.addMenu("Help")
+        self._add_menu_action(help_menu, "Getting Started Guide", self.open_getting_started, "F1")
+        help_menu.addSeparator()
         self._add_menu_action(help_menu, "Submit Feedback...", self.open_feedback_dialog)
         self._add_menu_action(help_menu, "Tell us what you think 💭", self.open_review_page)
 
