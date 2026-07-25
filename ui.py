@@ -150,7 +150,7 @@ class MainWindow(QMainWindow):
     def _check_for_updates_async(self):
         try:
             from updater import CheckUpdateThread
-            self._update_thread = CheckUpdateThread(current_version="1.2.0", parent=self)
+            self._update_thread = CheckUpdateThread(current_version=APP_VERSION, parent=self)
             self._update_thread.update_available.connect(self._on_update_found)
             self._update_thread.start()
         except Exception:
