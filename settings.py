@@ -31,6 +31,7 @@ DEFAULT_SETTINGS = {
     "tts_voice_id": None,
     "tts_read_mode": "page",
     "onboarding_completed": False,
+    "last_run_version": "0.0.0",
     "file_search_scope": "active_vault",
 }
 

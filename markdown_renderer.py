@@ -394,10 +394,17 @@ class MarkdownViewer(QWidget):
                 'a': ['href', 'title'],
                 'img': ['src', 'alt', 'title'],
                 'code': ['class'],
-                'span': ['class', 'style'],
-                'div': ['class', 'style'],
+                'span': ['class'],
+                'div': ['class'],
             }
-            html_body = bleach.clean(html_body, tags=allowed_tags, attributes=allowed_attrs)
+            try:
+                from bleach.css_sanitizer import CSSSanitizer
+                css_san = CSSSanitizer()
+                allowed_attrs['span'].append('style')
+                allowed_attrs['div'].append('style')
+                html_body = bleach.clean(html_body, tags=allowed_tags, attributes=allowed_attrs, css_sanitizer=css_san)
+            except Exception:
+                html_body = bleach.clean(html_body, tags=allowed_tags, attributes=allowed_attrs)
         return f"<html><head><style>{markdown_preview_css()}</style></head><body>{html_body}</body></html>"
 
     def _sync_from_syntax(self):

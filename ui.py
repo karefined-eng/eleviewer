@@ -49,25 +49,29 @@ _TAB_ICON_MAP = {
     "pdf": "book-open",
     "docx": "file-plus",
     "xlsx": "table",
+    "pptx": "monitor",
     "html": "globe",
     "htm": "globe",
 }
 
 
-def _tab_icon_for(path):
-    """Return a small QIcon appropriate for the file extension."""
+def _tab_icon_for(path_or_name):
+    """Return a small QIcon appropriate for the file extension or filename."""
     from file_icons import file_type_icon
-    if not path:
-        return file_type_icon(".txt", size=ICON_SIZE_COMPACT)
-    ext = os.path.splitext(path)[1].lower()
-    return file_type_icon(ext, size=ICON_SIZE_COMPACT)
+    if not path_or_name:
+        return file_type_icon(".txt", size=18)
+    if path_or_name.startswith("."):
+        ext = path_or_name.lower()
+    else:
+        ext = os.path.splitext(path_or_name)[1].lower()
+    return file_type_icon(ext or ".txt", size=18)
 
 
 class MainWindow(QMainWindow):
 
     FILE_FILTER = (
-        "All Supported (*.md *.txt *.docx *.xlsx *.pdf *.csv *.html *.htm);;"
-        "Word (*.docx);;Excel (*.xlsx);;PDF (*.pdf);;"
+        "All Supported (*.md *.txt *.docx *.xlsx *.pptx *.pdf *.csv *.html *.htm);;"
+        "PowerPoint (*.pptx);;Word (*.docx);;Excel (*.xlsx);;PDF (*.pdf);;"
         "Markdown (*.md);;HTML (*.html *.htm);;Text (*.txt);;CSV (*.csv)"
     )
 
@@ -227,6 +231,7 @@ class MainWindow(QMainWindow):
         self.tts_bar.populate_voices(self.tts_engine.list_voices())
         self.tts_bar.speak_requested.connect(self._speak_current_tab)
         self.tts_bar.stop_requested.connect(self._stop_tts)
+        self.tts_bar.voice_changed.connect(lambda vid: self._speak_current_tab())
 
         editor_layout = QVBoxLayout()
         editor_layout.setContentsMargins(0, 0, 0, 0)
@@ -495,7 +500,7 @@ class MainWindow(QMainWindow):
 
     def _add_editor_tab(self, editor, name):
         self._connect_editor_signals(editor)
-        path = getattr(editor, "file_path", None)
+        path = getattr(editor, "file_path", None) or name
         tab_icon = _tab_icon_for(path)
         index = self.tabs.addTab(editor, tab_icon, name)
         self.tabs.setCurrentIndex(index)
@@ -534,9 +539,16 @@ class MainWindow(QMainWindow):
         msg.exec()
         
         if msg.clickedButton() == join_btn:
-            from PySide6.QtGui import QDesktopServices
-            from PySide6.QtCore import QUrl
-            QDesktopServices.openUrl(QUrl("https://chat.whatsapp.com/FeofuieK0Ae51KdUZEvwTQ"))
+            if WEB_AVAILABLE:
+                if self._web_dock is None:
+                    self.open_web_tab()
+                if not self._web_dock.isVisible():
+                    self._web_dock.setVisible(True)
+                self._web_dock.widget()._add_tab_widget("https://eleviewer.vercel.app/community", "Nightly Insiders")
+            else:
+                from PySide6.QtGui import QDesktopServices
+                from PySide6.QtCore import QUrl
+                QDesktopServices.openUrl(QUrl("https://eleviewer.vercel.app/community"))
 
     # IMPROVEMENT: system tray minimization with restore on double-click
     def closeEvent(self, event):
@@ -661,7 +673,8 @@ class MainWindow(QMainWindow):
                 if getattr(editor, "is_modified", False):
                     name += "*"
                 self._connect_editor_signals(editor)
-                self.tabs.addTab(editor, name)
+                tab_icon = _tab_icon_for(file_path or name)
+                self.tabs.addTab(editor, tab_icon, name)
 
                 # QTimer.singleShot delay ensures widget has rendered before setting scroll/zoom
                 QTimer.singleShot(150, lambda t=editor, s=scroll_y, z=zoom, p=pdf_page: (
@@ -781,12 +794,14 @@ class MainWindow(QMainWindow):
         from markdown_renderer import MarkdownViewer
         from docx_viewer import DocxViewer
         from xlsx_viewer import XlsxViewer
+        from pptx_viewer import PptxViewer
         
         _add("Plain Text (.txt)", ".txt", EditorTab)
         _add("Markdown (.md)", ".md", MarkdownViewer)
         _add("HTML (.html)", ".html", MarkdownViewer, is_html=True)
         _add("Word Document (.docx)", ".docx", DocxViewer)
         _add("Excel Spreadsheet (.xlsx)", ".xlsx", XlsxViewer)
+        _add("PowerPoint Presentation (.pptx)", ".pptx", PptxViewer)
         _add("CSV Spreadsheet (.csv)", ".csv", EditorTab)
         return menu
 
@@ -1205,6 +1220,8 @@ class MainWindow(QMainWindow):
             self.tts_bar.hide()
             self._stop_tts()
         else:
+            voices = self.tts_engine.list_voices()
+            self.tts_bar.populate_voices(voices)
             self.tts_bar.show()
             self._speak_current_tab()
 
@@ -1212,15 +1229,18 @@ class MainWindow(QMainWindow):
         current = self.tabs.currentWidget()
         if not current:
             return
-        
+
         filename = "Untitled"
         if hasattr(current, "file_path") and current.file_path:
             filename = os.path.basename(current.file_path)
-            
-        if filename.endswith(".pdf") and hasattr(current, "read_current_page"):
-            current.read_current_page()
-            self.tts_bar.show()
-            self.tts_bar.set_status(filename, f"page {current.current_page + 1} of {current.total_pages}")
+
+        voice_id = self.tts_bar.get_selected_voice_id()
+
+        if filename.lower().endswith(".pdf") and hasattr(current, "read_current_page"):
+            spoken = current.read_current_page(voice_id=voice_id)
+            if spoken:
+                self.tts_bar.show()
+                self.tts_bar.set_status(filename, f"page {current.current_page + 1} of {current.total_pages}")
             return
 
         text = ""
@@ -1231,7 +1251,6 @@ class MainWindow(QMainWindow):
 
         if text and text.strip():
             self.tts_bar.show()
-            voice_id = self.tts_bar.get_selected_voice_id()
             self.tts_engine.speak(text, voice_id)
             self.tts_bar.set_status(filename)
         else:
@@ -1239,4 +1258,6 @@ class MainWindow(QMainWindow):
 
     def _stop_tts(self):
         self.tts_engine.stop()
+        if hasattr(self, "tts_bar") and self.tts_bar:
+            self.tts_bar.set_active_reading(False)
 

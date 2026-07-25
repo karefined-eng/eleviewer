@@ -70,23 +70,22 @@ class TtsEngine:
                 self._report_error(str(e))
 
     def list_voices(self):
-        if not TTS_AVAILABLE or not self._available:
+        if not TTS_AVAILABLE:
             return []
-        if not self._voices and self._thread:
-            self._queue.put(("init", None))
-            for _ in range(20):
-                if self._voices:
+        if not self._voices and self._thread and self._thread.is_alive():
+            for _ in range(30):
+                if self._voices or self._available:
                     break
                 threading.Event().wait(0.05)
         return list(self._voices)
 
     def speak(self, text, voice_id=None):
-        if not text or not text.strip() or not TTS_AVAILABLE or not self._available:
+        if not text or not text.strip() or not TTS_AVAILABLE:
             return
         self._queue.put(("speak", (text, voice_id)))
 
     def stop(self):
-        if TTS_AVAILABLE and self._available:
+        if TTS_AVAILABLE:
             self._queue.put(("stop", None))
 
 

@@ -3,10 +3,11 @@ from pathlib import Path
 from editor import EditorTab
 from docx_viewer import DocxViewer
 from xlsx_viewer import XlsxViewer
+from pptx_viewer import PptxViewer
 from markdown_renderer import MarkdownViewer
 from pdf_viewer import PdfViewer
 
-BINARY_FORMATS = {"docx", "xlsx", "pdf"}
+BINARY_FORMATS = {"docx", "xlsx", "pdf", "pptx"}
 TEXT_RESTORE_FORMATS = {"txt", "md", ""}
 
 
@@ -58,6 +59,11 @@ def create_viewer_widget(file_path, content=None):
 
     elif ext == "pdf":
         viewer = PdfViewer(file_path)
+        viewer.file_path = file_path
+        return viewer
+
+    elif ext == "pptx":
+        viewer = PptxViewer(file_path)
         viewer.file_path = file_path
         return viewer
 

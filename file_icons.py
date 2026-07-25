@@ -6,6 +6,7 @@ EXT_COLORS = {
     ".pdf": "#ff6b6b",    # Red / Coral
     ".docx": "#4d96ff",   # Word Blue
     ".xlsx": "#6bcb77",   # Excel Green
+    ".pptx": "#e056fd",   # PowerPoint Purple
     ".csv": "#2bcbba",    # Teal
     ".txt": "#a0a0a0",    # Muted Gray
     ".html": "#ff9f43",   # Orange
@@ -64,8 +65,8 @@ def file_type_icon(ext: str, size: int = 20) -> QIcon:
     if not text:
         text = "FILE"
         
-    font_size = max(5, int(size * 0.26))
-    font = QFont("Segoe UI", font_size)
+    font = QFont("Segoe UI")
+    font.setPixelSize(max(6, int(size * 0.28)))
     font.setBold(True)
     painter.setFont(font)
     

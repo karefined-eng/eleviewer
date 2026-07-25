@@ -4,12 +4,12 @@
 ![License](https://img.shields.io/github/license/karefined-eng/eleviewer)
 ![Downloads](https://img.shields.io/github/downloads/karefined-eng/eleviewer/total)
 
-A lightweight Windows document editor supporting **DOCX**, **XLSX**, **MD**, **TXT**, **CSV**, **HTML/HTM**, and **PDF**. Built with Python and PySide6.
+A lightweight Windows document editor supporting **DOCX**, **XLSX**, **PPTX**, **MD**, **TXT**, **CSV**, **HTML/HTM**, and **PDF**. Built with Python and PySide6.
 
 ## 📚 Features
 
 ### 📁 File Support
-Opens & edits **DOCX, XLSX, PDF, MD, TXT and HTML** — all in one workspace.
+Opens & edits **DOCX, XLSX, PPTX, PDF, MD, TXT and HTML** — all in one workspace.
 
 ### 🔊 Reading & Study Tools
 - **PDF text-to-speech** — reads lectures/PDFs aloud for hands-free studying (Toggle with `F9` or the toolbar button).
@@ -34,7 +34,7 @@ Opens & edits **DOCX, XLSX, PDF, MD, TXT and HTML** — all in one workspace.
 - 16 MB, single portable `.exe` — no install needed.
 - Windows 10/11.
 - No account, **zero telemetry** — your files stay local. Includes an opt-in secure crash reporter straight to GitHub.
-- MIT licensed, open source (Python + PySide6).
+- **GNU GPLv3 licensed**, open source (Python + PySide6).
 - Free forever, no ads.
 
 ## 🚀 Quick Start
@@ -132,7 +132,7 @@ This project is open-source. Feel free to fork it, create a branch, and submit a
 
 ## 📄 License
 
-MIT License — see the LICENSE file for details.
+GNU GPLv3 License — see the LICENSE file for details.
 
 ## ✍️ Author
-Built by **Elevon (ka.refined)** — Digital entrepreneur & developer based in Accra, Ghana.
+Built by **[karefined-eng](https://github.com/karefined-eng)**
