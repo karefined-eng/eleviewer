@@ -21,6 +21,18 @@ def is_binary_format(file_path):
     return get_file_extension(file_path) in BINARY_FORMATS
 
 
+# FIX: UTF-8 with latin-1 fallback prevents UnicodeDecodeError crash
+def _read_file_safely(file_path: str) -> str:
+    try:
+        with open(file_path, "r", encoding="utf-8") as f:
+            return f.read()
+    except UnicodeDecodeError:
+        with open(file_path, "r", encoding="latin-1", errors="replace") as f:
+            return f.read()
+    except OSError as e:
+        return f"[EleViewer] Could not read file: {e}"
+
+
 def create_viewer_widget(file_path, content=None):
     """
     Factory function: returns the correct viewer widget based on file type.
@@ -54,11 +66,7 @@ def create_viewer_widget(file_path, content=None):
         editor.file_path = file_path
 
         if content is None:
-            try:
-                with open(file_path, "r", encoding="utf-8") as file:
-                    content = file.read()
-            except Exception as e:
-                raise Exception(f"Failed to read file: {str(e)}")
+            content = _read_file_safely(file_path)
 
         editor.setPlainText(content)
         editor.is_modified = False

@@ -31,10 +31,12 @@ EleViewer relies heavily on standard PySide6 widgets and custom components to ke
 - `xlsx_viewer.py` & `csv_viewer.py`: Uses `openpyxl` and standard library `csv` to render spreadsheets natively into `QTableWidget`.
 - `docx_viewer.py`: Converts Word docs to HTML using `python-docx` for rich rendering.
 
-### Sub-systems
-- `vault_explorer.py`: The left sidebar for file navigation.
-- `quick_switcher.py`: The `Ctrl+Q` fuzzy finder powered by an embedded SQLite FTS5 database.
-- `draft_recovery.py`: Saves aggressive snapshots of text every 60 seconds to prevent data loss.
+### Sub-systems & Concurrency
+- `vault_explorer.py` & `vault_indexer.py`: The left sidebar for file navigation, paired with `vault_search.py` and `vault_indexer.py` (SQLite FTS5 full-text background search).
+- `quick_switcher.py`: The `Ctrl+Q` fuzzy finder for fast file switching.
+- `draft_recovery.py`: Saves auto-snapshots of text using a background `DraftWorker(QThread)` to prevent UI stutter and data loss.
+- `save_utils.py`, `session_manager.py`, `settings.py`: Enforces atomic disk writes (`tempfile.mkstemp` + `os.replace`) to eliminate 0-byte corruption on crash, while persisting scroll position, zoom, and PDF page numbers across sessions.
+- `release_hash.py`: Standalone script for computing executable SHA-256 release hashes.
 
 ---
 
@@ -42,7 +44,7 @@ EleViewer relies heavily on standard PySide6 widgets and custom components to ke
 
 1. **Check the Ledger**: Read `PROJECT_LOG.md` before starting work. It contains historical context on why certain decisions were made (e.g., why we dropped `fitz` for PDF).
 2. **Design System**: Ensure UI changes match `eleviewer-site/app/globals.css`. 
-3. **Testing**: Run `main.py` directly. Do not build the `.exe` via PyInstaller for testing—it takes too long and obscures stack traces.
+3. **Testing**: Run `main.py` directly for manual validation, or execute test suites archived in `OneDrive\Documents\EleViewer\tests\`.
 4. **Pull Requests**: Explain *why* a feature is needed, not just *what* it does. Ensure it doesn't break the "Offline First" or "Zero Telemetry" rules.
 
 Welcome aboard!

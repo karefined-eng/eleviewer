@@ -18,8 +18,8 @@ class SettingsDialog(QDialog):
         self.setWindowTitle("Settings")
         self.resize(520, 420)
         self.settings = load_settings()
-        # Close (reject / keep existing settings) when window loses focus
-        self.setAttribute(Qt.WA_DeleteOnClose, False)
+        # FIX: WA_DeleteOnClose=True ensures dialog is freed on close
+        self.setAttribute(Qt.WA_DeleteOnClose, True)
         self.setWindowModality(Qt.ApplicationModal)
 
         layout = QVBoxLayout(self)

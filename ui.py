@@ -1,9 +1,9 @@
 from PySide6.QtWidgets import (
     QMainWindow, QTabWidget, QFileDialog, QMessageBox,
     QSplitter, QMenu, QToolBar, QToolButton, QVBoxLayout, QWidget,
-    QDockWidget, QLabel,
+    QDockWidget, QLabel, QSystemTrayIcon, QApplication, QScrollBar,
 )
-from PySide6.QtGui import QAction, QKeySequence, QShortcut
+from PySide6.QtGui import QAction, QKeySequence, QShortcut, QIcon
 from PySide6.QtCore import Qt, QSize, QTimer
 import os
 
@@ -103,7 +103,29 @@ class MainWindow(QMainWindow):
         self.esc_shortcut = QShortcut(QKeySequence(Qt.Key_Escape), self)
         self.esc_shortcut.activated.connect(self.handle_escape)
 
+        # IMPROVEMENT: system tray minimization with restore on double-click
+        self.tray_icon = QSystemTrayIcon(create_eleviewer_icon(32), self)
+        tray_menu = QMenu()
+        tray_menu.addAction("Open EleViewer", self.show_and_raise)
+        tray_menu.addAction("Quit", QApplication.quit)
+        self.tray_icon.setContextMenu(tray_menu)
+        self.tray_icon.activated.connect(self._on_tray_activated)
+        self.tray_icon.show()
+
+    def show_and_raise(self):
+        self.show()
+        self.raise_()
+        self.activateWindow()
+
+    def _on_tray_activated(self, reason):
+        if reason == QSystemTrayIcon.DoubleClick:
+            self.show_and_raise()
+
+    # FIX: guard prevents ESC double-fire when modal dialog is active
     def handle_escape(self):
+        if QApplication.activeModalWidget() is not None:
+            return
+
         # Hide Find/Replace if open in current editor
         current_widget = self.tabs.currentWidget()
         if isinstance(current_widget, EditorTab):
@@ -516,7 +538,11 @@ class MainWindow(QMainWindow):
             from PySide6.QtCore import QUrl
             QDesktopServices.openUrl(QUrl("https://chat.whatsapp.com/FeofuieK0Ae51KdUZEvwTQ"))
 
+    # IMPROVEMENT: system tray minimization with restore on double-click
     def closeEvent(self, event):
+        from settings import load_settings, save_settings
+        settings = load_settings()
+
         has_modified = any(
             getattr(self.tabs.widget(i), "is_modified", False)
             for i in range(self.tabs.count())
@@ -536,12 +562,18 @@ class MainWindow(QMainWindow):
 
         self.save_current_session()
 
-        from settings import load_settings, save_settings
-        settings = load_settings()
         settings["window_geometry"] = self.saveGeometry().toBase64().data().decode()
         save_settings(settings)
 
-        event.accept()
+        if settings.get("minimize_to_tray", True) and hasattr(self, "tray_icon") and self.tray_icon.isVisible():
+            event.ignore()
+            self.hide()
+            self.tray_icon.showMessage(
+                "EleViewer", "Running in background. Click tray icon to restore.",
+                QSystemTrayIcon.Information, 2000
+            )
+        else:
+            event.accept()
 
     def save_all_modified(self):
         for i in range(self.tabs.count()):
@@ -571,14 +603,32 @@ class MainWindow(QMainWindow):
                 content = editor.toPlainText()
             else:
                 content = ""
+
+            scroll_y = 0
+            if hasattr(editor, "verticalScrollBar"):
+                scroll_y = editor.verticalScrollBar().value()
+            elif hasattr(editor, "findChild"):
+                from PySide6.QtWidgets import QScrollBar
+                sb = editor.findChild(QScrollBar)
+                if sb:
+                    scroll_y = sb.value()
+
+            zoom = getattr(editor, "zoom_level", getattr(editor, "scale_factor", 1.0))
+            pdf_page = getattr(editor, "current_page", 0)
+
             tabs_info.append({
                 "file_path": file_path,
                 "content": content,
                 "is_active": (i == self.tabs.currentIndex()),
                 "is_modified": getattr(editor, "is_modified", False),
+                "scroll_y": scroll_y,
+                "scroll_pos": scroll_y,
+                "zoom": zoom,
+                "pdf_page": pdf_page,
             })
         save_session(tabs_info, bookmarks_panel_visible=self.bookmarks_panel.isVisible())
 
+    # IMPROVEMENT: persist scroll position and PDF zoom across sessions
     def restore_session(self):
         session = load_session()
         tabs = session.get("tabs", [])
@@ -587,6 +637,10 @@ class MainWindow(QMainWindow):
             file_path = tab_info.get("file_path")
             content = tab_info.get("content", "")
             is_active = tab_info.get("is_active", False)
+            scroll_y = tab_info.get("scroll_y", tab_info.get("scroll_pos", 0))
+            zoom = tab_info.get("zoom", 1.0)
+            pdf_page = tab_info.get("pdf_page", 0)
+
             try:
                 if file_path and os.path.exists(file_path):
                     editor = create_viewer_widget(file_path)
@@ -608,6 +662,16 @@ class MainWindow(QMainWindow):
                     name += "*"
                 self._connect_editor_signals(editor)
                 self.tabs.addTab(editor, name)
+
+                # QTimer.singleShot delay ensures widget has rendered before setting scroll/zoom
+                QTimer.singleShot(150, lambda t=editor, s=scroll_y, z=zoom, p=pdf_page: (
+                    t.verticalScrollBar().setValue(s) if hasattr(t, "verticalScrollBar") else (
+                        t.findChild(QScrollBar).setValue(s) if hasattr(t, "findChild") and t.findChild(QScrollBar) else None
+                    ),
+                    t.set_zoom(z) if hasattr(t, "set_zoom") else None,
+                    t.go_to_page(p) if hasattr(t, "go_to_page") else None,
+                ))
+
                 if is_active:
                     active_index = self.tabs.count() - 1
             except Exception as e:
@@ -668,16 +732,27 @@ class MainWindow(QMainWindow):
 
         self.update_menus()
 
+    # FIX: WA_DeleteOnClose=True ensures dialog is freed on close
     def open_settings(self):
-        dialog = SettingsDialog(self)
-        if dialog.exec():
-            if self.autosaver:
-                self.autosaver.apply_settings()
-            settings = dialog.get_settings()
+        if getattr(self, '_settings_dialog', None) is None:
+            from settings_dialog import SettingsDialog
+            self._settings_dialog = SettingsDialog(self)
+            self._settings_dialog.finished.connect(
+                lambda: setattr(self, '_settings_dialog', None)
+            )
+            self._settings_dialog.accepted.connect(self._on_settings_saved)
+        self._settings_dialog.show()
+        self._settings_dialog.raise_()
+
+    def _on_settings_saved(self):
+        if hasattr(self, 'autosaver') and self.autosaver:
+            self.autosaver.apply_settings()
+        from settings import load_settings
+        settings = load_settings()
+        if hasattr(self, 'vault_panel') and self.vault_panel:
             self.vault_panel.set_show_all_files(settings.get("vault_show_all_files", False))
             self.vault_panel.restore_from_settings()
-
-            self.show_status_message("Settings saved", 2000)
+        self.show_status_message("Settings saved", 2000)
 
     def update_menus(self):
         self.update_recent_files_menu()
@@ -789,7 +864,16 @@ class MainWindow(QMainWindow):
             "file_path": getattr(editor, "file_path", None),
             "modified": getattr(editor, "is_modified", False),
         })
+        # FIX: deleteLater() prevents cumulative memory leak on tab close
+        widget = self.tabs.widget(index)
         self.tabs.removeTab(index)
+        if widget is not None:
+            if hasattr(widget, 'cleanup'):
+                widget.cleanup()
+            if hasattr(widget, 'page'):
+                widget.page().deleteLater()
+            widget.deleteLater()
+
         if self.tabs.count() == 0:
             self.new_tab()
         else:
@@ -915,17 +999,21 @@ class MainWindow(QMainWindow):
             QMessageBox.critical(self, "Error", f"Failed to save file: {str(e)}")
             return False
 
+    # FIX: dynamic extension detection replaces hardcoded .docx default
     def save_file_as(self):
         editor = self.current_editor()
         if not editor:
             return
             
         current_ext = ".txt"
-        idx = self.tabs.indexOf(editor)
-        if idx >= 0:
-            title = self.tabs.tabText(idx).replace("*", "")
-            ext = os.path.splitext(title)[1]
-            if ext: current_ext = ext
+        if hasattr(editor, "file_path") and editor.file_path:
+            current_ext = os.path.splitext(editor.file_path)[1].lower() or ".txt"
+        else:
+            idx = self.tabs.indexOf(editor)
+            if idx >= 0:
+                title = self.tabs.tabText(idx).replace("*", "")
+                ext = os.path.splitext(title)[1]
+                if ext: current_ext = ext
             
         from markdown_renderer import MarkdownViewer
         from docx_viewer import DocxViewer
@@ -983,6 +1071,8 @@ class MainWindow(QMainWindow):
             self.update_status_bar()
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Failed to save file: {str(e)}")
+
+    save_tab_as = save_file_as
 
     def update_recent_files_menu(self):
         self.recent_menu.clear()

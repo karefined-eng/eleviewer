@@ -4,7 +4,7 @@
 
 [Setup]
 AppName=EleViewer
-AppVersion=1.2.0
+AppVersion=1.3.0
 AppPublisher=Elevon (ka.refined)
 AppPublisherURL=https://eleviewer.vercel.app
 AppSupportURL=https://github.com/karefined-eng/eleviewer/issues
@@ -15,7 +15,7 @@ DisableProgramGroupPage=yes
 Compression=lzma2/ultra64
 SolidCompression=yes
 OutputDir=dist
-OutputBaseFilename=EleViewer_Setup_v1.2.0
+OutputBaseFilename=EleViewer_Setup_v1.3.0
 SetupIconFile=icons\eleviewer.ico
 UninstallDisplayIcon={app}\EleViewer.exe
 PrivilegesRequired=lowest

@@ -6,6 +6,11 @@ from PySide6.QtCore import Signal, Qt, QEvent, QTimer, QSize, QObject
 from PySide6.QtGui import QMouseEvent, QAction, QTextDocument
 import markdown
 import re
+try:
+    import bleach
+    BLEACH_AVAILABLE = True
+except ImportError:
+    BLEACH_AVAILABLE = False
 
 from icons import icon
 from markdown_utils import markdown_to_simple, simple_to_markdown
@@ -370,6 +375,7 @@ class MarkdownViewer(QWidget):
 
     # ── Core Modes ───────────────────────────────────────────────────
 
+    # SECURITY: sanitize HTML output before rendering to prevent XSS
     def _render_markdown(self, text):
         if self.is_html:
             return text
@@ -377,6 +383,21 @@ class MarkdownViewer(QWidget):
             text,
             extensions=["tables", "fenced_code", "nl2br", "sane_lists"],
         )
+        if BLEACH_AVAILABLE:
+            allowed_tags = bleach.sanitizer.ALLOWED_TAGS | {
+                'p', 'pre', 'code', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+                'blockquote', 'ul', 'ol', 'li', 'strong', 'em', 'table',
+                'thead', 'tbody', 'tr', 'th', 'td', 'hr', 'br', 'img',
+                'span', 'div', 'b', 'i', 'u', 's'
+            }
+            allowed_attrs = {
+                'a': ['href', 'title'],
+                'img': ['src', 'alt', 'title'],
+                'code': ['class'],
+                'span': ['class', 'style'],
+                'div': ['class', 'style'],
+            }
+            html_body = bleach.clean(html_body, tags=allowed_tags, attributes=allowed_attrs)
         return f"<html><head><style>{markdown_preview_css()}</style></head><body>{html_body}</body></html>"
 
     def _sync_from_syntax(self):

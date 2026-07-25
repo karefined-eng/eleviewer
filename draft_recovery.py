@@ -3,17 +3,48 @@ import json
 import time
 import hashlib
 from pathlib import Path
-from PySide6.QtCore import QObject, QTimer
+from PySide6.QtCore import QObject, QTimer, QThread, Signal
 from PySide6.QtWidgets import QMessageBox
 
 from paths import APP_DATA_DIR
 
 DRAFTS_DIR = APP_DATA_DIR / "drafts"
 
+
+# FIX: offload draft serialization to QThread to prevent UI stutter
+class DraftWorker(QThread):
+    finished_signal = Signal()
+
+    def __init__(self, items):
+        super().__init__()
+        self.items = items
+
+    def run(self):
+        for draft_path, meta_path, content, meta_dict in self.items:
+            try:
+                temp_txt = draft_path.with_suffix(".txt.tmp")
+                with open(temp_txt, "w", encoding="utf-8") as f:
+                    f.write(content)
+                os.replace(temp_txt, draft_path)
+
+                temp_meta = meta_path.with_suffix(".json.tmp")
+                with open(temp_meta, "w", encoding="utf-8") as f:
+                    json.dump(meta_dict, f)
+                os.replace(temp_meta, meta_path)
+            except Exception:
+                pass
+        self.finished_signal.emit()
+
+
+DraftSaveWorker = DraftWorker  # Alias for backward compatibility
+
+
 class DraftManager(QObject):
     def __init__(self, main_window=None):
         super().__init__()
         self.main_window = main_window
+        self._worker_running = False
+        self._current_worker = None
         DRAFTS_DIR.mkdir(parents=True, exist_ok=True)
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.snapshot_all)
@@ -25,10 +56,11 @@ class DraftManager(QObject):
             self.timer.start(interval * 1000)
 
     def snapshot_all(self):
-        if not self.main_window:
+        if not self.main_window or self._worker_running:
             return
             
         tabs = self.main_window.tabs
+        work_items = []
         for i in range(tabs.count()):
             editor = tabs.widget(i)
             if getattr(editor, "is_modified", False) and hasattr(editor, "toPlainText"):
@@ -41,21 +73,22 @@ class DraftManager(QObject):
                 
                 draft_path = DRAFTS_DIR / f"{file_hash}.draft.txt"
                 meta_path = DRAFTS_DIR / f"{file_hash}.draft.meta.json"
-                
-                # atomic writes
-                temp_txt = draft_path.with_suffix(".txt.tmp")
-                with open(temp_txt, "w", encoding="utf-8") as f:
-                    f.write(content)
-                os.replace(temp_txt, draft_path)
-                
-                temp_meta = meta_path.with_suffix(".json.tmp")
-                with open(temp_meta, "w", encoding="utf-8") as f:
-                    json.dump({
-                        "original_path": path,
-                        "tab_title": tab_title,
-                        "timestamp": time.time()
-                    }, f)
-                os.replace(temp_meta, meta_path)
+                meta_dict = {
+                    "original_path": path,
+                    "tab_title": tab_title,
+                    "timestamp": time.time()
+                }
+                work_items.append((draft_path, meta_path, content, meta_dict))
+
+        if work_items:
+            self._worker_running = True
+            self._current_worker = DraftWorker(work_items)
+            self._current_worker.finished_signal.connect(self._on_worker_finished)
+            self._current_worker.start()
+
+    def _on_worker_finished(self):
+        self._worker_running = False
+        self._current_worker = None
 
     def cleanup(self, path=None, editor_id=None):
         if path:
