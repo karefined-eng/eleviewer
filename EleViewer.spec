@@ -15,6 +15,7 @@ a = Analysis(
         'markdown',
         'docx',
         'openpyxl',
+        'pptx',
         'pyttsx3',
     ],
     hookspath=[],
