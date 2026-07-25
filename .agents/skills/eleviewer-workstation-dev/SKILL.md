@@ -34,3 +34,8 @@ When invoked to work on the Python PySide6 desktop application, adhere to these 
 
 ## 5. Atomic File Operations (`atomic_write`)
 - All user settings (`settings.json`), session state, and document drafts MUST be saved using atomic write patterns (`atomic_write` temp file renaming) to prevent 0-byte file corruption during unexpected Windows power cuts or system shutdowns.
+
+## 6. Installer Creation & Copywriting Standards (`setup.iss`)
+- **Flesch-Kincaid & Paul Graham Copywriting:** When creating or modifying installer scripts (`setup.iss`), PyInstaller specs (`EleViewer.spec`), or Winget manifests, never use dry corporate/technical boilerplate. All wizard messages, task descriptions, and option labels must speak in conversational, middle-grader accessible English (e.g., *"Open my study files with EleViewer by default"* instead of *"Register default file associations"*).
+- **Distraction-Free Wizard Design:** Ensure custom installer messages (`WelcomeLabel2`, `FinishedLabelNoIcons`) emphasize our core student promise: offline privacy, zero telemetry, local storage, and lightweight speed.
+

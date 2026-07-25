@@ -20,14 +20,29 @@ SetupIconFile=icons\eleviewer.ico
 UninstallDisplayIcon={app}\EleViewer.exe
 PrivilegesRequired=lowest
 ArchitecturesInstallIn64BitMode=x64
+; Modern UI & Brand Styling
+WizardStyle=modern
+WizardResizable=no
+; To apply our custom color code (#161616 dark panels and #6cb6ff electric blue accents)
+; to the wizard sidebars and headers, place branded bitmaps in the icons/ folder:
+; WizardImageFile=icons\wizard_banner.bmp
+; WizardSmallImageFile=icons\wizard_logo.bmp
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
+[Messages]
+WelcomeLabel1=Welcome to the EleViewer Setup Wizard
+WelcomeLabel2=This will install EleViewer on your computer.%n%nEleViewer is a lightweight, offline study workspace that opens PDFs, Word documents, Excel spreadsheets, PowerPoint slides, Markdown notes, and more—all in one place without lag or telemetry.%n%nClick Next to continue.
+WizardSelectTasks=Select Shortcuts and File Options
+TasksListLabel=Choose how you want EleViewer to open your course materials and documents:
+FinishedHeadingLabel=EleViewer is ready for your studies!
+FinishedLabelNoIcons=Setup has finished installing EleViewer on your computer.%n%nYour files stay local on your hard drive, your privacy is protected, and your laptop will run fast. Click Finish to exit setup.
+
 [Tasks]
-Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
-Name: "associate"; Description: "Register as default editor for .md, .pdf, .docx, .xlsx, .pptx, .csv, .txt, .html"; GroupDescription: "File Associations"
-Name: "contextmenu"; Description: "Add 'Open with EleViewer' to right-click menu"; GroupDescription: "Windows Explorer"
+Name: "desktopicon"; Description: "Create a shortcut on my desktop"; GroupDescription: "Desktop Shortcut"; Flags: unchecked
+Name: "associate"; Description: "Open my study files (PDFs, Word docs, Excel, PowerPoint, Markdown, CSV, TXT, HTML) with EleViewer by default"; GroupDescription: "Default File Associations"
+Name: "contextmenu"; Description: "Add 'Open with EleViewer' to my right-click menu in Windows Explorer"; GroupDescription: "Windows Explorer Integration"
 
 [Files]
 ; The source is the single portable executable created by PyInstaller.
