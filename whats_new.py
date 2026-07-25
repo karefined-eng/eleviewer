@@ -3,12 +3,12 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt
 from theme import BRAND_BACKGROUND, BRAND_PRIMARY, BRAND_BORDER, BRAND_MUTED_FG, get_brand_accent
-from main import APP_VERSION
+
 
 class WhatsNewDialog(QDialog):
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, app_version="1.3.0"):
         super().__init__(parent)
-        self.setWindowTitle(f"What's New in v{APP_VERSION}")
+        self.setWindowTitle(f"What's New in v{app_version}")
         self.resize(550, 450)
         
         accent = get_brand_accent()
@@ -41,7 +41,7 @@ class WhatsNewDialog(QDialog):
         layout.setSpacing(20)
 
         header_layout = QHBoxLayout()
-        title_label = QLabel(f"🎉 EleViewer updated to v{APP_VERSION}")
+        title_label = QLabel(f"🎉 EleViewer updated to v{app_version}")
         title_label.setStyleSheet("font-size: 22px; font-weight: bold; color: #ffffff;")
         header_layout.addWidget(title_label)
         header_layout.addStretch()

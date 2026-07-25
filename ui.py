@@ -1236,11 +1236,14 @@ class MainWindow(QMainWindow):
 
         voice_id = self.tts_bar.get_selected_voice_id()
 
-        if filename.lower().endswith(".pdf") and hasattr(current, "read_current_page"):
+        if hasattr(current, "read_current_page"):
             spoken = current.read_current_page(voice_id=voice_id)
             if spoken:
                 self.tts_bar.show()
-                self.tts_bar.set_status(filename, f"page {current.current_page + 1} of {current.total_pages}")
+                if hasattr(current, "current_page") and hasattr(current, "total_pages"):
+                    self.tts_bar.set_status(filename, f"page {current.current_page + 1} of {current.total_pages}")
+                elif hasattr(current, "current_slide") and hasattr(current, "total_slides"):
+                    self.tts_bar.set_status(filename, f"slide {current.current_slide + 1} of {current.total_slides}")
             return
 
         text = ""
@@ -1258,6 +1261,9 @@ class MainWindow(QMainWindow):
 
     def _stop_tts(self):
         self.tts_engine.stop()
+        current = self.tabs.currentWidget()
+        if hasattr(current, "tts"):
+            current.tts.stop()
         if hasattr(self, "tts_bar") and self.tts_bar:
             self.tts_bar.set_active_reading(False)
 

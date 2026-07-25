@@ -24,6 +24,7 @@ from PySide6.QtGui import QIntValidator, QKeyEvent
 
 from icons import icon
 from theme import compact_toolbar_stylesheet, ICON_SIZE_COMPACT, BRAND_PANEL, BRAND_BORDER, BRAND_PRIMARY, BRAND_MUTED_FG, get_brand_accent
+from tts_engine import TtsEngine
 
 
 class PptxViewer(QWidget):
@@ -39,6 +40,8 @@ class PptxViewer(QWidget):
         self.slides = []  # list of dicts: {"title": str, "content": str, "notes": str}
         self.current_slide = 0
         self.total_slides = 0
+
+        self.tts = TtsEngine(on_error=self._on_tts_error)
 
         self.setFocusPolicy(Qt.StrongFocus)
 
@@ -200,6 +203,10 @@ class PptxViewer(QWidget):
         except Exception as e:
             print(f"[PPTX Viewer] Fallback zip parse error: {e}")
 
+    def _on_tts_error(self, message):
+        if self._status_callback:
+            self._status_callback(f"TTS error: {message}", 4000)
+
     def go_to_slide(self, index):
         if index < 0 or index >= self.total_slides:
             return
@@ -255,9 +262,9 @@ class PptxViewer(QWidget):
             slide_data = self.slides[self.current_slide]
             text = f"{slide_data['title']}. {slide_data['content']}"
             if text.strip():
-                from tts_engine import TtsEngine
-                engine = TtsEngine()
-                engine.speak(text, voice_id=voice_id)
+                self.tts.speak(text, voice_id=voice_id)
+                if self._status_callback:
+                    self._status_callback(f"Reading slide {self.current_slide + 1} aloud...", 2000)
                 return text
         return ""
 

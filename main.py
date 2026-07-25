@@ -132,7 +132,7 @@ else:
         from whats_new import WhatsNewDialog
         from settings import save_settings
         
-        dlg = WhatsNewDialog(window)
+        dlg = WhatsNewDialog(window, APP_VERSION)
         dlg.exec()
         
         settings["last_run_version"] = APP_VERSION
