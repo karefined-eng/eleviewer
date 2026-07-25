@@ -52,17 +52,17 @@ def main_window_stylesheet():
     accent = get_active_accent()
     return f"""
         QMainWindow {{ background-color: {BRAND_BACKGROUND}; }}
-        QToolBar {{ background-color: {BRAND_PANEL}; border-bottom: 1px solid {BRAND_BORDER}; padding: 8px; spacing: 15px; }}
-        QToolButton {{ color: {BRAND_PRIMARY}; background-color: transparent; border: none; padding: 6px; border-radius: 4px; min-width: 28px; min-height: 28px; }}
+        QToolBar {{ background-color: {BRAND_PANEL}; border-bottom: 1px solid {BRAND_BORDER}; padding: 6px; spacing: 12px; }}
+        QToolButton {{ color: {BRAND_PRIMARY}; background-color: transparent; border: none; padding: 6px; border-radius: 6px; min-width: 28px; min-height: 28px; }}
         QToolButton:hover {{ background-color: {BRAND_PANEL_2}; }}
         QToolButton:pressed {{ background-color: {accent['pressed']}; color: {BRAND_BACKGROUND}; }}
         QToolButton:checked {{ background-color: {accent['accent']}; color: {BRAND_BACKGROUND}; }}
-        QToolBar QToolButton {{ min-width: 70px; min-height: 52px; font-size: 11px; }}
+        QToolBar QToolButton {{ min-width: 65px; min-height: 50px; font-size: 11px; }}
         QTabWidget::pane {{ border: 1px solid {BRAND_BORDER}; background-color: {BRAND_PANEL}; }}
         QTabBar {{ background-color: #1a1a1a; border-bottom: 1px solid {BRAND_BORDER}; }}
-        QTabBar::tab {{ background-color: #242424; color: {BRAND_MUTED_FG}; padding: 7px 16px; margin-right: 2px; font-size: 12px; font-family: 'Segoe UI', sans-serif; border-top: 2px solid transparent; border-top-left-radius: 4px; border-top-right-radius: 4px; }}
+        QTabBar::tab {{ background-color: #242424; color: {BRAND_MUTED_FG}; padding: 6px 14px; margin-right: 1px; font-size: 11px; font-family: 'Segoe UI', sans-serif; border-top: 2px solid transparent; border-top-left-radius: 6px; border-top-right-radius: 6px; }}
         QTabBar::tab:selected {{ background-color: {BRAND_BACKGROUND}; color: #ffffff; font-weight: bold; border-top: 2px solid {accent['accent']}; }}
-        QTabBar::tab:hover:!selected {{ background-color: #2a2a2a; color: #e0e0e0; }}
+        QTabBar::tab:hover:!selected {{ background-color: #2a2a2a; color: #ffffff; }}
         QTextEdit, QPlainTextEdit {{ background-color: {BRAND_PANEL}; color: {BRAND_PRIMARY}; border: none; padding: 15px; font-family: 'Consolas', monospace; font-size: 14px; }}
         QMenuBar {{ background-color: {BRAND_BACKGROUND}; color: {BRAND_PRIMARY}; border-bottom: 1px solid {BRAND_BORDER}; font-size: 13px; }}
         QMenuBar::item {{ padding: 5px 10px; }}
@@ -74,12 +74,12 @@ def main_window_stylesheet():
         QStatusBar {{ background-color: {BRAND_BACKGROUND}; color: {BRAND_MUTED_FG}; border-top: 1px solid {BRAND_BORDER}; }}
         QFileDialog {{ background-color: {BRAND_PANEL}; color: {BRAND_PRIMARY}; }}
         QMessageBox {{ background-color: {BRAND_PANEL}; color: {BRAND_PRIMARY}; }}
-        QPushButton {{ background-color: {accent['accent']}; color: {BRAND_BACKGROUND}; border: none; padding: 5px 10px; border-radius: 4px; font-weight: bold; }}
+        QPushButton {{ background-color: {accent['accent']}; color: {BRAND_BACKGROUND}; border: none; padding: 5px 10px; border-radius: 6px; font-weight: bold; }}
         QPushButton:hover {{ background-color: {accent['hover']}; opacity: 0.9; }}
         QPushButton:pressed {{ background-color: {accent['pressed']}; }}
         QDialog {{ background-color: {BRAND_BACKGROUND}; color: {BRAND_PRIMARY}; }}
         QLineEdit, QSpinBox, QCheckBox {{ color: {BRAND_PRIMARY}; }}
-        QLineEdit, QSpinBox {{ background-color: {BRAND_MUTED}; border: 1px solid {BRAND_BORDER}; padding: 6px; border-radius: 3px; }}
+        QLineEdit, QSpinBox {{ background-color: {BRAND_MUTED}; border: 1px solid {BRAND_BORDER}; padding: 6px; border-radius: 6px; }}
         QLabel {{ color: {BRAND_PRIMARY}; }}
     """
 
@@ -183,7 +183,7 @@ def compact_toolbar_stylesheet():
             background: transparent;
             border: none;
             padding: 4px;
-            border-radius: 4px;
+            border-radius: 6px;
             min-width: 28px;
             min-height: 28px;
         }}

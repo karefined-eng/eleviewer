@@ -74,14 +74,14 @@ class TtsReaderBar(QFrame):
 
         # Play / Speak button
         self.btn_play = QToolButton()
-        self.btn_play.setIcon(icon("play", size=14, color=BRAND_PRIMARY))
+        self.btn_play.setIcon(icon("play", size=18, color=accent))
         self.btn_play.setToolTip("Read aloud (Play)")
         self.btn_play.clicked.connect(self.speak_requested.emit)
         layout.addWidget(self.btn_play)
 
         # Stop button
         self.btn_stop = QToolButton()
-        self.btn_stop.setIcon(icon("square", size=14, color=BRAND_PRIMARY))
+        self.btn_stop.setIcon(icon("square", size=18, color=BRAND_PRIMARY))
         self.btn_stop.setToolTip("Stop reading")
         self.btn_stop.clicked.connect(self.stop_requested.emit)
         layout.addWidget(self.btn_stop)

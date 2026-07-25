@@ -1,22 +1,13 @@
 from PySide6.QtGui import QIcon, QPixmap, QPainter, QColor, QFont, QPainterPath, QPen
 from PySide6.QtCore import Qt, QRectF, QPointF
 
-EXT_COLORS = {
-    ".md": "#6cb6ff",     # Accent Blue
-    ".pdf": "#ff6b6b",    # Red / Coral
-    ".docx": "#4d96ff",   # Word Blue
-    ".xlsx": "#6bcb77",   # Excel Green
-    ".pptx": "#e056fd",   # PowerPoint Purple
-    ".csv": "#2bcbba",    # Teal
-    ".txt": "#a0a0a0",    # Muted Gray
-    ".html": "#ff9f43",   # Orange
-}
+# All file icons now use the same unified accent color to fit the dark theme
+ACCENT_COLOR_HEX = "#6cb6ff"
 
 def file_type_icon(ext: str, size: int = 20) -> QIcon:
-    """Generates a crisp document-page QIcon with a folded corner and colored brand accent."""
+    """Generates a crisp document-page QIcon with a folded corner and a distinct monochrome symbol."""
     ext = ext.lower()
-    color_hex = EXT_COLORS.get(ext, "#888888")
-    accent_color = QColor(color_hex)
+    accent_color = QColor(ACCENT_COLOR_HEX)
     
     pixmap = QPixmap(size, size)
     pixmap.fill(Qt.transparent)
@@ -60,20 +51,48 @@ def file_type_icon(ext: str, size: int = 20) -> QIcon:
     painter.fillPath(fold_path, fold_color)
     painter.drawPath(fold_path)
     
-    # Draw File Extension Text Badge in lower region
-    text = ext.replace(".", "").upper()[:4]
-    if not text:
-        text = "FILE"
+    # Draw internal glyph instead of extension text
+    # Map extensions to specific symbols or glyphs
+    glyph = "FILE"
+    font_scale = 0.35
+    if ext == ".md":
+        glyph = "M↓"
+        font_scale = 0.35
+    elif ext == ".pdf":
+        glyph = "≡" # horizontal lines
+        font_scale = 0.5
+    elif ext == ".docx":
+        glyph = "W"
+        font_scale = 0.4
+    elif ext == ".xlsx":
+        glyph = "⊞" # grid
+        font_scale = 0.45
+    elif ext == ".pptx":
+        glyph = "▶"
+        font_scale = 0.35
+    elif ext == ".csv":
+        glyph = ","
+        font_scale = 0.5
+    elif ext == ".txt":
+        glyph = "T"
+        font_scale = 0.4
+    elif ext in (".html", ".htm"):
+        glyph = "</>"
+        font_scale = 0.25
+    else:
+        glyph = ext.replace(".", "").upper()[:3]
+        font_scale = 0.25
         
     font = QFont("Segoe UI")
-    font.setPixelSize(max(6, int(size * 0.28)))
+    font.setPixelSize(max(6, int(size * font_scale)))
     font.setBold(True)
     painter.setFont(font)
     
-    # Text rect positioned in lower half of page
+    # Glyph rect positioned in lower half of page, muted color
     text_rect = QRectF(x, y + h * 0.35, w, h * 0.6)
-    painter.setPen(accent_color)
-    painter.drawText(text_rect, Qt.AlignCenter, text)
+    glyph_color = QColor(accent_color.red(), accent_color.green(), accent_color.blue(), 180) # Slightly muted interior glyph
+    painter.setPen(glyph_color)
+    painter.drawText(text_rect, Qt.AlignCenter, glyph)
     
     painter.end()
     return QIcon(pixmap)

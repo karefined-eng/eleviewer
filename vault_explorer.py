@@ -87,11 +87,11 @@ class VaultExplorer(QWidget):
                 background: {BRAND_PANEL};
                 color: {BRAND_PRIMARY};
                 border: none;
-                font-size: 13px;
+                font-size: 12px;
             }}
-            QTreeWidget::item {{ padding: 4px 2px; }}
-            QTreeWidget::item:selected {{ background: {get_brand_accent()}; color: {BRAND_BACKGROUND}; }}
-            QTreeWidget::item:hover {{ background: {BRAND_PANEL_2}; }}
+            QTreeWidget::item {{ padding: 5px 6px; border-left: 2px solid transparent; }}
+            QTreeWidget::item:selected {{ background: {BRAND_PANEL_2}; border-left: 2px solid {get_brand_accent()}; color: #ffffff; font-weight: bold; }}
+            QTreeWidget::item:hover:!selected {{ background: {BRAND_PANEL_2}; }}
         """)
         self.tree.itemExpanded.connect(self._on_item_expanded)
         self.tree.itemDoubleClicked.connect(self._on_item_double_clicked)
