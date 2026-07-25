@@ -34,6 +34,7 @@ Opens & edits **DOCX, XLSX, PPTX, PDF, MD, TXT and HTML** — all in one workspa
 - 16 MB, single portable `.exe` — no install needed.
 - Windows 10/11.
 - No account, **zero telemetry** — your files stay local. Includes an opt-in, **PII-stripped secure crash reporter** that automatically copies technical logs to your clipboard without exposing your personal username or file paths.
+- **Flesch-Kincaid Compliant Copy** — all user-facing text follows the Paul Graham / Ogilvy "write like you talk" framework at a 6th-to-8th grade reading level for effortless scanning.
 - **GNU GPLv3 licensed**, open source (Python + PySide6).
 - Free forever, no ads.
 
