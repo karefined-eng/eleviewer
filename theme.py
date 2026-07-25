@@ -60,7 +60,7 @@ def main_window_stylesheet():
         QToolBar QToolButton {{ min-width: 70px; min-height: 52px; font-size: 11px; }}
         QTabWidget::pane {{ border: 1px solid {BRAND_BORDER}; background-color: {BRAND_PANEL}; }}
         QTabBar {{ background-color: #252526; border-bottom: 1px solid {BRAND_BORDER}; }}
-        QTabBar::tab {{ background-color: #2d2d2d; color: #999999; padding: 7px 14px; margin-right: 1px; font-size: 12px; font-family: 'Consolas', 'Segoe UI', monospace; border-top: 2px solid transparent; }}
+        QTabBar::tab {{ background-color: #2d2d2d; color: #999999; padding: 7px 14px; margin-right: 1px; font-size: 12px; font-family: 'Segoe UI', sans-serif; border-top: 2px solid transparent; }}
         QTabBar::tab:selected {{ background-color: {BRAND_BACKGROUND}; color: #ffffff; font-weight: bold; border-top: 2px solid {accent['accent']}; }}
         QTabBar::tab:hover:!selected {{ background-color: #333333; color: #e0e0e0; }}
         QTextEdit, QPlainTextEdit {{ background-color: {BRAND_PANEL}; color: {BRAND_PRIMARY}; border: none; padding: 15px; font-family: 'Consolas', monospace; font-size: 14px; }}
