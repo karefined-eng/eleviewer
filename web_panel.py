@@ -18,6 +18,30 @@ try:
             _web_profile.setPersistentStoragePath(storage_path)
             _web_profile.setCachePath(storage_path)
             _web_profile.setPersistentCookiesPolicy(QWebEngineProfile.PersistentCookiesPolicy.ForcePersistentCookies)
+            
+            # Disable redundant specs to reduce resource load and improve privacy/security
+            from PySide6.QtWebEngineCore import QWebEngineSettings
+            settings = _web_profile.settings()
+            
+            # Disable heavy renderers and plugins
+            settings.setAttribute(QWebEngineSettings.WebAttribute.PluginsEnabled, False)
+            settings.setAttribute(QWebEngineSettings.WebAttribute.WebGLEnabled, False)
+            settings.setAttribute(QWebEngineSettings.WebAttribute.PdfViewerEnabled, False)
+            
+            # Prevent annoying popups and autoplay media
+            settings.setAttribute(QWebEngineSettings.WebAttribute.JavascriptCanOpenWindows, False)
+            settings.setAttribute(QWebEngineSettings.WebAttribute.PlaybackRequiresUserGesture, True)
+            
+            # Security/Privacy limits
+            settings.setAttribute(QWebEngineSettings.WebAttribute.JavascriptCanAccessClipboard, False)
+            
+            # 2026 Zero-Day Mitigations: Block File System Access API exploits
+            settings.setAttribute(QWebEngineSettings.WebAttribute.LocalContentCanAccessFileUrls, False)
+            settings.setAttribute(QWebEngineSettings.WebAttribute.LocalContentCanAccessRemoteUrls, False)
+            
+            # Block Mixed Content and malicious Window takeovers
+            settings.setAttribute(QWebEngineSettings.WebAttribute.AllowRunningInsecureContent, False)
+            settings.setAttribute(QWebEngineSettings.WebAttribute.AllowWindowActivationFromJavaScript, False)
         return _web_profile
 
     class WebViewWrapper(QWebEngineView):
@@ -28,6 +52,12 @@ try:
             # Assign the persistent profile to this view's page
             page = QWebEnginePage(get_persistent_profile(), self)
             self.setPage(page)
+            
+            # Auto-deny all hardware/sensor access requests (Camera, Mic, Screen Share, Location, etc.)
+            page.featurePermissionRequested.connect(self._auto_deny_permissions)
+            
+        def _auto_deny_permissions(self, security_origin, feature):
+            self.page().setFeaturePermission(security_origin, feature, QWebEnginePage.PermissionPolicy.PermissionDeniedByUser)
         
         def setUrl(self, qurl):
             super().setUrl(qurl)
