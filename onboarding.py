@@ -33,7 +33,7 @@ class OnboardingDialog(QDialog):
         ))
         self.stack.addWidget(self._create_slide(
             "Survival Shortcuts ⚡",
-            "Master these three shortcuts to fly through your workflow:\n\n"
+            "Master these three shortcuts to fly through your homework and notes:\n\n"
             "• Alt+V : Toggle Vault Sidebar\n"
             "• Ctrl+Q : Quick Switcher (fuzzy find files)\n"
             "• Ctrl+T : Split View Web Browser"
