@@ -20,6 +20,9 @@ except Exception:
     pass
 
 import traceback
+from datetime import datetime
+import urllib.request
+import json
 def global_exception_handler(exc_type, exc_value, exc_traceback):
     if issubclass(exc_type, KeyboardInterrupt):
         sys.__excepthook__(exc_type, exc_value, exc_traceback)
@@ -53,9 +56,6 @@ def global_exception_handler(exc_type, exc_value, exc_traceback):
         pass
     
     from PySide6.QtWidgets import QMessageBox
-    import urllib.request
-    import json
-    from datetime import datetime
     
     msg = QMessageBox()
     msg.setIcon(QMessageBox.Critical)
@@ -138,7 +138,8 @@ if not settings.get("onboarding_completed", False):
     settings["last_run_version"] = APP_VERSION
     save_settings(settings)
     
-    welcome_file = Path("getting_started/Welcome to EleViewer.md").absolute()
+    from paths import BASE_DIR
+    welcome_file = BASE_DIR / "getting_started" / "Welcome to EleViewer.md"
     if welcome_file.exists():
         window.open_file(str(welcome_file))
 else:

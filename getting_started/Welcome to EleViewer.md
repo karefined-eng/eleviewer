@@ -1,6 +1,6 @@
 ---
 title: Welcome to EleViewer
-author: Abednego Lomazah
+description: The Sovereignty Workstation — a local-first study workspace for students who value speed and privacy.
 ---
 
 Welcome to EleViewer: The Sovereignty Workstation 🐘
