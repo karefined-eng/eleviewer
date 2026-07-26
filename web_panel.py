@@ -62,8 +62,11 @@ try:
         def setUrl(self, qurl):
             super().setUrl(qurl)
             
-        def setHtml(self, html):
-            super().setHtml(html)
+        def setHtml(self, html, baseUrl=None):
+            if baseUrl is not None:
+                super().setHtml(html, baseUrl)
+            else:
+                super().setHtml(html)
             
         def url(self):
             return super().url()
