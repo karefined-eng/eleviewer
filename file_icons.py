@@ -7,6 +7,8 @@ ACCENT_COLOR_HEX = "#6cb6ff"
 def file_type_icon(ext: str, size: int = 20) -> QIcon:
     """Generates a crisp document-page QIcon with a folded corner and a distinct monochrome symbol."""
     ext = ext.lower()
+    if ext and not ext.startswith("."):
+        ext = "." + ext
     accent_color = QColor(ACCENT_COLOR_HEX)
     
     pixmap = QPixmap(size, size)
@@ -70,7 +72,7 @@ def file_type_icon(ext: str, size: int = 20) -> QIcon:
     elif ext == ".pptx":
         glyph = "▶"
         font_scale = 0.35
-    elif ext == ".csv":
+    elif ext in (".csv", ".tsv"):
         glyph = ","
         font_scale = 0.5
     elif ext == ".txt":

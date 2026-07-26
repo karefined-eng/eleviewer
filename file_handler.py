@@ -6,9 +6,11 @@ from xlsx_viewer import XlsxViewer
 from pptx_viewer import PptxViewer
 from markdown_renderer import MarkdownViewer
 from pdf_viewer import PdfViewer
+from csv_viewer import CsvViewer
+from html_viewer import HtmlViewer
 
 BINARY_FORMATS = {"docx", "xlsx", "pdf", "pptx"}
-TEXT_RESTORE_FORMATS = {"txt", "md", ""}
+TEXT_RESTORE_FORMATS = {"txt", "md", "csv", "tsv", "html", "htm", ""}
 
 
 def get_file_extension(file_path):
@@ -50,11 +52,21 @@ def create_viewer_widget(file_path, content=None):
         viewer.file_path = file_path
         return viewer
 
-    elif ext in ("md", "html", "htm"):
-        viewer = MarkdownViewer(file_path, is_html=(ext in ("html", "htm")))
+    elif ext in ("csv", "tsv"):
+        viewer = CsvViewer(file_path, content=content)
+        viewer.file_path = file_path
+        return viewer
+
+    elif ext == "md":
+        viewer = MarkdownViewer(file_path, is_html=False)
         viewer.file_path = file_path
         if content is not None:
             viewer.setPlainText(content)
+        return viewer
+
+    elif ext in ("html", "htm"):
+        viewer = HtmlViewer(file_path, content=content)
+        viewer.file_path = file_path
         return viewer
 
     elif ext == "pdf":
@@ -88,6 +100,9 @@ def get_file_content(widget, file_path):
 
     elif ext == "xlsx":
         return widget.to_xlsx_bytes()
+
+    elif ext in ("csv", "tsv"):
+        return widget.toPlainText()
 
     else:
         return widget.toPlainText()
