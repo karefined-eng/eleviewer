@@ -28,11 +28,11 @@ def run_tests():
 
     print("[2/6] Testing 3-way view switcher (Preview, Syntax, Split View)...")
     viewer.set_view_mode("preview")
-    assert not viewer.editor.isVisible() and viewer.viewer.isVisible(), "Preview mode failed visibility check"
+    assert viewer.editor.isHidden() and not viewer.viewer.isHidden(), "Preview mode failed visibility check"
     viewer.set_view_mode("syntax")
-    assert viewer.editor.isVisible() and not viewer.viewer.isVisible(), "Syntax mode failed visibility check"
+    assert not viewer.editor.isHidden() and viewer.viewer.isHidden(), "Syntax mode failed visibility check"
     viewer.set_view_mode("split")
-    assert viewer.editor.isVisible() and viewer.viewer.isVisible(), "Split mode failed visibility check"
+    assert not viewer.editor.isHidden() and not viewer.viewer.isHidden(), "Split mode failed visibility check"
     print("  -> Passed! 3-way view switcher toggles visibility cleanly.")
 
     print("[3/6] Testing syntax edits and live feed debounce timer...")
