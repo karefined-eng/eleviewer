@@ -52,4 +52,6 @@ def run_test():
     return 0
 
 if __name__ == "__main__":
-    sys.exit(run_test())
+    ret = run_test()
+    os._exit(0)
+

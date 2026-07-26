@@ -61,6 +61,7 @@ def run_tests():
     viewer.raw_editor.setPlainText('ID,Name,Score\n00999,Alice,100\n')
     viewer.toggle_view_mode()
     
+    start_t = time.time()
     while viewer._loading and (time.time() - start_t) < timeout:
         app.processEvents()
         time.sleep(0.05)
