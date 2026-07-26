@@ -79,6 +79,7 @@ Opens & edits **DOCX, XLSX, PPTX, PDF, MD, TXT, CSV and HTML** — all in one wo
 
 | Shortcut | Action |
 |---|---|
+| **Alt+E** | **System-Wide Quick Note / Summon** (Brings EleViewer to front & opens new note from anywhere in Windows) |
 | **Ctrl+N** | New File picker |
 | **Ctrl+O** / **Ctrl+S** | Open file / Save file |
 | **Ctrl+Shift+S** | Save As |
