@@ -110,17 +110,20 @@ def _draw_icon_pixmap(ext: str, size: int, color_hex: str) -> QPixmap:
     return pixmap
 
 
-def file_type_icon(ext: str, size: int = 20) -> QIcon:
+def file_type_icon(ext: str, size: int = 20, active: bool = False) -> QIcon:
     """
     Generates a multi-state QIcon matching the minimalist Lucide line-art aesthetic of the website live demo.
-    Uses calm gray for Normal (unselected) and vibrant #6cb6ff accent for Active/Selected states.
+    When active=True (or when Qt renders in Active/Selected mode), uses vibrant #6cb6ff accent.
+    When active=False, uses calm gray (#888888) for Normal mode.
     """
     icon = QIcon()
-    pix_normal = _draw_icon_pixmap(ext, size, MUTED_COLOR_HEX)
+    primary_color = ACCENT_COLOR_HEX if active else MUTED_COLOR_HEX
+    pix_normal = _draw_icon_pixmap(ext, size, primary_color)
     pix_active = _draw_icon_pixmap(ext, size, ACCENT_COLOR_HEX)
 
     icon.addPixmap(pix_normal, QIcon.Normal, QIcon.Off)
     icon.addPixmap(pix_active, QIcon.Active, QIcon.Off)
     icon.addPixmap(pix_active, QIcon.Selected, QIcon.Off)
     return icon
+
 
