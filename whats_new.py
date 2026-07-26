@@ -59,25 +59,28 @@ class WhatsNewDialog(QDialog):
         <div>
             Thank you for studying with EleViewer! Here is what we just shipped based entirely on anonymous community feedback:
             <br><br>
-            <b>1. Native PowerPoint (.pptx) Integration</b>
+            <b>1. CSV Table Workstation & Editor</b>
             <ul>
-                <li>EleViewer can now instantly extract slide text and speaker notes from PPTX files!</li>
-                <li>Flip through slides cleanly and use the Text-to-Speech (TTS) reader on PowerPoint lectures.</li>
+                <li>Dual view modes: toggle instantly between <b>Table Grid View</b> (Excel/Sheets style) and <b>Raw Text View</b>.</li>
+                <li>Add rows, add columns, delete selected cells, and override delimiters on-the-fly without corrupting leading zeroes!</li>
+            </ul>
+
+            <b>2. HTML Live Workstation & 1-Click Browser Migration</b>
+            <ul>
+                <li>Split-screen live webpage workstation with debounced preview and 3-way view switcher.</li>
+                <li>Click the new <b>Open in Browser Tab</b> button to push local HTML or preview URLs directly into the right-hand Web Panel!</li>
+            </ul>
+
+            <b>3. Obsidian-Inspired Web Panel & Link Interception</b>
+            <ul>
+                <li>The Web Panel now features dedicated <b>Refresh</b> and <b>Bookmark</b> toolbar controls.</li>
+                <li><b>Zero External Browser Launches:</b> Clicking web links across documents or slide notes now automatically opens inside EleViewer's Web Panel!</li>
             </ul>
             
-            <b>2. Active Reading Focus Mode</b>
+            <b>4. Expanded Universal TTS & Robust Shortcuts</b>
             <ul>
-                <li>When the TTS engine is reading aloud, the active reader bar now glows with the accent color to indicate active reading mode.</li>
-            </ul>
-            
-            <b>3. License Upgraded to GNU GPLv3</b>
-            <ul>
-                <li>We transitioned our license from MIT to GPLv3. This guarantees EleViewer remains free, open-source, and protected against corporate piracy forever.</li>
-            </ul>
-            
-            <b>4. Deep System Integration</b>
-            <ul>
-                <li>The Windows installer now fully associates EleViewer as the default editor for .docx, .xlsx, .pptx, .csv, .md, and .pdf files.</li>
+                <li>Pressing <code>F9</code> now reads aloud CSV spreadsheets and HTML pages alongside PDFs, DOCX, and PPTX!</li>
+                <li>Restored full reliability to <code>Alt+V</code> (Toggle Vault) and <code>Ctrl+W</code> tab closing with intelligent Web Panel focus detection.</li>
             </ul>
             
             <br>
