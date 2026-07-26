@@ -55,16 +55,16 @@ _TAB_ICON_MAP = {
 }
 
 
-def _tab_icon_for(path_or_name):
+def _tab_icon_for(path_or_name, active=False):
     """Return a small QIcon appropriate for the file extension or filename."""
     from file_icons import file_type_icon
     if not path_or_name:
-        return file_type_icon(".txt", size=18)
+        return file_type_icon(".txt", size=18, active=active)
     if path_or_name.startswith("."):
         ext = path_or_name.lower()
     else:
         ext = os.path.splitext(path_or_name)[1].lower()
-    return file_type_icon(ext or ".txt", size=18)
+    return file_type_icon(ext or ".txt", size=18, active=active)
 
 
 class MainWindow(QMainWindow):
@@ -1325,7 +1325,16 @@ class MainWindow(QMainWindow):
             count = editor.replace_all(find_text, replace_text, match_case, whole_word)
             self.show_status_message(f"Replaced {count} occurrences.", 3000)
 
+    def _refresh_tab_icons(self):
+        """Update tab icons so the active/focused tab has a vibrant blue icon while inactive tabs are calm gray."""
+        current_idx = self.tabs.currentIndex()
+        for i in range(self.tabs.count()):
+            editor = self.tabs.widget(i)
+            path = getattr(editor, "file_path", None) or self.tabs.tabText(i)
+            self.tabs.setTabIcon(i, _tab_icon_for(path, active=(i == current_idx)))
+
     def update_status_bar(self):
+        self._refresh_tab_icons()
         count = self.tabs.count()
         self.status_left.setText(f"{count} tab{'s' if count != 1 else ''} · session saved")
         

@@ -95,6 +95,7 @@ class VaultExplorer(QWidget):
         """)
         self.tree.itemExpanded.connect(self._on_item_expanded)
         self.tree.itemDoubleClicked.connect(self._on_item_double_clicked)
+        self.tree.itemSelectionChanged.connect(self._on_tree_selection_changed)
 
         layout.addLayout(header_row)
         layout.addWidget(self.tree)
@@ -174,7 +175,7 @@ class VaultExplorer(QWidget):
         root_item.setData(0, Qt.UserRole + 1, "dir")
         from icons import icon
         from theme import ICON_SIZE_COMPACT
-        root_item.setIcon(0, icon("folder", size=ICON_SIZE_COMPACT))
+        root_item.setIcon(0, icon("folder", size=ICON_SIZE_COMPACT, color="#888888"))
         self.tree.addTopLevelItem(root_item)
         self._populate_dir(root_item, str(root))
         root_item.setExpanded(True)
@@ -217,7 +218,7 @@ class VaultExplorer(QWidget):
                 child = QTreeWidgetItem([entry.name])
                 child.setData(0, Qt.UserRole, entry.path)
                 child.setData(0, Qt.UserRole + 1, "dir")
-                child.setIcon(0, icon("folder", size=ICON_SIZE_COMPACT))
+                child.setIcon(0, icon("folder", size=ICON_SIZE_COMPACT, color="#888888"))
                 parent_item.addChild(child)
                 placeholder = QTreeWidgetItem(["…"])
                 placeholder.setData(0, Qt.UserRole + 1, "placeholder")
@@ -247,3 +248,31 @@ class VaultExplorer(QWidget):
             path = item.data(0, Qt.UserRole)
             if path:
                 self.file_opened.emit(path)
+
+    def _on_tree_selection_changed(self):
+        from file_icons import file_type_icon
+        from icons import icon
+        from theme import ICON_SIZE_COMPACT
+        if getattr(self, "_last_selected_tree_item", None):
+            old = self._last_selected_tree_item
+            try:
+                if old.data(0, Qt.UserRole + 1) == "file":
+                    ext = Path(old.text(0)).suffix
+                    old.setIcon(0, file_type_icon(ext, size=ICON_SIZE_COMPACT, active=False))
+                elif old.data(0, Qt.UserRole + 1) == "dir":
+                    old.setIcon(0, icon("folder", size=ICON_SIZE_COMPACT, color="#888888"))
+            except RuntimeError:
+                pass
+
+        selected = self.tree.selectedItems()
+        if selected:
+            new_item = selected[0]
+            self._last_selected_tree_item = new_item
+            if new_item.data(0, Qt.UserRole + 1) == "file":
+                ext = Path(new_item.text(0)).suffix
+                new_item.setIcon(0, file_type_icon(ext, size=ICON_SIZE_COMPACT, active=True))
+            elif new_item.data(0, Qt.UserRole + 1) == "dir":
+                new_item.setIcon(0, icon("folder", size=ICON_SIZE_COMPACT, color="#6cb6ff"))
+        else:
+            self._last_selected_tree_item = None
+
