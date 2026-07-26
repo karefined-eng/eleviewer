@@ -203,8 +203,10 @@ class VaultExplorer(QWidget):
         from file_icons import file_type_icon
         from theme import ICON_SIZE_COMPACT
         
+        SYSTEM_IGNORED_FILES = {"desktop.ini", "_desktop.ini", "thumbs.db", ".ds_store", "$recycle.bin"}
         for entry in entries:
-            if entry.name.startswith("."):
+            name_lower = entry.name.lower()
+            if entry.name.startswith(".") or name_lower in SYSTEM_IGNORED_FILES or name_lower.startswith("_desktop.ini"):
                 continue
             if vault_root_resolved:
                 try:
