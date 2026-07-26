@@ -57,11 +57,15 @@ class PreviewEventFilter(QObject):
         return False
 
     def _on_timeout(self):
-        if self._click_count == 2:
-            if self._viewer.is_html:
-                self._viewer.enter_syntax_mode()
-            else:
-                self._viewer.enter_simple_mode()
+        try:
+            if getattr(self, "_viewer", None) and not self._viewer.isHidden():
+                if self._click_count == 2:
+                    if self._viewer.is_html:
+                        self._viewer.enter_syntax_mode()
+                    else:
+                        self._viewer.enter_simple_mode()
+        except (RuntimeError, AttributeError):
+            pass
         self._click_count = 0
 
     def _reset_clicks(self):
@@ -426,17 +430,20 @@ class MarkdownViewer(QWidget):
         self._update_mode_button()
 
     def enter_simple_mode(self):
-        if self.is_html:
-            return
-        if self._mode == MODE_VIEW:
-            self.simple_editor.setPlainText(markdown_to_simple(self.editor.toPlainText()))
-        self._mode = MODE_SIMPLE
-        self.stack.setCurrentIndex(MODE_SIMPLE)
-        self.hint.setVisible(False)
-        if not self.btn_pin.isChecked():
-            self.formatting_widget.setVisible(True)
-            self.btn_toggle.setVisible(True)
-        self._update_mode_button()
+        try:
+            if self.is_html:
+                return
+            if self._mode == MODE_VIEW:
+                self.simple_editor.setPlainText(markdown_to_simple(self.editor.toPlainText()))
+            self._mode = MODE_SIMPLE
+            self.stack.setCurrentIndex(MODE_SIMPLE)
+            self.hint.setVisible(False)
+            if not self.btn_pin.isChecked():
+                self.formatting_widget.setVisible(True)
+                self.btn_toggle.setVisible(True)
+            self._update_mode_button()
+        except RuntimeError:
+            pass
 
     def enter_syntax_mode(self):
         if self._mode == MODE_SIMPLE and not self.is_html:

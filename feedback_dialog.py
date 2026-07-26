@@ -11,6 +11,7 @@ from PySide6.QtCore import Qt, QUrl, QThread, Signal
 import urllib.parse
 import urllib.request
 import json
+from theme import BRAND_BACKGROUND, BRAND_PRIMARY, BRAND_PANEL, BRAND_BORDER, get_brand_accent
 
 
 # FIX: HTTP POST moved to QThread to prevent 10s GUI freeze on timeout
