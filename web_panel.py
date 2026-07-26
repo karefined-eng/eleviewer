@@ -58,6 +58,18 @@ try:
             
         def _auto_deny_permissions(self, security_origin, feature):
             self.page().setFeaturePermission(security_origin, feature, QWebEnginePage.PermissionPolicy.PermissionDeniedByUser)
+
+        def createWindow(self, type):
+            # Intercept new window/tab requests (target="_blank", window.open) to open inside EleViewer WebPanel!
+            parent_w = self.parent()
+            while parent_w and not hasattr(parent_w, "add_tab"):
+                parent_w = parent_w.parent()
+            if parent_w and hasattr(parent_w, "add_tab"):
+                new_view = parent_w.add_tab(url="about:blank", title="Loading...")
+                if hasattr(parent_w, "tabs"):
+                    parent_w.tabs.setCurrentWidget(new_view)
+                return new_view
+            return self
         
         def setUrl(self, qurl):
             super().setUrl(qurl)
