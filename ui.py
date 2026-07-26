@@ -122,11 +122,47 @@ class MainWindow(QMainWindow):
         self.tray_icon.setContextMenu(tray_menu)
         self.tray_icon.activated.connect(self._on_tray_activated)
         self.tray_icon.show()
+        self._register_system_wide_hotkey()
+
+    def _register_system_wide_hotkey(self):
+        """Register Alt+E system-wide Windows hotkey to bring EleViewer to front and open a new note."""
+        if sys.platform != "win32":
+            return
+        try:
+            import ctypes
+            self._hotkey_id = 0x454C  # 'EL'
+            MOD_ALT = 0x0001
+            VK_E = 0x45
+            hwnd = int(self.winId())
+            ctypes.windll.user32.RegisterHotKey(hwnd, self._hotkey_id, MOD_ALT, VK_E)
+        except Exception:
+            pass
+
+    def nativeEvent(self, eventType, message):
+        """Catch Windows native WM_HOTKEY events (Alt+E) anywhere on the system."""
+        if sys.platform == "win32" and eventType == b"windows_generic_MSG":
+            try:
+                import ctypes
+                import ctypes.wintypes
+                msg = ctypes.wintypes.MSG.from_address(int(message))
+                WM_HOTKEY = 0x0312
+                if msg.message == WM_HOTKEY and getattr(msg, "wParam", None) == getattr(self, "_hotkey_id", 0x454C):
+                    self.bring_to_front_and_new_note()
+                    return True, 0
+            except Exception:
+                pass
+        return super().nativeEvent(eventType, message)
 
     def show_and_raise(self):
+        self.showNormal()
         self.show()
         self.raise_()
         self.activateWindow()
+
+    def bring_to_front_and_new_note(self):
+        """Brings EleViewer to the foreground and opens a new scratchpad .txt document."""
+        self.show_and_raise()
+        self.new_tab()
 
     def _on_tray_activated(self, reason):
         if reason == QSystemTrayIcon.DoubleClick:
@@ -357,6 +393,7 @@ class MainWindow(QMainWindow):
         # Create global ApplicationShortcut instances for all Reflex Keys and common actions
         # so they trigger reliably regardless of which child widget has focus and without ambiguous shortcut conflicts.
         shortcuts = [
+            ("Alt+E", self.bring_to_front_and_new_note),
             ("Alt+V", self.toggle_vault_panel),
             ("Ctrl+Q", self.open_quick_switcher),
             ("Ctrl+T", self.open_web_tab),

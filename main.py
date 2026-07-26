@@ -112,14 +112,17 @@ elif launch_behavior == "maximized":
 
 window.autosaver = AutoSaver(window)
 
-# If another instance tries to start with a file, open it in this instance
+# If another instance tries to start with a file or new note flag, handle it in this instance
 instance_server.file_opened.connect(window._open_vault_file)
+instance_server.new_note_requested.connect(window.bring_to_front_and_new_note)
 
-# If this instance was started with a file from the command line, open it
+# If this instance was started with a file or --new flag from CLI, open it
 if len(sys.argv) > 1:
-    file_path = os.path.abspath(sys.argv[1])
-    if os.path.exists(file_path):
-        window._open_vault_file(file_path)
+    arg = sys.argv[1].strip()
+    if arg in ("--new", "-n", "--new-note"):
+        window.new_tab()
+    elif os.path.exists(arg):
+        window._open_vault_file(os.path.abspath(arg))
 
 window.show()
 
