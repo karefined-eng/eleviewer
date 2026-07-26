@@ -182,6 +182,37 @@ class WebPanel(QWidget):
         self._add_tab_widget(default_url, "New Tab")
         self.persist_tabs()
 
+    def open_url_in_new_tab(self, url_str, title="Live Feed"):
+        if not WEB_AVAILABLE:
+            return
+        target_local = QUrl(url_str).toLocalFile().lower() if url_str.lower().startswith("file:") else ""
+        for i in range(self.tabs.count()):
+            view = self.tabs.widget(i)
+            if view and WEB_AVAILABLE:
+                curr_str = view.url().toString()
+                curr_local = view.url().toLocalFile().lower() if curr_str.lower().startswith("file:") else ""
+                if curr_str == url_str or (target_local and curr_local == target_local):
+                    self.tabs.setCurrentIndex(i)
+                    view.reload()
+                    return
+        self._add_tab_widget(url_str, title)
+        self.persist_tabs()
+
+    def reload_url(self, url_str):
+        if not WEB_AVAILABLE:
+            return False
+        reloaded = False
+        target_local = QUrl(url_str).toLocalFile().lower() if url_str.lower().startswith("file:") else ""
+        for i in range(self.tabs.count()):
+            view = self.tabs.widget(i)
+            if view and WEB_AVAILABLE:
+                curr_str = view.url().toString()
+                curr_local = view.url().toLocalFile().lower() if curr_str.lower().startswith("file:") else ""
+                if curr_str == url_str or (target_local and curr_local == target_local):
+                    view.reload()
+                    reloaded = True
+        return reloaded
+
     def _close_tab(self, index):
         if self.tabs.count() <= 1:
             return

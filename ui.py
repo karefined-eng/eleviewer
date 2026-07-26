@@ -544,6 +544,19 @@ class MainWindow(QMainWindow):
     def _connect_editor_signals(self, editor):
         if hasattr(editor, "textChanged"):
             editor.textChanged.connect(lambda ed=editor: self._on_editor_changed(ed))
+        if hasattr(editor, "pushToBrowserRequested"):
+            editor.pushToBrowserRequested.connect(self._on_push_to_browser)
+
+    def _on_push_to_browser(self, file_path, url_str):
+        if not WEB_AVAILABLE:
+            return
+        if self._web_dock is None:
+            self.toggle_web_panel()
+        elif not self._web_dock.isVisible():
+            self.toggle_web_panel()
+        web_panel = self._web_dock.widget()
+        title = os.path.basename(file_path) if file_path else "Live Feed"
+        web_panel.open_url_in_new_tab(url_str, title)
 
     def _on_editor_changed(self, editor):
         self.update_tab_title(editor)
@@ -1063,6 +1076,10 @@ class MainWindow(QMainWindow):
             self.update_tab_title(editor)
             self.show_status_message(f"Saved {os.path.basename(path)}", 3000)
             self.update_status_bar()
+            if WEB_AVAILABLE and self._web_dock and self._web_dock.isVisible():
+                from PySide6.QtCore import QUrl
+                file_url = QUrl.fromLocalFile(os.path.abspath(path)).toString()
+                self._web_dock.widget().reload_url(file_url)
             return True
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Failed to save file: {str(e)}")

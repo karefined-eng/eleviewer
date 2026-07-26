@@ -62,3 +62,43 @@ class MarkdownHighlighter(QSyntaxHighlighter):
                 start = match.start()
                 length = match.end() - start
                 self.setFormat(start, length, fmt)
+
+
+class HtmlHighlighter(QSyntaxHighlighter):
+    """Monochromatic syntax highlighter for HTML/XML documents in EleViewer."""
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self._setup_formats()
+
+    def _setup_formats(self):
+        accent_hex = get_brand_accent()
+        accent_color = QColor(accent_hex)
+        muted_color = QColor(BRAND_MUTED_FG)
+        bg_muted = QColor(BRAND_MUTED)
+
+        self.rules = []
+
+        # HTML Comments: <!-- ... -->
+        comment_format = QTextCharFormat()
+        comment_format.setForeground(muted_color)
+        comment_format.setFontItalic(True)
+        self.rules.append((re.compile(r"<!--.*?-->"), comment_format))
+
+        # HTML Tags: <tag> </tag> <tag/>
+        tag_format = QTextCharFormat()
+        tag_format.setFontWeight(QFont.Bold)
+        tag_format.setForeground(accent_color)
+        self.rules.append((re.compile(r"</?[a-zA-Z0-9\-]+(\s+[^>]*)?>"), tag_format))
+
+        # Attributes: attr="val" or attr='val'
+        attr_format = QTextCharFormat()
+        attr_format.setForeground(muted_color)
+        self.rules.append((re.compile(r"\b([a-zA-Z0-9\-]+)=(?:\"[^\"]*\"|'[^']*')"), attr_format))
+
+    def highlightBlock(self, text):
+        for pattern, fmt in self.rules:
+            for match in pattern.finditer(text):
+                start = match.start()
+                length = match.end() - start
+                self.setFormat(start, length, fmt)
+
