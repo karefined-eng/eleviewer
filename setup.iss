@@ -48,6 +48,7 @@ Name: "contextmenu"; Description: "Add 'Open with EleViewer' to my right-click m
 ; The source is the single portable executable created by PyInstaller.
 Source: "dist\EleViewer.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "icons\*"; DestDir: "{app}\icons"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "getting_started\*"; DestDir: "{app}\getting_started"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
 Name: "{autoprograms}\EleViewer"; Filename: "{app}\EleViewer.exe"

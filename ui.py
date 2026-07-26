@@ -567,8 +567,8 @@ class MainWindow(QMainWindow):
         self._web_dock.widget()._add_tab_widget("https://eleviewer.vercel.app/review", "Leave a Review")
 
     def open_getting_started(self):
-        from pathlib import Path
-        welcome_file = Path("getting_started/Welcome to EleViewer.md").absolute()
+        from paths import BASE_DIR
+        welcome_file = BASE_DIR / "getting_started" / "Welcome to EleViewer.md"
         if welcome_file.exists():
             self._open_vault_file(str(welcome_file))
         else:

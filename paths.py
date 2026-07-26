@@ -1,5 +1,14 @@
 import os
+import sys
 from pathlib import Path
+
+# BASE_DIR: root of bundled resources. Handles three execution contexts:
+#   1. PyInstaller frozen exe  -> sys._MEIPASS (temp extraction dir)
+#   2. Source / dev run        -> directory containing main.py / this file
+if getattr(sys, 'frozen', False):
+    BASE_DIR = Path(sys._MEIPASS)
+else:
+    BASE_DIR = Path(__file__).resolve().parent
 
 APP_DATA_DIR = Path(os.getenv("APPDATA", Path.home())) / "EleViewer"
 APP_DATA_DIR.mkdir(parents=True, exist_ok=True)
