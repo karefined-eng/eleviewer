@@ -73,9 +73,9 @@ class HtmlViewer(QWidget):
 
         icon_sz = QSize(self._icon_size, self._icon_size)
 
-        self.btn_preview = self._create_btn("book-open", "Preview Only", lambda: self.set_view_mode("preview"))
-        self.btn_syntax = self._create_btn("code", "Syntax Only", lambda: self.set_view_mode("syntax"))
-        self.btn_split = self._create_btn("layout", "Split View (Live Feed)", lambda: self.set_view_mode("split"))
+        self.btn_preview = self._create_btn("book-open", "Preview", "Preview Only", lambda: self.set_view_mode("preview"))
+        self.btn_syntax = self._create_btn("code", "Syntax", "Syntax Only", lambda: self.set_view_mode("syntax"))
+        self.btn_split = self._create_btn("layout", "Split View", "Split View (Live Feed)", lambda: self.set_view_mode("split"))
 
         tb_layout.addWidget(self.btn_preview)
         tb_layout.addWidget(self.btn_syntax)
@@ -126,10 +126,12 @@ class HtmlViewer(QWidget):
         layout.addWidget(self.splitter)
         self.set_view_mode(self._mode)
 
-    def _create_btn(self, icon_name, tooltip, callback):
+    def _create_btn(self, icon_name, text, tooltip, callback):
         btn = QToolButton()
         btn.setIconSize(QSize(self._icon_size, self._icon_size))
         btn.setIcon(icon(icon_name, size=self._icon_size))
+        btn.setText(f" {text}")
+        btn.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
         btn.setStyleSheet(compact_toolbar_stylesheet())
         btn.setToolTip(tooltip)
         btn.clicked.connect(callback)
@@ -151,7 +153,8 @@ class HtmlViewer(QWidget):
         self._update_live_preview()
 
     def _update_button_states(self):
-        accent_style = f"background: {get_brand_accent()}; color: {BRAND_BACKGROUND}; border-radius: 6px; padding: 4px; min-width: 28px; min-height: 28px;"
+        accent = get_brand_accent()
+        accent_style = f"background: {accent}; color: #ffffff; border-radius: 6px; padding: 4px 8px; font-weight: bold;"
         default_style = compact_toolbar_stylesheet()
         self.btn_preview.setStyleSheet(accent_style if self._mode == "preview" else default_style)
         self.btn_syntax.setStyleSheet(accent_style if self._mode == "syntax" else default_style)
