@@ -6,6 +6,7 @@ from PySide6.QtWidgets import (
 from PySide6.QtGui import QAction, QKeySequence, QShortcut, QIcon
 from PySide6.QtCore import Qt, QSize, QTimer, Slot, QUrl
 import os
+import sys
 
 APP_VERSION = "1.3.0"
 
@@ -175,9 +176,10 @@ class MainWindow(QMainWindow):
 
         # Hide Find/Replace if open in current editor
         current_widget = self.tabs.currentWidget()
-        if isinstance(current_widget, EditorTab):
-            if current_widget.find_replace_widget.isVisible():
-                current_widget.find_replace_widget.hide_panel()
+        if current_widget:
+            fr = getattr(current_widget, "find_replace_widget", None)
+            if fr and fr.isVisible():
+                fr.hide_panel()
                 return
 
         # Hide Vault Sidebar if open
