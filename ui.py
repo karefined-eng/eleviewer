@@ -93,6 +93,7 @@ class MainWindow(QMainWindow):
         self._build_layout()
         self._build_toolbar()
         self.create_menu()
+        self._setup_global_shortcuts()
         self._restore_vault()
         self.restore_session()
 
@@ -283,24 +284,28 @@ class MainWindow(QMainWindow):
         vault_btn = QAction(icon("panel-left", size=ICON_SIZE_TOOLBAR), "Toggle Vault", self)
         vault_btn.setToolTip("Toggle Vault (Alt+V)")
         vault_btn.setShortcut("Alt+V")
+        vault_btn.setShortcutContext(Qt.WidgetShortcut)
         vault_btn.triggered.connect(self.toggle_vault_panel)
         self.toolbar.addAction(vault_btn)
 
         open_btn = QAction(icon("folder-open", size=ICON_SIZE_TOOLBAR), "Open", self)
         open_btn.setToolTip("Open File (Ctrl+O)")
         open_btn.setShortcut("Ctrl+O")
+        open_btn.setShortcutContext(Qt.WidgetShortcut)
         open_btn.triggered.connect(self.open_file)
         self.toolbar.addAction(open_btn)
 
         save_btn = QAction(icon("save", size=ICON_SIZE_TOOLBAR), "Save", self)
         save_btn.setToolTip("Save File (Ctrl+S)")
         save_btn.setShortcut("Ctrl+S")
+        save_btn.setShortcutContext(Qt.WidgetShortcut)
         save_btn.triggered.connect(self.save_file)
         self.toolbar.addAction(save_btn)
         
         tts_btn = QAction(icon("volume-2", size=ICON_SIZE_TOOLBAR), "Read Aloud", self)
         tts_btn.setToolTip("Read Aloud / Toggle TTS (F9)")
         tts_btn.setShortcut("F9")
+        tts_btn.setShortcutContext(Qt.WidgetShortcut)
         tts_btn.triggered.connect(self.toggle_tts_bar)
         self.toolbar.addAction(tts_btn)
 
@@ -319,6 +324,7 @@ class MainWindow(QMainWindow):
         action = QAction(text, self)
         if shortcut:
             action.setShortcut(shortcut)
+            action.setShortcutContext(Qt.WidgetShortcut)
         action.triggered.connect(slot)
         menu.addAction(action)
         return action
@@ -337,6 +343,33 @@ class MainWindow(QMainWindow):
         menu.addSeparator()
         self._add_menu_action(menu, "Settings...", self.open_settings, "Alt+S")
         return menu
+
+    def _setup_global_shortcuts(self):
+        from PySide6.QtGui import QShortcut, QKeySequence
+        from PySide6.QtCore import Qt
+
+        # Create global ApplicationShortcut instances for all Reflex Keys and common actions
+        # so they trigger reliably regardless of which child widget has focus and without ambiguous shortcut conflicts.
+        shortcuts = [
+            ("Alt+V", self.toggle_vault_panel),
+            ("Ctrl+Q", self.open_quick_switcher),
+            ("Ctrl+T", self.open_web_tab),
+            ("Ctrl+Shift+T", self.reopen_closed_tab),
+            ("F9", self.toggle_tts_bar),
+            ("Ctrl+N", self.new_tab),
+            ("Ctrl+O", self.open_file),
+            ("Ctrl+S", self.save_file),
+            ("Ctrl+Shift+S", self.save_file_as),
+            ("Ctrl+W", self.close_current_tab),
+            ("Ctrl+F", self.show_find),
+            ("Ctrl+H", self.show_replace),
+            ("Ctrl+Shift+F", self.open_vault_search),
+            ("Alt+S", self.open_settings),
+        ]
+        for key_seq, slot in shortcuts:
+            sc = QShortcut(QKeySequence(key_seq), self)
+            sc.setContext(Qt.ApplicationShortcut)
+            sc.activated.connect(slot)
 
     def _restore_vault(self):
         settings = load_settings()
@@ -1257,7 +1290,8 @@ class MainWindow(QMainWindow):
 
         voice_id = self.tts_bar.get_selected_voice_id()
 
-        if hasattr(current, "read_current_page"):
+        # 1. If the viewer has its own dedicated TTS engine (e.g., PdfViewer or PptxViewer)
+        if hasattr(current, "tts") and hasattr(current, "read_current_page"):
             spoken = current.read_current_page(voice_id=voice_id)
             if spoken:
                 self.tts_bar.show()
@@ -1267,16 +1301,30 @@ class MainWindow(QMainWindow):
                     self.tts_bar.set_status(filename, f"slide {current.current_slide + 1} of {current.total_slides}")
             return
 
+        # 2. For all other viewers (DocxViewer, EditorTab, MarkdownViewer, XlsxViewer, etc.)
         text = ""
-        if hasattr(current, "toPlainText"):
-            text = current.toPlainText()
-        elif hasattr(current, "editor") and hasattr(current.editor, "toPlainText"):
-            text = current.editor.toPlainText()
+        if hasattr(current, "read_current_page"):
+            try:
+                text = current.read_current_page(voice_id=voice_id)
+            except Exception:
+                pass
 
-        if text and text.strip():
+        if not text and hasattr(current, "toPlainText"):
+            try:
+                text = current.toPlainText()
+            except Exception:
+                pass
+
+        if not text and hasattr(current, "editor") and hasattr(current.editor, "toPlainText"):
+            try:
+                text = current.editor.toPlainText()
+            except Exception:
+                pass
+
+        if text and str(text).strip():
             self.tts_bar.show()
-            self.tts_engine.speak(text, voice_id)
-            self.tts_bar.set_status(filename)
+            self.tts_engine.speak(str(text).strip(), voice_id)
+            self.tts_bar.set_status(filename, "Reading aloud...")
         else:
             self.show_status_message("No text available for TTS in current tab", 2000)
 
