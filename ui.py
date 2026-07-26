@@ -921,6 +921,9 @@ class MainWindow(QMainWindow):
         remove_pinned_file(path)
         self.update_menus()
 
+    def close_current_tab(self):
+        self.close_tab(self.tabs.currentIndex())
+
     def close_tab(self, index):
         editor = self.tabs.widget(index)
         if not editor:
