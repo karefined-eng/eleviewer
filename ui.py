@@ -882,14 +882,16 @@ class MainWindow(QMainWindow):
         from docx_viewer import DocxViewer
         from xlsx_viewer import XlsxViewer
         from pptx_viewer import PptxViewer
+        from html_viewer import HtmlViewer
+        from csv_viewer import CsvViewer
         
         _add("Plain Text (.txt)", ".txt", EditorTab)
         _add("Markdown (.md)", ".md", MarkdownViewer)
-        _add("HTML (.html)", ".html", MarkdownViewer, is_html=True)
+        _add("HTML (.html)", ".html", HtmlViewer)
         _add("Word Document (.docx)", ".docx", DocxViewer)
         _add("Excel Spreadsheet (.xlsx)", ".xlsx", XlsxViewer)
         _add("PowerPoint Presentation (.pptx)", ".pptx", PptxViewer)
-        _add("CSV Spreadsheet (.csv)", ".csv", EditorTab)
+        _add("CSV Spreadsheet (.csv)", ".csv", CsvViewer)
         return menu
 
     def new_tab(self):

@@ -1,3 +1,4 @@
+
 """
 HTML Table & Document Workstation for EleViewer.
 Provides Split-Screen real-time HTML/CSS/JS previewing (QSplitter with 300ms debounce),
