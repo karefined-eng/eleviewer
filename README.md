@@ -9,16 +9,20 @@ A lightweight Windows document editor supporting **DOCX**, **XLSX**, **PPTX**, *
 ## 📚 Features
 
 ### 📁 File Support
-Opens & edits **DOCX, XLSX, PPTX, PDF, MD, TXT and HTML** — all in one workspace.
+Opens & edits **DOCX, XLSX, PPTX, PDF, MD, TXT, CSV and HTML** — all in one workspace.
+- **CSV Table Workstation** — dual Table Grid View ⇄ Raw Text View with interactive cell editing, row/column insertion, delimiter overrides, and non-destructive text preservation.
+- **HTML Live Workstation** — split-screen syntax editor with debounced live preview, compact monochromatic styling, and 1-click migration into the right-hand Web Panel.
+- **Global Hyperlink Interception** — clicks on web or file links in documents automatically open inside EleViewer's Web Panel or editor tabs without launching external system browsers.
 
 ### 🔊 Reading & Study Tools
-- **Universal Text-to-Speech** — reads lectures, notes, Word docs, Markdown, and PDFs aloud for hands-free studying (Toggle with `F9` or the toolbar button). Reads highlighted text selection or the full document.
+- **Universal Text-to-Speech** — reads lectures, notes, Word docs, Markdown, CSV tables, HTML text, and PDFs aloud for hands-free studying (Toggle with `F9` or the toolbar button). Reads highlighted text selection or the full document.
 - **Persistent Bookmarks** — drop a bookmark anywhere in your documents (`Ctrl+D`), even in 400-page textbooks or lengthy notes, and jump back instantly.
 
 ### 🗂️ Organization & System Tray
 - **Vault sidebar** — one-click access to course folders (`Alt+V`).
 - **SQLite FTS5 full-text indexer** — instant background search across all vault study files.
 - **Quick switcher** — fuzzy file search like VSCode (`Ctrl+Q`).
+- **Obsidian-inspired Web Panel** — persists URLs, with dedicated Refresh and Bookmark toolbar controls.
 - **Session restore** — reopens all tabs right where you left off, preserving scroll position, zoom, and PDF page numbers.
 - **System Tray Minimization** — minimize to tray on close with background notification and double-click restore.
 - **Reopen closed tab** (`Ctrl+Shift+T`).
