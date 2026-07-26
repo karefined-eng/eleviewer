@@ -4,7 +4,7 @@ from PySide6.QtWidgets import (
     QDockWidget, QLabel, QSystemTrayIcon, QApplication, QScrollBar,
 )
 from PySide6.QtGui import QAction, QKeySequence, QShortcut, QIcon
-from PySide6.QtCore import Qt, QSize, QTimer
+from PySide6.QtCore import Qt, QSize, QTimer, Slot, QUrl
 import os
 
 APP_VERSION = "1.3.0"
@@ -107,6 +107,12 @@ class MainWindow(QMainWindow):
         # Global Esc shortcut for closing popups and sidebars
         self.esc_shortcut = QShortcut(QKeySequence(Qt.Key_Escape), self)
         self.esc_shortcut.activated.connect(self.handle_escape)
+
+        # Register global URL handlers so links in PDFs, Markdown, HTML, What's New, etc. open in EleViewer instead of external browser!
+        from PySide6.QtGui import QDesktopServices
+        QDesktopServices.setUrlHandler("http", self, "handle_url")
+        QDesktopServices.setUrlHandler("https", self, "handle_url")
+        QDesktopServices.setUrlHandler("file", self, "handle_url")
 
         # IMPROVEMENT: system tray minimization with restore on double-click
         self.tray_icon = QSystemTrayIcon(create_eleviewer_icon(32), self)
@@ -1260,6 +1266,32 @@ class MainWindow(QMainWindow):
             | QDockWidget.DockWidgetFloatable
         )
         self.addDockWidget(Qt.RightDockWidgetArea, self._web_dock)
+
+    @Slot(QUrl)
+    @Slot(str)
+    def handle_url(self, url):
+        url_str = url.toString() if hasattr(url, "toString") else str(url)
+        if url_str.lower().startswith(("http:", "https:")):
+            self.open_web_tab_with_url(url_str)
+        elif url_str.lower().startswith("file:"):
+            self._handle_file_url(url)
+        else:
+            self.open_web_tab_with_url(url_str)
+
+    def open_web_tab_with_url(self, url, title=None):
+        url_str = url.toString() if hasattr(url, "toString") else str(url)
+        if not self._web_dock or not self._web_dock.isVisible():
+            self.toggle_web_panel()
+        if self._web_dock and self._web_dock.widget():
+            self._web_dock.widget().open_url_in_new_tab(url_str, title if isinstance(title, str) else url_str)
+
+    def _handle_file_url(self, url):
+        url_str = url.toString() if hasattr(url, "toString") else str(url)
+        local_path = QUrl(url_str).toLocalFile() if hasattr(url, "toString") and hasattr(url, "toLocalFile") else url_str.replace("file:///", "").replace("file://", "")
+        if os.path.exists(local_path):
+            self.open_recent_file(local_path)
+        else:
+            self.show_status_message(f"Linked file not found: {local_path}", 3000)
 
     def show_find(self):
         editor = self.current_editor()
