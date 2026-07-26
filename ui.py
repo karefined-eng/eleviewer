@@ -206,6 +206,27 @@ class MainWindow(QMainWindow):
         dlg = UpdateDialog(tag_name, release_notes, download_url, self)
         dlg.exec()
 
+    def check_for_updates_manual(self):
+        try:
+            self.show_status_message("Checking for updates...", 3000)
+            from updater import CheckUpdateThread
+            self._manual_update_thread = CheckUpdateThread(current_version=APP_VERSION, parent=self)
+            self._manual_update_thread.update_available.connect(self._on_update_found)
+            
+            def on_no_update():
+                from PySide6.QtWidgets import QMessageBox
+                QMessageBox.information(self, "Up to Date", f"You are running the latest version of EleViewer (v{APP_VERSION}).")
+            
+            def on_error(err):
+                from PySide6.QtWidgets import QMessageBox
+                QMessageBox.warning(self, "Update Check Failed", f"Could not check for updates:\n{err}")
+
+            self._manual_update_thread.no_update.connect(on_no_update)
+            self._manual_update_thread.error_occurred.connect(on_error)
+            self._manual_update_thread.start()
+        except Exception:
+            self.show_status_message("Update check failed.", 3000)
+
 
     def _setup_status_bar(self):
         status_bar = self.statusBar()
@@ -865,6 +886,7 @@ class MainWindow(QMainWindow):
 
         help_menu = menu.addMenu("Help")
         self._add_menu_action(help_menu, "Getting Started Guide", self.open_getting_started, "F1")
+        self._add_menu_action(help_menu, "Check for Updates...", self.check_for_updates_manual)
         help_menu.addSeparator()
         self._add_menu_action(help_menu, "Submit Feedback...", self.open_feedback_dialog)
         self._add_menu_action(help_menu, "Tell us what you think 💭", self.open_review_page)

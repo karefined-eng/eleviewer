@@ -13,6 +13,7 @@ import urllib.request
 import json
 from theme import BRAND_BACKGROUND, BRAND_PRIMARY, BRAND_PANEL, BRAND_BORDER, get_brand_accent
 
+APP_VERSION = "1.3.0"
 
 # FIX: HTTP POST moved to QThread to prevent 10s GUI freeze on timeout
 class FeedbackSubmitThread(QThread):
