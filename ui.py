@@ -446,7 +446,16 @@ class MainWindow(QMainWindow):
 
     def _navigate_to_bookmark(self, bookmark):
         path = bookmark.get("file_path")
-        if not path or not os.path.exists(path):
+        if not path:
+            return
+        if str(path).lower().startswith(("http://", "https://", "file://")):
+            if not self._web_dock or not self._web_dock.isVisible():
+                self.toggle_web_panel()
+            if self._web_dock and self._web_dock.widget():
+                self._web_dock.widget().open_url_in_new_tab(path, bookmark.get("label", "Bookmarked Page"))
+            self.show_status_message(f"Opened web bookmark: {bookmark.get('label', '')}", 2000)
+            return
+        if not os.path.exists(path):
             self.show_status_message("Bookmarked file not found", 3000)
             return
         if not self.switch_to_tab_if_open(path):
@@ -467,6 +476,11 @@ class MainWindow(QMainWindow):
         self.show_status_message(f"Opened bookmark: {bookmark.get('label', '')}", 2000)
 
     def bookmark_current_tab(self):
+        from PySide6.QtWidgets import QApplication
+        focus_w = QApplication.focusWidget()
+        if self._web_dock and self._web_dock.isVisible() and focus_w and (self._web_dock.isAncestorOf(focus_w) or focus_w == self._web_dock):
+            self._web_dock.widget()._bookmark_current()
+            return
         editor = self.current_editor()
         if not editor:
             return
@@ -922,6 +936,13 @@ class MainWindow(QMainWindow):
         self.update_menus()
 
     def close_current_tab(self):
+        from PySide6.QtWidgets import QApplication
+        focus_w = QApplication.focusWidget()
+        if self._web_dock and self._web_dock.isVisible() and focus_w and (self._web_dock.isAncestorOf(focus_w) or focus_w == self._web_dock):
+            web_panel = self._web_dock.widget()
+            if web_panel and hasattr(web_panel, "tabs") and web_panel.tabs.count() > 0:
+                web_panel._close_tab(web_panel.tabs.currentIndex())
+                return
         self.close_tab(self.tabs.currentIndex())
 
     def close_tab(self, index):

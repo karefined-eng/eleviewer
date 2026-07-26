@@ -66,10 +66,8 @@ class HtmlViewer(QWidget):
         layout.setSpacing(0)
 
         # ── Toolbar ───────────────────────────────────────────────────────
-        self.toolbar = QWidget()
-        self.toolbar.setStyleSheet(compact_toolbar_stylesheet())
-        tb_layout = QHBoxLayout(self.toolbar)
-        tb_layout.setContentsMargins(8, 6, 8, 6)
+        tb_layout = QHBoxLayout()
+        tb_layout.setContentsMargins(8, 4, 8, 4)
         tb_layout.setSpacing(6)
 
         icon_sz = QSize(self._icon_size, self._icon_size)
@@ -88,6 +86,7 @@ class HtmlViewer(QWidget):
         self.btn_push.setIconSize(icon_sz)
         self.btn_push.setIcon(icon("globe", size=self._icon_size))
         self.btn_push.setText(" Push to Web Panel")
+        self.btn_push.setStyleSheet(compact_toolbar_stylesheet())
         self.btn_push.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
         self.btn_push.setToolTip("Open live HTML feed in right-hand Web Panel dock (Ctrl+Shift+B)")
         self.btn_push.clicked.connect(self._push_to_browser)
@@ -96,7 +95,7 @@ class HtmlViewer(QWidget):
         # Shortcut for Browser Push
         QShortcut(QKeySequence("Ctrl+Shift+B"), self, self._push_to_browser)
 
-        layout.addWidget(self.toolbar)
+        layout.addLayout(tb_layout)
 
         # ── Splitter Area ─────────────────────────────────────────────────
         self.splitter = QSplitter(Qt.Horizontal, self)
@@ -123,15 +122,14 @@ class HtmlViewer(QWidget):
 
         self.splitter.addWidget(self.editor)
         self.splitter.addWidget(self.viewer)
-        self.splitter.setSizes([600, 600])
-
         layout.addWidget(self.splitter)
-        self._update_button_states()
+        self.set_view_mode(self._mode)
 
     def _create_btn(self, icon_name, tooltip, callback):
         btn = QToolButton()
         btn.setIconSize(QSize(self._icon_size, self._icon_size))
         btn.setIcon(icon(icon_name, size=self._icon_size))
+        btn.setStyleSheet(compact_toolbar_stylesheet())
         btn.setToolTip(tooltip)
         btn.clicked.connect(callback)
         return btn
@@ -152,8 +150,8 @@ class HtmlViewer(QWidget):
         self._update_live_preview()
 
     def _update_button_states(self):
-        accent_style = f"background: {get_brand_accent()}; color: {BRAND_PANEL}; border-radius: 4px;"
-        default_style = ""
+        accent_style = f"background: {get_brand_accent()}; color: {BRAND_BACKGROUND}; border-radius: 6px; padding: 4px; min-width: 28px; min-height: 28px;"
+        default_style = compact_toolbar_stylesheet()
         self.btn_preview.setStyleSheet(accent_style if self._mode == "preview" else default_style)
         self.btn_syntax.setStyleSheet(accent_style if self._mode == "syntax" else default_style)
         self.btn_split.setStyleSheet(accent_style if self._mode == "split" else default_style)

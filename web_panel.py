@@ -125,19 +125,33 @@ class WebPanel(QWidget):
         self.btn_forward.setToolTip("Forward")
         self.btn_forward.clicked.connect(self._go_forward)
 
+        self.btn_refresh = QToolButton()
+        self.btn_refresh.setIconSize(icon_qsize)
+        self.btn_refresh.setIcon(icon("refresh-cw", size=icon_sz))
+        self.btn_refresh.setToolTip("Reload page (Ctrl+R / F5)")
+        self.btn_refresh.clicked.connect(self._reload_current)
+
+        self.btn_bookmark = QToolButton()
+        self.btn_bookmark.setIconSize(icon_qsize)
+        self.btn_bookmark.setIcon(icon("bookmark", size=icon_sz))
+        self.btn_bookmark.setToolTip("Bookmark this web page (Ctrl+D)")
+        self.btn_bookmark.clicked.connect(self._bookmark_current)
+
         self.btn_add = QToolButton()
         self.btn_add.setIconSize(icon_qsize)
         self.btn_add.setIcon(icon("plus", size=icon_sz))
         self.btn_add.setToolTip("New tab")
         self.btn_add.clicked.connect(self.add_tab)
 
-        for btn in (self.btn_back, self.btn_forward, self.btn_add):
+        for btn in (self.btn_back, self.btn_forward, self.btn_refresh, self.btn_bookmark, self.btn_add):
             btn.setStyleSheet(compact_toolbar_stylesheet())
             btn.setAutoRaise(True)
 
         nav.addWidget(self.btn_back)
         nav.addWidget(self.btn_forward)
+        nav.addWidget(self.btn_refresh)
         nav.addWidget(self.url_bar, stretch=1)
+        nav.addWidget(self.btn_bookmark)
         nav.addWidget(self.btn_add)
 
         self.tabs = QTabWidget()
@@ -148,6 +162,9 @@ class WebPanel(QWidget):
 
         layout.addLayout(nav)
         layout.addWidget(self.tabs)
+
+        QShortcut(QKeySequence("Ctrl+R"), self, self._reload_current)
+        QShortcut(QKeySequence("F5"), self, self._reload_current)
 
         self.restore_tabs()
 
@@ -269,6 +286,30 @@ class WebPanel(QWidget):
         view = self._current_view()
         if view:
             view.forward()
+
+    def _reload_current(self):
+        view = self._current_view()
+        if view:
+            view.reload()
+
+    def _bookmark_current(self):
+        view = self._current_view()
+        if not view:
+            return
+        url_str = view.url().toString()
+        title = view.title() or url_str
+        try:
+            from bookmark_manager import add_bookmark
+            add_bookmark(label=title, file_path=url_str, page_number=0, scroll_position_y=0.0)
+            window = self.window()
+            if hasattr(window, "bookmarks_panel") and window.bookmarks_panel:
+                window.bookmarks_panel.refresh()
+            if hasattr(window, "update_bookmarks_menu"):
+                window.update_bookmarks_menu()
+            if hasattr(window, "show_status_message"):
+                window.show_status_message(f"Bookmarked: {title}", 2500)
+        except Exception as e:
+            print(f"[WebPanel] Bookmark error: {e}")
 
     def persist_tabs(self):
         settings = load_settings()
