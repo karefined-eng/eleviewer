@@ -1,3 +1,4 @@
+import json
 import os
 import tempfile
 import time
@@ -37,3 +38,23 @@ def atomic_write(file_path, content):
             except Exception:
                 pass
         raise
+
+def load_list(path, validate=True):
+    if not path.exists(): return []
+    try:
+        with open(path, "r", encoding="utf-8") as f: files = json.load(f)
+        if validate:
+            valid = [f for f in files if os.path.exists(f)]
+            if len(valid) != len(files): save_list(path, valid)
+            return valid
+        return files
+    except Exception: return []
+
+def save_list(path, files):
+    atomic_write(path, json.dumps(files, indent=4))
+
+def update_list(path, file_path, remove=False, max_items=10):
+    files = load_list(path, validate=False)
+    if file_path in files: files.remove(file_path)
+    if not remove: files.insert(0, file_path)
+    save_list(path, files[:max_items])
