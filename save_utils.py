@@ -20,6 +20,8 @@ def atomic_write(file_path, content):
     try:
         with open(tmp_path, mode, **kwargs) as f:
             f.write(content)
+            f.flush()
+            os.fsync(f.fileno())
         for attempt in range(5):
             try:
                 os.replace(tmp_path, path)

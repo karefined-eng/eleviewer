@@ -27,7 +27,7 @@ class OnboardingDialog(QDialog):
         self.stack = QStackedWidget()
         self.stack.addWidget(self._create_slide(
             "Welcome to EleViewer 🐘",
-            "Your Zero-Friction, Offline-First Sovereignty Workstation.\n\n"
+            "Your Zero-Friction, Offline-First Study Workspace.\n\n"
             "EleViewer is designed to stay out of your way. Everything is saved locally. "
             "There's no telemetry, no forced cloud accounts, and no loading screens."
         ))

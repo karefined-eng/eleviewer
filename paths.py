@@ -18,3 +18,47 @@ PINNED_FILE_PATH = APP_DATA_DIR / "pinned_files.json"
 SESSION_FILE_PATH = APP_DATA_DIR / "session.json"
 SETTINGS_FILE_PATH = APP_DATA_DIR / "settings.json"
 BOOKMARKS_FILE_PATH = APP_DATA_DIR / "bookmarks.json"
+
+
+def scandir_walk(top_dir, followlinks=False):
+    """
+    Iterative generator replacing os.walk using os.scandir for high-speed I/O.
+    Yields (root_str, dirs_list, files_list) just like os.walk without extra stat calls.
+    """
+    stack = [str(top_dir)]
+    while stack:
+        curr = stack.pop()
+        dirs, files = [], []
+        try:
+            with os.scandir(curr) as it:
+                for entry in it:
+                    try:
+                        if entry.name.startswith('.'):
+                            continue
+                        if entry.is_dir(follow_symlinks=followlinks):
+                            dirs.append(entry.name)
+                        elif entry.is_file(follow_symlinks=followlinks):
+                            files.append(entry.name)
+                    except OSError:
+                        continue
+        except OSError:
+            continue
+        yield curr, dirs, files
+        for d in reversed(dirs):
+            stack.append(os.path.join(curr, d))
+
+
+def strip_pii(text: str) -> str:
+    """Strip user PII (such as Windows home directory paths) from text case-insensitively."""
+    if not text:
+        return text
+    try:
+        import re
+        user_home = os.path.expanduser("~")
+        home_bs = user_home.replace("/", "\\")
+        home_fs = user_home.replace("\\", "/")
+        pattern = re.compile(re.escape(home_bs) + "|" + re.escape(home_fs), re.IGNORECASE)
+        return pattern.sub("~", str(text))
+    except Exception:
+        return str(text) if text else ""
+

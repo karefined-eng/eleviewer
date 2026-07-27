@@ -2,6 +2,7 @@ import json
 import os
 
 from paths import RECENT_FILE_PATH
+from save_utils import atomic_write
 
 
 def load_recent_files(validate=True):
@@ -21,8 +22,8 @@ def load_recent_files(validate=True):
 
 
 def save_recent_files(files):
-    with open(RECENT_FILE_PATH, "w", encoding="utf-8") as file:
-        json.dump(files, file, indent=4)
+    atomic_write(RECENT_FILE_PATH, json.dumps(files, indent=4))
+
 
 
 def save_recent_file(path):

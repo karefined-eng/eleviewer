@@ -3,6 +3,7 @@ import os
 import sqlite3
 from pathlib import Path
 from PySide6.QtCore import QThread, Signal
+from paths import scandir_walk
 
 INDEX_DB = Path.home() / ".eleviewer" / "vault_index.db"
 
@@ -29,6 +30,10 @@ class VaultIndexWorker(QThread):
     def __init__(self, vault_paths: list):
         super().__init__()
         self.vault_paths = vault_paths
+        self._is_cancelled = False
+
+    def cancel(self):
+        self._is_cancelled = True
 
     def run(self):
         try:
@@ -37,21 +42,29 @@ class VaultIndexWorker(QThread):
             count = 0
             TEXT_EXTENSIONS = {".txt", ".md", ".csv", ".html"}
             for vault in self.vault_paths:
+                if self._is_cancelled:
+                    break
                 try:
                     vault_resolved = Path(vault).resolve()
                 except Exception:
                     continue
-                for root, _, files in os.walk(str(vault_resolved), followlinks=False):
+                for root, dirs, files in scandir_walk(str(vault_resolved), followlinks=False):
+                    if self._is_cancelled:
+                        break
                     try:
                         resolved_root = Path(root).resolve()
                         if not str(resolved_root).startswith(str(vault_resolved)):
+                            dirs.clear()
                             continue
                     except Exception:
                         continue
 
                     for fname in files:
+                        if self._is_cancelled:
+                            break
                         if fname.startswith("."):
                             continue
+
                         fpath = Path(root) / fname
                         content = ""
                         if fpath.suffix.lower() in TEXT_EXTENSIONS:

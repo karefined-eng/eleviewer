@@ -66,9 +66,10 @@ try:
                 parent_w = parent_w.parent()
             if parent_w and hasattr(parent_w, "add_tab"):
                 new_view = parent_w.add_tab(url="about:blank", title="Loading...")
-                if hasattr(parent_w, "tabs") and new_view:
-                    parent_w.tabs.setCurrentWidget(new_view)
-                return new_view
+                if new_view:
+                    if hasattr(parent_w, "tabs"):
+                        parent_w.tabs.setCurrentWidget(new_view)
+                    return new_view
             return self
         
         def setUrl(self, qurl):
@@ -88,6 +89,38 @@ try:
             
         def forward(self):
             super().forward()
+
+        def keyPressEvent(self, event):
+            """Forward app-level shortcuts to the MainWindow so Chromium never swallows them.
+            This covers Escape, Reflex Keys (Alt+V, Ctrl+Q, Ctrl+T, F9), and tab management shortcuts.
+            """
+            _APP_SHORTCUT_KEYS = {
+                # (modifiers, key): label
+                (Qt.NoModifier, Qt.Key_Escape),
+                (Qt.AltModifier, Qt.Key_V),
+                (Qt.AltModifier, Qt.Key_E),
+                (Qt.AltModifier, Qt.Key_S),
+                (Qt.ControlModifier, Qt.Key_Q),
+                (Qt.ControlModifier, Qt.Key_T),
+                (Qt.ControlModifier, Qt.Key_W),
+                (Qt.ControlModifier, Qt.Key_N),
+                (Qt.ControlModifier, Qt.Key_O),
+                (Qt.ControlModifier, Qt.Key_S),
+                (Qt.ControlModifier, Qt.Key_F),
+                (Qt.ControlModifier, Qt.Key_H),
+                (Qt.ControlModifier | Qt.ShiftModifier, Qt.Key_T),
+                (Qt.ControlModifier | Qt.ShiftModifier, Qt.Key_F),
+                (Qt.ControlModifier | Qt.ShiftModifier, Qt.Key_S),
+                (Qt.NoModifier, Qt.Key_F9),
+            }
+            key_combo = (event.modifiers(), event.key())
+            if key_combo in _APP_SHORTCUT_KEYS:
+                # Re-post to the QApplication so ApplicationShortcut handlers fire correctly
+                from PySide6.QtCore import QCoreApplication
+                QCoreApplication.sendEvent(self.window(), event)
+                event.accept()
+                return
+            super().keyPressEvent(event)
 
     WEB_AVAILABLE = True
 except ImportError:
@@ -185,7 +218,12 @@ class WebPanel(QWidget):
         tabs_data = settings.get("web_tabs") or DEFAULT_WEB_TABS.copy()
         self.tabs.blockSignals(True)
         while self.tabs.count():
+            w = self.tabs.widget(0)
             self.tabs.removeTab(0)
+            if w:
+                if hasattr(w, "page"):
+                    w.page().deleteLater()
+                w.deleteLater()
         self._tabs_data = []
         for tab in tabs_data:
             url = tab.get("url", "https://www.google.com")
@@ -254,10 +292,16 @@ class WebPanel(QWidget):
     def _close_tab(self, index):
         if self.tabs.count() <= 1:
             return
+        widget = self.tabs.widget(index)
         self.tabs.removeTab(index)
         if index < len(self._tabs_data):
             self._tabs_data.pop(index)
+        if widget:
+            if hasattr(widget, "page"):
+                widget.page().deleteLater()
+            widget.deleteLater()
         self.persist_tabs()
+
 
     def _current_view(self):
         w = self.tabs.currentWidget()

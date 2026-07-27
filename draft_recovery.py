@@ -7,6 +7,7 @@ from PySide6.QtCore import QObject, QTimer, QThread, Signal
 from PySide6.QtWidgets import QMessageBox
 
 from paths import APP_DATA_DIR
+from save_utils import atomic_write
 
 DRAFTS_DIR = APP_DATA_DIR / "drafts"
 
@@ -22,18 +23,12 @@ class DraftWorker(QThread):
     def run(self):
         for draft_path, meta_path, content, meta_dict in self.items:
             try:
-                temp_txt = draft_path.with_suffix(".txt.tmp")
-                with open(temp_txt, "w", encoding="utf-8") as f:
-                    f.write(content)
-                os.replace(temp_txt, draft_path)
-
-                temp_meta = meta_path.with_suffix(".json.tmp")
-                with open(temp_meta, "w", encoding="utf-8") as f:
-                    json.dump(meta_dict, f)
-                os.replace(temp_meta, meta_path)
+                atomic_write(draft_path, content)
+                atomic_write(meta_path, json.dumps(meta_dict))
             except Exception:
                 pass
         self.finished_signal.emit()
+
 
 
 DraftSaveWorker = DraftWorker  # Alias for backward compatibility

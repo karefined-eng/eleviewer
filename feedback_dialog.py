@@ -12,6 +12,7 @@ import urllib.parse
 import urllib.request
 import json
 from theme import BRAND_BACKGROUND, BRAND_PRIMARY, BRAND_PANEL, BRAND_BORDER, get_brand_accent
+from paths import strip_pii
 
 APP_VERSION = "1.3.0"
 
@@ -24,8 +25,15 @@ class FeedbackSubmitThread(QThread):
     def __init__(self, data):
         super().__init__()
         self.data = data
+        self._is_cancelled = False
+
+    def cancel(self):
+        self._is_cancelled = True
+        self.requestInterruption()
 
     def run(self):
+        if self._is_cancelled:
+            return
         try:
             req = urllib.request.Request(
                 "https://eleviewer.vercel.app/api/feedback", 
@@ -33,6 +41,8 @@ class FeedbackSubmitThread(QThread):
                 headers={'Content-Type': 'application/json'}
             )
             with urllib.request.urlopen(req, timeout=10) as response:
+                if self._is_cancelled:
+                    return
                 if response.status == 200:
                     msg = response.read().decode() or "Your feedback was sent successfully! Thank you."
                     self.finished_signal.emit(True, msg)
@@ -42,8 +52,10 @@ class FeedbackSubmitThread(QThread):
                     self.finished_signal.emit(False, msg)
                     self.error.emit(msg)
         except Exception as e:
-            self.finished_signal.emit(False, str(e))
-            self.error.emit(str(e))
+            if not self._is_cancelled:
+                self.finished_signal.emit(False, str(e))
+                self.error.emit(str(e))
+
 
 
 FeedbackSubmitWorker = FeedbackSubmitThread  # Alias for backward compatibility
@@ -102,12 +114,7 @@ class FeedbackDialog(QDialog):
             return
             
         # SECURITY: Strip PII (User's home directory path) from the description
-        try:
-            import os
-            user_home = os.path.expanduser("~")
-            desc = desc.replace(user_home, "~")
-        except Exception:
-            pass
+        desc = strip_pii(desc)
             
         self.submit_btn.setText("Submitting...")
         self.submit_btn.setEnabled(False)
@@ -124,6 +131,12 @@ class FeedbackDialog(QDialog):
         self._submit_thread.finished_signal.connect(self._on_submit_finished)
         self._submit_thread.start()
 
+    def reject(self):
+        if self._submit_thread and self._submit_thread.isRunning():
+            self._submit_thread.cancel()
+            self._submit_thread.wait(500)
+        super().reject()
+
     def _on_submit_finished(self, success, message):
         if success:
             QMessageBox.information(self, "Success", message)
@@ -132,3 +145,4 @@ class FeedbackDialog(QDialog):
             QMessageBox.warning(self, "Network Error", f"Failed to send feedback securely to server.\n\nError: {message}")
             self.submit_btn.setText("Submit Feedback")
             self.submit_btn.setEnabled(True)
+
