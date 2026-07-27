@@ -66,7 +66,7 @@ try:
                 parent_w = parent_w.parent()
             if parent_w and hasattr(parent_w, "add_tab"):
                 new_view = parent_w.add_tab(url="about:blank", title="Loading...")
-                if hasattr(parent_w, "tabs"):
+                if hasattr(parent_w, "tabs") and new_view:
                     parent_w.tabs.setCurrentWidget(new_view)
                 return new_view
             return self
@@ -198,7 +198,7 @@ class WebPanel(QWidget):
 
     def _add_tab_widget(self, url, title="Web"):
         if not WEB_AVAILABLE:
-            return
+            return None
         view = WebViewWrapper()
         view.setUrl(QUrl(url))
         view.urlChanged.connect(lambda u, v=view: self._on_url_changed(v, u))
@@ -206,17 +206,22 @@ class WebPanel(QWidget):
         index = self.tabs.addTab(view, title)
         self._tabs_data.append({"title": title, "url": url})
         self.tabs.setCurrentIndex(index)
+        return view
 
-    def add_tab(self):
+    def add_tab(self, url=None, title="New Tab"):
         if not WEB_AVAILABLE:
-            return
-        default_url = load_settings().get("web_url", "https://www.google.com")
-        self._add_tab_widget(default_url, "New Tab")
+            return None
+        if url is None or not isinstance(url, str) or not url:
+            url = load_settings().get("web_url", "https://www.google.com")
+        if not isinstance(title, str) or not title:
+            title = "New Tab"
+        view = self._add_tab_widget(url, title)
         self.persist_tabs()
+        return view
 
     def open_url_in_new_tab(self, url_str, title="Live Feed"):
         if not WEB_AVAILABLE:
-            return
+            return None
         target_local = QUrl(url_str).toLocalFile().lower() if url_str.lower().startswith("file:") else ""
         for i in range(self.tabs.count()):
             view = self.tabs.widget(i)
@@ -226,9 +231,10 @@ class WebPanel(QWidget):
                 if curr_str == url_str or (target_local and curr_local == target_local):
                     self.tabs.setCurrentIndex(i)
                     view.reload()
-                    return
-        self._add_tab_widget(url_str, title)
+                    return view
+        view = self._add_tab_widget(url_str, title)
         self.persist_tabs()
+        return view
 
     def reload_url(self, url_str):
         if not WEB_AVAILABLE:
