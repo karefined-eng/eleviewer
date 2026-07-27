@@ -32,13 +32,11 @@ def save_recent_file(path):
         files.remove(path)
     files.insert(0, path)
     files = files[:10]
-    with open(RECENT_FILE_PATH, "w", encoding="utf-8") as file:
-        json.dump(files, file, indent=4)
+    atomic_write(RECENT_FILE_PATH, json.dumps(files, indent=4))
 
 
 def remove_recent_file(path):
     files = load_recent_files(validate=False)
     if path in files:
         files.remove(path)
-    with open(RECENT_FILE_PATH, "w", encoding="utf-8") as file:
-        json.dump(files, file, indent=4)
+    atomic_write(RECENT_FILE_PATH, json.dumps(files, indent=4))

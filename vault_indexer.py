@@ -51,12 +51,9 @@ class VaultIndexWorker(QThread):
                 for root, dirs, files in scandir_walk(str(vault_resolved), followlinks=False):
                     if self._is_cancelled:
                         break
-                    try:
-                        resolved_root = Path(root).resolve()
-                        if not str(resolved_root).startswith(str(vault_resolved)):
-                            dirs.clear()
-                            continue
-                    except Exception:
+                    abs_root = os.path.abspath(root)
+                    if not abs_root.startswith(str(vault_resolved)):
+                        dirs.clear()
                         continue
 
                     for fname in files:
