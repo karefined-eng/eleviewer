@@ -21,12 +21,32 @@ from PySide6.QtWidgets import (
     QSplitter,
 )
 from PySide6.QtGui import QIntValidator, QKeyEvent, QWheelEvent
-from PySide6.QtCore import Qt, Signal, QTimer, QSize, QPointF
+from PySide6.QtCore import Qt, Signal, QTimer, QSize, QPointF, QThread
+
+class PdfTextWorker(QThread):
+    """Off-thread PDF text extraction worker to prevent GUI freezes during TTS and page scans."""
+    extracted = Signal(int, str)
+
+    def __init__(self, pdf_doc, page_idx):
+        super().__init__()
+        self.pdf_doc = pdf_doc
+        self.page_idx = page_idx
+
+    def run(self):
+        try:
+            selection = self.pdf_doc.getAllText(self.page_idx)
+            text = selection.text().strip() if hasattr(selection, "text") else ""
+            self.extracted.emit(self.page_idx, text)
+        except Exception:
+            self.extracted.emit(self.page_idx, "")
 
 from icons import icon
 from tts_engine import TtsEngine as PdfTts, TTS_AVAILABLE
 from settings import load_settings
-from theme import compact_toolbar_stylesheet, ICON_SIZE_COMPACT
+from theme import (
+    BRAND_BACKGROUND, BRAND_PANEL, BRAND_PANEL_2, BRAND_BORDER, BRAND_PRIMARY, BRAND_MUTED_FG,
+    compact_toolbar_stylesheet, ICON_SIZE_COMPACT
+)
 from paths import APP_DATA_DIR
 
 # ── Custom QPdfView with Ctrl+Wheel zoom and key navigation ─────────
@@ -135,12 +155,12 @@ class PdfViewer(QWidget):
         self.page_input.setAlignment(Qt.AlignCenter)
         self.page_input.setValidator(QIntValidator(1, 99999))
         self.page_input.setStyleSheet(
-            "QLineEdit { background:#242424; color:#f2f2f0; border:1px solid #2c2c2c;"
+            f"QLineEdit {{ background:{BRAND_PANEL_2}; color:{BRAND_PRIMARY}; border:1px solid {BRAND_BORDER};"
             " border-radius:4px; padding:2px 4px; font-weight:bold; font-size:12px; }"
         )
         self.page_input.returnPressed.connect(self._jump_to_page)
         self.lbl_total = QLabel(" / 0")
-        self.lbl_total.setStyleSheet("color:#9b9b96; font-weight:bold; padding:0 6px 0 2px; font-size:12px;")
+        self.lbl_total.setStyleSheet(f"color:{BRAND_MUTED_FG}; font-weight:bold; padding:0 6px 0 2px; font-size:12px;")
 
         self.btn_zoom_out  = _tb("zoom-out",   "Zoom out",                lambda: self._apply_zoom(1 / 1.2))
         self.btn_fit_page  = _tb("minimize-2",   "Fit to page",             self.fit_page)
@@ -174,17 +194,17 @@ class PdfViewer(QWidget):
         toc_layout.setSpacing(0)
         toc_lbl = QLabel("Table of Contents")
         toc_lbl.setStyleSheet(
-            "background:#1a1a1a; color:#888; font-size:11px; font-weight:bold;"
-            " padding:6px 8px; border-bottom:1px solid #333;"
+            f"background:{BRAND_BACKGROUND}; color:{BRAND_MUTED_FG}; font-size:11px; font-weight:bold;"
+            f" padding:6px 8px; border-bottom:1px solid {BRAND_BORDER};"
         )
         self.toc_tree = QTreeView()
         self.toc_tree.setHeaderHidden(True)
         self.bookmark_model = None
         self.toc_tree.setStyleSheet(
-            "QTreeView { background:#1e1e1e; border:none; color:#d0d0d0; font-size:12px; }"
+            f"QTreeView {{ background:{BRAND_PANEL}; border:none; color:{BRAND_PRIMARY}; font-size:12px; }}"
             "QTreeView::item { padding:4px 6px; }"
-            "QTreeView::item:selected { background:#37373d; }"
-            "QTreeView::item:hover { background:#2a2a2a; }"
+            f"QTreeView::item:selected {{ background:{BRAND_PANEL_2}; }}"
+            f"QTreeView::item:hover {{ background:{BRAND_BORDER}; }}"
         )
         self.toc_tree.clicked.connect(self._on_toc_item_clicked)
         toc_layout.addWidget(toc_lbl)
@@ -323,6 +343,16 @@ class PdfViewer(QWidget):
                 self.pdf_view.width() - lbl_w - padding,
                 self.pdf_view.height() - lbl_h - padding
             )
+        self._prefetch_page_text(page)
+
+    def _prefetch_page_text(self, page):
+        if not hasattr(self, "_page_text_cache"):
+            self._page_text_cache = {}
+        for p in (page, page + 1, page - 1):
+            if 0 <= p < self.total_pages and p not in self._page_text_cache:
+                worker = PdfTextWorker(self.pdf_doc_qt, p)
+                worker.extracted.connect(lambda idx, txt: self._page_text_cache.update({idx: txt}))
+                worker.start()
 
     def _on_page_change_key(self, delta):
         """Called by EleViewerPdfView arrow key signals (-1 or +1)."""

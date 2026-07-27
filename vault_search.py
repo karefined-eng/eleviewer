@@ -56,18 +56,13 @@ class VaultSearchWorker(QThread):
                     if f.startswith('.'):
                         continue
                     if self.query in f.lower():
-                        full_path = os.path.join(root, f)
-                        try:
-                            # Path traversal security check
-                            full_resolved = Path(full_path).resolve()
-                            if not str(full_resolved).startswith(str(vault_resolved)):
-                                continue
-                        except Exception:
+                        abs_full_path = os.path.abspath(full_path)
+                        if not abs_full_path.startswith(vault_str):
                             continue
 
-                        rel_path = os.path.relpath(root, str(vault_resolved))
+                        rel_path = os.path.relpath(root, vault_str)
                         display_dir = "" if rel_path == "." else f" ({rel_path})"
-                        self.result_found.emit(f, display_dir, vault_name, str(full_resolved))
+                        self.result_found.emit(f, display_dir, vault_name, abs_full_path)
                         count += 1
 
 
