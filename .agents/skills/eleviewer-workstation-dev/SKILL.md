@@ -96,5 +96,55 @@ When invoked to work on the Python PySide6 desktop application, adhere to these 
   2. Directory traversal throughput (files & directories per millisecond).
   3. Atomic file write speed (`atomic_write` + `os.fsync()`).
   4. 100% pass rate on `test_eleviewer_fixes.py` regression suite.
+- **Mandatory Audit Gate Before Any Performance Fix:** Before implementing any claimed performance bug fix or optimization, you MUST first read the relevant source file and verify the bug actually exists in the current code. A significant portion of "suspected" issues are already correctly implemented in the codebase. Record confirmed-real vs. phantom findings explicitly in your response before writing any code. This prevents wasted effort, avoids introducing regressions from "fixing" working code, and keeps the commit history clean.
 
+## 13. PySide6 + Nuitka Gold Standard Performance Architecture
+- **Lazy Chromium Ingestion (<50MB Cold RAM):** Never import `PySide6.QtWebEngineWidgets` or `QtWebEngineCore` at top-level module load time. Defer imports until the user explicitly opens a web tab or HTML preview to avoid triggering `QtWebEngineProcess.exe` on startup.
+- **Model/View Virtualization (`QTableView` + `QAbstractTableModel`):** Never use `QTableWidget` for CSV, TSV, or XLSX data viewers. Always implement a custom `QAbstractTableModel` with `QTableView`. Qt will only query cells currently visible in the viewport via `data(index, Qt.DisplayRole)`, guaranteeing flat RAM usage and 60 FPS scrolling even on 100,000+ row files.
+- **Async PDF Pre-Buffering:** Offload PDF text parsing and raster pre-buffering to background `QThread` workers to maintain smooth scrolling without blocking the main GUI thread.
+- **Nuitka Compilation Trimming:** When building with Nuitka, always specify Link Time Optimization (`--lto=yes`) and selective plugin inclusion (`--include-qt-plugins=sensible,styles`) to strip unused Qt 3D/multimedia DLLs, keeping executable size <250MB.
+- **High-Speed Ingestion (`os.scandir`):** Always use `os.scandir()` instead of `os.walk()` for vault indexing and file system traversal to retrieve OS stat metadata without redundant kernel syscalls.
 
+## 14. Session Closing Ritual (Mandatory)
+After completing any task session in `eleviewer`, you MUST execute these three steps in order:
+
+1. **Run the regression suite first.** Execute `test_csv_viewer.py`, `test_html_viewer.py`, and `test_link_interception.py` and confirm all tests pass before committing anything. Do not commit broken code.
+
+2. **Commit with a structured message.** Use `type(scope): short summary` on the first line (e.g., `perf(vault): replace Path.resolve() with os.path.abspath()`), followed by a blank line and a bulleted body enumerating every file changed and the precise reason. Use semicolons to chain git commands per PowerShell Rule 11:
+   ```powershell
+   git add file1.py file2.py; git commit -m "type(scope): summary`n`nbody"
+   ```
+
+3. **Update `PROJECT_LOG.md` Historical Ledger.** Prepend a new `### [DATE] Task Title` entry to the ledger with:
+   - What changed and why, including the audit result (real bugs found vs. phantom assumptions).
+   - An **Agent Notes for Future Sessions** sub-section listing specific non-obvious gotchas discovered during the session (e.g., Win32 API subtleties, Inno Setup registry traps, Nuitka flag requirements). This ledger is written *for future AI agents*, not for the human user — future agents will read it to inherit session context.
+
+---
+
+## 15. Learnings from Recent Issue Triage & Implementation Plan
+
+**Issue Triage Summary (v1.3.0)**
+- Identified three P0 crashes affecting launch and feedback submission:
+  1. Missing `sys` import in `ui.py` preventing app start.
+  2. Undefined `APP_VERSION` in `feedback_dialog.py` causing feedback crashes.
+  3. `WebPanel.add_tab()` signature mismatch rejecting `url=`/`title=` kwargs, breaking popup links.
+- Additional user requests for a light theme, PPTX image handling, and a positive testimonial.
+
+**Actions Taken**
+- Added the missing imports (`import sys` in `ui.py` and `from eleviewer import APP_VERSION` in `feedback_dialog.py`).
+- Updated `WebPanel.add_tab()` to accept `url=None, title="New Tab"` kwargs and return a valid `QWebEngineView` pointer per **Rule 7**.
+- Included these fixes in the hot‑fix release notes and updated `PROJECT_LOG.md` accordingly.
+
+**Implementation Plan v1.4.0 – "Closing the Gap"**
+- Extend the CSV viewer with automatic charset detection and delimiter inference.
+- Improve DOCX/PPTX rendering for high‑resolution images and ensure graceful fallback on missing assets.
+- Optimize PDF handling: lazy page rasterization and background text extraction to avoid UI freezes.
+- Add a unified light theme leveraging the centralized `theme.py` constants for consistent styling.
+- Document the `gh issue list` / `gh issue view` workflow as the standard triage pattern for future releases.
+
+**Guideline Updates**
+- **Rule 7 (WebEngine Popup Safety):** Enforced keyword‑argument acceptance and fallback return values for all tab creation functions.
+- **Rule 11 (PowerShell Command Chaining):** Added examples in `PROJECT_LOG.md` using `;` separators for git commands.
+- **New Rule 15 (Issue‑Triage Integration):** Before any release, run `gh issue list --state open` and incorporate findings into the release checklist.
+
+These updates ensure that the most critical crashes are resolved, the development workflow is tighter, and the upcoming v1.4.0 targets the remaining performance and usability gaps identified by the AI Mode research.

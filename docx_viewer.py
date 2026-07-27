@@ -1,11 +1,18 @@
 from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QPlainTextEdit, QToolButton,
+    QWidget, QVBoxLayout, QHBoxLayout, QTextBrowser, QToolButton,
 )
 from PySide6.QtCore import Signal, QSize
 
-from docx import Document
 import io
 import os
+
+try:
+    import mammoth
+    MAMMOTH_AVAILABLE = True
+except ImportError:
+    MAMMOTH_AVAILABLE = False
+
+from docx import Document
 
 from icons import icon
 from theme import editor_stylesheet, compact_toolbar_stylesheet, ICON_SIZE_COMPACT
@@ -14,8 +21,7 @@ from theme import editor_stylesheet, compact_toolbar_stylesheet, ICON_SIZE_COMPA
 class DocxViewer(QWidget):
     """
     DOCX viewer and editor.
-    Displays document paragraphs in an editable text area.
-    Supports save/load while preserving basic structure.
+    Renders rich HTML with embedded images via mammoth (in QTextBrowser) or fallback to text.
     """
 
     textChanged = Signal()
@@ -47,7 +53,8 @@ class DocxViewer(QWidget):
         self.btn_bookmark.clicked.connect(self._add_bookmark_here)
         toolbar.addWidget(self.btn_bookmark)
 
-        self.editor = QPlainTextEdit()
+        self.editor = QTextBrowser()
+        self.editor.setOpenExternalLinks(True)
         self.editor.setStyleSheet(editor_stylesheet())
         self.editor.textChanged.connect(self._on_text_changed)
 
@@ -71,28 +78,50 @@ class DocxViewer(QWidget):
             raise Exception(f"Failed to load DOCX: {str(e)}")
 
     def _display_content(self):
-        """Extract and display all paragraphs from DOCX."""
-        if not self.docx_content:
+        """Render DOCX to rich HTML with base64 images via mammoth, falling back to python-docx text extraction."""
+        if not self.file_path and not self.docx_content:
             return
 
-        text_parts = []
-
-        for para in self.docx_content.paragraphs:
-            if para.text.strip():
-                text_parts.append(para.text)
-
-        for table in self.docx_content.tables:
-            for row in table.rows:
-                row_text = " | ".join(cell.text for cell in row.cells)
-                if row_text.strip():
-                    text_parts.append(row_text)
-
-        combined_text = "\n\n".join(text_parts)
-
         self.editor.blockSignals(True)
-        self.editor.setPlainText(combined_text)
-        self.editor.blockSignals(False)
 
+        if MAMMOTH_AVAILABLE and self.file_path and os.path.exists(self.file_path):
+            try:
+                with open(self.file_path, "rb") as docx_file:
+                    result = mammoth.convert_to_html(docx_file)
+                    html_content = result.value
+                    self.editor.setHtml(html_content)
+                    self.editor.blockSignals(False)
+                    self.is_modified = False
+                    return
+            except Exception as e:
+                print(f"[DOCX Viewer] Mammoth HTML conversion failed: {e}")
+
+        # Fallback python-docx text extraction
+        if self.docx_content:
+            text_parts = []
+            for para in self.docx_content.paragraphs:
+                has_image = any(
+                    run._element.findall(
+                        ".//{http://schemas.openxmlformats.org/wordprocessingml/2006/main}drawing"
+                    )
+                    for run in para.runs
+                )
+                if has_image:
+                    label = para.text.strip()
+                    text_parts.append(f"📷 [Image{': ' + label if label else ''}]")
+                elif para.text.strip():
+                    text_parts.append(para.text)
+
+            for table in self.docx_content.tables:
+                for row in table.rows:
+                    row_text = " | ".join(cell.text for cell in row.cells)
+                    if row_text.strip():
+                        text_parts.append(row_text)
+
+            combined_text = "\n\n".join(text_parts)
+            self.editor.setPlainText(combined_text)
+
+        self.editor.blockSignals(False)
         self.is_modified = False
 
     def _on_text_changed(self):

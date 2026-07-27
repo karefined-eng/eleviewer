@@ -7,6 +7,7 @@ grid ⇄ raw text toggling, atomic serialization, and Universal TTS (F9) support
 import sys
 import os
 import time
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QApplication
 from csv_viewer import CsvViewer
 from file_handler import create_viewer_widget, get_file_content
@@ -31,11 +32,11 @@ def run_tests():
     app.processEvents()
     
     # Assert dimensions
-    assert viewer.table.rowCount() == 3, f"Expected 3 rows, got {viewer.table.rowCount()}"
-    assert viewer.table.columnCount() == 3, f"Expected 3 cols, got {viewer.table.columnCount()}"
+    assert viewer.model.rowCount() == 3, f"Expected 3 rows, got {viewer.model.rowCount()}"
+    assert viewer.model.columnCount() == 3, f"Expected 3 cols, got {viewer.model.columnCount()}"
     
     # Assert leading zeros preserved (No Excel Trap!)
-    id_cell = viewer.table.item(1, 0).text()
+    id_cell = viewer.model.data(viewer.model.index(1, 0), Qt.DisplayRole)
     assert id_cell == "00123", f"Excel Trap failure! Expected '00123', got '{id_cell}'"
     print("  -> Passed! Leading zero '00123' preserved cleanly.")
 
@@ -68,7 +69,7 @@ def run_tests():
     app.processEvents()
     
     assert viewer.view_mode == "grid", "Expected view mode to be 'grid'"
-    new_id = viewer.table.item(1, 0).text()
+    new_id = viewer.model.data(viewer.model.index(1, 0), Qt.DisplayRole)
     assert new_id == "00999", f"Expected new ID '00999' from raw edit, got '{new_id}'"
     print("  -> Passed! Bidirectional sync between Grid View and Raw Text View works!")
 

@@ -1,130 +1,123 @@
 """Tabbed web panel with persisted URLs using QtWebEngine."""
 
-try:
-    from PySide6.QtCore import Signal, QUrl
-    from PySide6.QtWebEngineWidgets import QWebEngineView
-    from PySide6.QtWebEngineCore import QWebEngineProfile, QWebEnginePage
-    from paths import APP_DATA_DIR
-    
-    # Create a persistent profile for the web engine
-    _web_profile = None
+from PySide6.QtCore import Signal, QUrl
+from paths import APP_DATA_DIR
 
-    def get_persistent_profile():
-        global _web_profile
-        if _web_profile is None:
-            # We must use a named profile to enable persistence (empty string = off-the-record)
-            _web_profile = QWebEngineProfile("eleviewer_web_profile")
-            storage_path = str(APP_DATA_DIR / "web_data")
-            _web_profile.setPersistentStoragePath(storage_path)
-            _web_profile.setCachePath(storage_path)
-            _web_profile.setPersistentCookiesPolicy(QWebEngineProfile.PersistentCookiesPolicy.ForcePersistentCookies)
-            
-            # Disable redundant specs to reduce resource load and improve privacy/security
-            from PySide6.QtWebEngineCore import QWebEngineSettings
-            settings = _web_profile.settings()
-            
-            # Disable heavy renderers and plugins
-            settings.setAttribute(QWebEngineSettings.WebAttribute.PluginsEnabled, False)
-            settings.setAttribute(QWebEngineSettings.WebAttribute.WebGLEnabled, False)
-            settings.setAttribute(QWebEngineSettings.WebAttribute.PdfViewerEnabled, False)
-            
-            # Prevent annoying popups and autoplay media
-            settings.setAttribute(QWebEngineSettings.WebAttribute.JavascriptCanOpenWindows, False)
-            settings.setAttribute(QWebEngineSettings.WebAttribute.PlaybackRequiresUserGesture, True)
-            
-            # Security/Privacy limits
-            settings.setAttribute(QWebEngineSettings.WebAttribute.JavascriptCanAccessClipboard, False)
-            
-            # 2026 Zero-Day Mitigations: Block File System Access API exploits
-            settings.setAttribute(QWebEngineSettings.WebAttribute.LocalContentCanAccessFileUrls, False)
-            settings.setAttribute(QWebEngineSettings.WebAttribute.LocalContentCanAccessRemoteUrls, False)
-            
-            # Block Mixed Content and malicious Window takeovers
-            settings.setAttribute(QWebEngineSettings.WebAttribute.AllowRunningInsecureContent, False)
-            settings.setAttribute(QWebEngineSettings.WebAttribute.AllowWindowActivationFromJavaScript, False)
-        return _web_profile
+WEB_AVAILABLE = True
+_web_profile = None
+_WebViewWrapperClass = None
 
-    class WebViewWrapper(QWebEngineView):
-        # We define signals to match the old API so we don't have to rewrite the parent container
+def get_persistent_profile():
+    global _web_profile
+    if _web_profile is None:
+        from PySide6.QtWebEngineCore import QWebEngineProfile, QWebEngineSettings
+        _web_profile = QWebEngineProfile("eleviewer_web_profile")
+        storage_path = str(APP_DATA_DIR / "web_data")
+        _web_profile.setPersistentStoragePath(storage_path)
+        _web_profile.setCachePath(storage_path)
+        _web_profile.setPersistentCookiesPolicy(QWebEngineProfile.PersistentCookiesPolicy.ForcePersistentCookies)
         
-        def __init__(self, parent=None):
-            super().__init__(parent)
-            # Assign the persistent profile to this view's page
-            page = QWebEnginePage(get_persistent_profile(), self)
-            self.setPage(page)
-            
-            # Auto-deny all hardware/sensor access requests (Camera, Mic, Screen Share, Location, etc.)
-            page.featurePermissionRequested.connect(self._auto_deny_permissions)
-            
-        def _auto_deny_permissions(self, security_origin, feature):
-            self.page().setFeaturePermission(security_origin, feature, QWebEnginePage.PermissionPolicy.PermissionDeniedByUser)
+        settings = _web_profile.settings()
+        settings.setAttribute(QWebEngineSettings.WebAttribute.PluginsEnabled, False)
+        settings.setAttribute(QWebEngineSettings.WebAttribute.WebGLEnabled, False)
+        settings.setAttribute(QWebEngineSettings.WebAttribute.PdfViewerEnabled, False)
+        settings.setAttribute(QWebEngineSettings.WebAttribute.JavascriptCanOpenWindows, False)
+        settings.setAttribute(QWebEngineSettings.WebAttribute.PlaybackRequiresUserGesture, True)
+        settings.setAttribute(QWebEngineSettings.WebAttribute.JavascriptCanAccessClipboard, False)
+        settings.setAttribute(QWebEngineSettings.WebAttribute.LocalContentCanAccessFileUrls, False)
+        settings.setAttribute(QWebEngineSettings.WebAttribute.LocalContentCanAccessRemoteUrls, False)
+        settings.setAttribute(QWebEngineSettings.WebAttribute.AllowRunningInsecureContent, False)
+        settings.setAttribute(QWebEngineSettings.WebAttribute.AllowWindowActivationFromJavaScript, False)
+    return _web_profile
 
-        def createWindow(self, type):
-            # Intercept new window/tab requests (target="_blank", window.open) to open inside EleViewer WebPanel!
-            parent_w = self.parent()
-            while parent_w and not hasattr(parent_w, "add_tab"):
-                parent_w = parent_w.parent()
-            if parent_w and hasattr(parent_w, "add_tab"):
-                new_view = parent_w.add_tab(url="about:blank", title="Loading...")
-                if new_view:
-                    if hasattr(parent_w, "tabs"):
-                        parent_w.tabs.setCurrentWidget(new_view)
-                    return new_view
-            return self
-        
-        def setUrl(self, qurl):
-            super().setUrl(qurl)
-            
-        def setHtml(self, html, baseUrl=None):
-            if baseUrl is not None:
-                super().setHtml(html, baseUrl)
-            else:
-                super().setHtml(html)
-            
-        def url(self):
-            return super().url()
-            
-        def back(self):
-            super().back()
-            
-        def forward(self):
-            super().forward()
+def get_web_view_class():
+    global _WebViewWrapperClass
+    if _WebViewWrapperClass is None:
+        from PySide6.QtWebEngineWidgets import QWebEngineView
+        from PySide6.QtWebEngineCore import QWebEnginePage
 
-        def keyPressEvent(self, event):
-            """Forward app-level shortcuts to the MainWindow so Chromium never swallows them.
-            This covers Escape, Reflex Keys (Alt+V, Ctrl+Q, Ctrl+T, F9), and tab management shortcuts.
-            """
-            _APP_SHORTCUT_KEYS = {
-                # (modifiers, key): label
-                (Qt.NoModifier, Qt.Key_Escape),
-                (Qt.AltModifier, Qt.Key_V),
-                (Qt.AltModifier, Qt.Key_E),
-                (Qt.AltModifier, Qt.Key_S),
-                (Qt.ControlModifier, Qt.Key_Q),
-                (Qt.ControlModifier, Qt.Key_T),
-                (Qt.ControlModifier, Qt.Key_W),
-                (Qt.ControlModifier, Qt.Key_N),
-                (Qt.ControlModifier, Qt.Key_O),
-                (Qt.ControlModifier, Qt.Key_S),
-                (Qt.ControlModifier, Qt.Key_F),
-                (Qt.ControlModifier, Qt.Key_H),
-                (Qt.ControlModifier | Qt.ShiftModifier, Qt.Key_T),
-                (Qt.ControlModifier | Qt.ShiftModifier, Qt.Key_F),
-                (Qt.ControlModifier | Qt.ShiftModifier, Qt.Key_S),
-                (Qt.NoModifier, Qt.Key_F9),
-            }
-            key_combo = (event.modifiers(), event.key())
-            if key_combo in _APP_SHORTCUT_KEYS:
-                # Re-post to the QApplication so ApplicationShortcut handlers fire correctly
-                from PySide6.QtCore import QCoreApplication
-                QCoreApplication.sendEvent(self.window(), event)
-                event.accept()
-                return
-            super().keyPressEvent(event)
+        class _WebViewWrapperImpl(QWebEngineView):
+            def __init__(self, parent=None):
+                super().__init__(parent)
+                page = QWebEnginePage(get_persistent_profile(), self)
+                self.setPage(page)
+                page.featurePermissionRequested.connect(self._auto_deny_permissions)
+                
+            def _auto_deny_permissions(self, security_origin, feature):
+                self.page().setFeaturePermission(security_origin, feature, QWebEnginePage.PermissionPolicy.PermissionDeniedByUser)
 
-    WEB_AVAILABLE = True
-except ImportError:
-    WEB_AVAILABLE = False
+            def createWindow(self, type):
+                parent_w = self.parent()
+                while parent_w and not hasattr(parent_w, "add_tab"):
+                    parent_w = parent_w.parent()
+                if parent_w and hasattr(parent_w, "add_tab"):
+                    new_view = parent_w.add_tab(url="about:blank", title="Loading...")
+                    if new_view:
+                        if hasattr(parent_w, "tabs"):
+                            parent_w.tabs.setCurrentWidget(new_view)
+                        return new_view
+                return self
+            
+            def setUrl(self, qurl):
+                super().setUrl(qurl)
+                
+            def setHtml(self, html, baseUrl=None):
+                if baseUrl is not None:
+                    super().setHtml(html, baseUrl)
+                else:
+                    super().setHtml(html)
+                
+            def url(self):
+                return super().url()
+                
+            def back(self):
+                super().back()
+                
+            def forward(self):
+                super().forward()
+
+            def keyPressEvent(self, event):
+                _APP_SHORTCUT_KEYS = {
+                    (Qt.NoModifier, Qt.Key_Escape),
+                    (Qt.AltModifier, Qt.Key_V),
+                    (Qt.AltModifier, Qt.Key_E),
+                    (Qt.AltModifier, Qt.Key_S),
+                    (Qt.ControlModifier, Qt.Key_Q),
+                    (Qt.ControlModifier, Qt.Key_T),
+                    (Qt.ControlModifier, Qt.Key_W),
+                    (Qt.ControlModifier, Qt.Key_N),
+                    (Qt.ControlModifier, Qt.Key_O),
+                    (Qt.ControlModifier, Qt.Key_S),
+                    (Qt.ControlModifier, Qt.Key_F),
+                    (Qt.ControlModifier, Qt.Key_H),
+                    (Qt.ControlModifier | Qt.ShiftModifier, Qt.Key_T),
+                    (Qt.ControlModifier | Qt.ShiftModifier, Qt.Key_F),
+                    (Qt.ControlModifier | Qt.ShiftModifier, Qt.Key_S),
+                    (Qt.NoModifier, Qt.Key_F9),
+                }
+                key_combo = (event.modifiers(), event.key())
+                if key_combo in _APP_SHORTCUT_KEYS:
+                    from PySide6.QtCore import QCoreApplication
+                    QCoreApplication.sendEvent(self.window(), event)
+                    event.accept()
+                    return
+                super().keyPressEvent(event)
+
+        _WebViewWrapperClass = _WebViewWrapperImpl
+    return _WebViewWrapperClass
+
+class _LazyWebViewMeta(type):
+    def __instancecheck__(cls, instance):
+        return isinstance(instance, get_web_view_class())
+
+    def __subclasscheck__(cls, subclass):
+        return issubclass(subclass, get_web_view_class())
+
+    def __call__(cls, *args, **kwargs):
+        return get_web_view_class()(*args, **kwargs)
+
+class WebViewWrapper(metaclass=_LazyWebViewMeta):
+    pass
 
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QTabWidget, QLineEdit,

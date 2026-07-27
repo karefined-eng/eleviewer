@@ -9,11 +9,11 @@ import io
 import os
 from pathlib import Path
 
-from PySide6.QtCore import Qt, QThread, Signal
+from PySide6.QtCore import Qt, QThread, Signal, QAbstractTableModel, QModelIndex
 from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QTableWidget, QTableWidgetItem,
-    QHeaderView, QComboBox, QPushButton, QToolButton, QLabel, QStackedWidget,
-    QMessageBox, QAbstractItemView, QFrame
+    QWidget, QVBoxLayout, QHBoxLayout, QTableView, QHeaderView, QComboBox, 
+    QPushButton, QToolButton, QLabel, QStackedWidget, QMessageBox, 
+    QAbstractItemView, QFrame
 )
 
 from editor import EditorTab
@@ -43,12 +43,25 @@ class CsvLoadWorker(QThread):
             if self.content is not None:
                 raw_text = self.content
             elif self.file_path and os.path.exists(self.file_path):
+                # Sniff encoding with chardet; fall back to utf-8 then latin-1
+                detected_encoding = self.encoding
                 try:
-                    with open(self.file_path, "r", encoding=self.encoding) as f:
+                    import chardet
+                    with open(self.file_path, "rb") as fb:
+                        raw_bytes = fb.read(32768)  # sample first 32 KB
+                    result = chardet.detect(raw_bytes)
+                    if result and result.get("confidence", 0) >= 0.7:
+                        detected_encoding = result["encoding"] or "utf-8"
+                except Exception:
+                    detected_encoding = self.encoding or "utf-8"
+
+                try:
+                    with open(self.file_path, "r", encoding=detected_encoding, errors="replace") as f:
                         raw_text = f.read()
-                except UnicodeDecodeError:
+                except (UnicodeDecodeError, LookupError):
                     with open(self.file_path, "r", encoding="latin-1", errors="replace") as f:
                         raw_text = f.read()
+
 
             if not raw_text.strip():
                 self.loaded.emit([[""]], ",")
@@ -80,6 +93,94 @@ class CsvLoadWorker(QThread):
             self.error.emit(str(e))
 
 
+class CsvTableModel(QAbstractTableModel):
+    """Virtualized model for high-performance rendering of large CSV datasets."""
+    def __init__(self, data=None, parent=None):
+        super().__init__(parent)
+        self._data = data if data else [[""]]
+        self._max_cols = max((len(r) for r in self._data), default=1)
+
+    def rowCount(self, parent=QModelIndex()):
+        return len(self._data)
+
+    def columnCount(self, parent=QModelIndex()):
+        return self._max_cols
+
+    def data(self, index, role=Qt.DisplayRole):
+        if not index.isValid():
+            return None
+        r, c = index.row(), index.column()
+        if role in (Qt.DisplayRole, Qt.EditRole):
+            if r < len(self._data) and c < len(self._data[r]):
+                return str(self._data[r][c])
+            return ""
+        return None
+
+    def setData(self, index, value, role=Qt.EditRole):
+        if index.isValid() and role == Qt.EditRole:
+            r, c = index.row(), index.column()
+            while len(self._data) <= r:
+                self._data.append([])
+            while len(self._data[r]) <= c:
+                self._data[r].append("")
+            self._data[r][c] = str(value)
+            self.dataChanged.emit(index, index, [Qt.DisplayRole, Qt.EditRole])
+            return True
+        return False
+
+    def flags(self, index):
+        if not index.isValid():
+            return Qt.NoItemFlags
+        return Qt.ItemIsSelectable | Qt.ItemIsEnabled | Qt.ItemIsEditable
+
+    def headerData(self, section, orientation, role=Qt.DisplayRole):
+        if role == Qt.DisplayRole:
+            if orientation == Qt.Horizontal:
+                return self._col_to_letter(section)
+            elif orientation == Qt.Vertical:
+                return str(section + 1)
+        return None
+
+    def _col_to_letter(self, col_idx):
+        result = ""
+        while col_idx >= 0:
+            result = chr(col_idx % 26 + 65) + result
+            col_idx = col_idx // 26 - 1
+        return result
+
+    def set_data(self, data):
+        self.beginResetModel()
+        self._data = data if data else [[""]]
+        self._max_cols = max((len(r) for r in self._data), default=1)
+        self.endResetModel()
+
+    def get_data(self):
+        return self._data
+
+    def add_row(self):
+        self.beginInsertRows(QModelIndex(), len(self._data), len(self._data))
+        self._data.append([""] * self._max_cols)
+        self.endInsertRows()
+
+    def add_column(self):
+        self.beginInsertColumns(QModelIndex(), self._max_cols, self._max_cols)
+        self._max_cols += 1
+        for r in self._data:
+            while len(r) < self._max_cols:
+                r.append("")
+        self.endInsertColumns()
+
+    def remove_rows(self, row_indices):
+        for r in sorted(row_indices, reverse=True):
+            if 0 <= r < len(self._data):
+                self.beginRemoveRows(QModelIndex(), r, r)
+                del self._data[r]
+                self.endRemoveRows()
+        if not self._data:
+            self._data = [[""]]
+            self._max_cols = 1
+
+
 class CsvViewer(QWidget):
     """CSV/TSV Workstation Table Viewer & Raw Text Editor."""
     textChanged = Signal()
@@ -94,7 +195,6 @@ class CsvViewer(QWidget):
         self.current_encoding = "utf-8"
         self.view_mode = "grid"  # 'grid' or 'raw'
         self.worker = None
-        self._headers = []
 
         self._build_ui()
 
@@ -103,7 +203,7 @@ class CsvViewer(QWidget):
         elif file_path:
             self.load_from_path(file_path)
         else:
-            self._populate_grid([["A", "B", "C"], ["", "", ""]])
+            self.model.set_data([["A", "B", "C"], ["", "", ""]])
             self.is_modified = False
 
     def _build_ui(self):
@@ -201,10 +301,13 @@ class CsvViewer(QWidget):
         # ── Stacked Views (Grid vs Raw Text) ──────────────────────────────
         self.stack = QStackedWidget()
 
-        # 1. Grid View
-        self.table = QTableWidget()
+        # 1. Grid View (Virtualized QTableView)
+        self.model = CsvTableModel()
+        self.model.dataChanged.connect(self._on_cell_changed)
+        self.table = QTableView()
+        self.table.setModel(self.model)
         self.table.setStyleSheet(f"""
-            QTableWidget {{
+            QTableView {{
                 background-color: {BRAND_PANEL};
                 color: {BRAND_PRIMARY};
                 gridline-color: {BRAND_BORDER};
@@ -212,8 +315,8 @@ class CsvViewer(QWidget):
                 font-family: 'Consolas', 'Courier New', monospace;
                 font-size: 13px;
             }}
-            QTableWidget::item {{ padding: 6px; }}
-            QTableWidget::item:selected {{
+            QTableView::item {{ padding: 6px; }}
+            QTableView::item:selected {{
                 background-color: {get_brand_accent()};
                 color: {BRAND_BACKGROUND};
             }}
@@ -228,7 +331,6 @@ class CsvViewer(QWidget):
         """)
         self.table.setSelectionBehavior(QAbstractItemView.SelectItems)
         self.table.setSelectionMode(QAbstractItemView.ExtendedSelection)
-        self.table.itemChanged.connect(self._on_cell_changed)
         self.stack.addWidget(self.table)
 
         # 2. Raw Text View
@@ -287,33 +389,12 @@ class CsvViewer(QWidget):
 
     def _populate_grid(self, rows):
         self._loading = True
-        self.table.blockSignals(True)
-        self.table.clear()
-
-        max_cols = max(len(row) for row in rows) if rows else 1
-        num_rows = len(rows)
-
-        self.table.setRowCount(num_rows)
-        self.table.setColumnCount(max_cols)
-
-        # Standard spreadsheet headers (A, B, C...)
-        headers = [self._col_to_letter(c) for c in range(max_cols)]
-        self.table.setHorizontalHeaderLabels(headers)
-        self._headers = headers
-
-        for r_idx, row in enumerate(rows):
-            for c_idx in range(max_cols):
-                val = row[c_idx] if c_idx < len(row) else ""
-                item = QTableWidgetItem(str(val))
-                self.table.setItem(r_idx, c_idx, item)
-
+        self.model.set_data(rows)
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Interactive)
-        for c in range(min(max_cols, 15)):
+        for c in range(min(self.model.columnCount(), 15)):
             self.table.resizeColumnToContents(c)
             if self.table.columnWidth(c) < 80:
                 self.table.setColumnWidth(c, 80)
-
-        self.table.blockSignals(False)
         self._loading = False
 
     def _col_to_letter(self, col_idx):
@@ -324,7 +405,7 @@ class CsvViewer(QWidget):
         return result
 
     # ── Table Grid & Raw View Editing ─────────────────────────────────────
-    def _on_cell_changed(self, item):
+    def _on_cell_changed(self, top_left=None, bottom_right=None, roles=None):
         if self._loading:
             return
         self.is_modified = True
@@ -339,7 +420,7 @@ class CsvViewer(QWidget):
     def _on_delimiter_changed(self, index):
         if self._loading:
             return
-        if self.file_path or self.table.rowCount() > 0:
+        if self.file_path or self.model.rowCount() > 0:
             content = self.toPlainText()
             self.load_from_content(content)
 
@@ -374,43 +455,21 @@ class CsvViewer(QWidget):
             self.load_from_content(raw_text)
 
     def add_row(self):
-        row_idx = self.table.rowCount()
-        self.table.insertRow(row_idx)
-        for c in range(self.table.columnCount()):
-            self.table.setItem(row_idx, c, QTableWidgetItem(""))
+        self.model.add_row()
         self.is_modified = True
         self.textChanged.emit()
 
     def add_column(self):
-        col_idx = self.table.columnCount()
-        self.table.insertColumn(col_idx)
-        letter = self._col_to_letter(col_idx)
-        self.table.setHorizontalHeaderItem(col_idx, QTableWidgetItem(letter))
-        for r in range(self.table.rowCount()):
-            self.table.setItem(r, col_idx, QTableWidgetItem(""))
+        self.model.add_column()
         self.is_modified = True
         self.textChanged.emit()
 
     def delete_selected(self):
-        selected_ranges = self.table.selectedRanges()
-        if not selected_ranges:
+        selected_indexes = self.table.selectedIndexes()
+        if not selected_indexes:
             return
-        
-        # Determine whether to delete rows or columns based on selection spanning
-        for rng in sorted(selected_ranges, key=lambda r: r.topRow(), reverse=True):
-            if rng.leftColumn() == 0 and rng.rightColumn() == self.table.columnCount() - 1:
-                for r in range(rng.bottomRow(), rng.topRow() - 1, -1):
-                    self.table.removeRow(r)
-            elif rng.topRow() == 0 and rng.bottomRow() == self.table.rowCount() - 1:
-                for c in range(rng.rightColumn(), rng.leftColumn() - 1, -1):
-                    self.table.removeColumn(c)
-            else:
-                # Default: clear contents of selected cells
-                for r in range(rng.topRow(), rng.bottomRow() + 1):
-                    for c in range(rng.leftColumn(), rng.rightColumn() + 1):
-                        item = self.table.item(r, c)
-                        if item:
-                            item.setText("")
+        rows_to_del = set(idx.row() for idx in selected_indexes)
+        self.model.remove_rows(rows_to_del)
         self.is_modified = True
         self.textChanged.emit()
 
@@ -425,12 +484,8 @@ class CsvViewer(QWidget):
 
         output = io.StringIO()
         writer = csv.writer(output, delimiter=delim, quoting=quote)
-        for r in range(self.table.rowCount()):
-            row_vals = []
-            for c in range(self.table.columnCount()):
-                item = self.table.item(r, c)
-                row_vals.append(item.text() if item else "")
-            writer.writerow(row_vals)
+        for row in self.model.get_data():
+            writer.writerow(row)
         return output.getvalue()
 
     def toPlainText(self):
@@ -454,27 +509,27 @@ class CsvViewer(QWidget):
         if self.view_mode == "raw":
             return self.raw_editor.read_current_page(voice_id=voice_id)
 
-        selected_items = self.table.selectedItems()
-        if selected_items:
+        selected_indexes = self.table.selectedIndexes()
+        if selected_indexes:
             lines = []
-            for item in selected_items:
-                r = item.row() + 1
-                c = self._col_to_letter(item.column())
-                val = item.text().strip()
+            for idx in selected_indexes:
+                r = idx.row() + 1
+                c = self._col_to_letter(idx.column())
+                val = str(self.model.data(idx, Qt.DisplayRole) or "").strip()
                 if val:
                     lines.append(f"Row {r}, Column {c}: {val}")
             if lines:
                 return ". ".join(lines)
 
         # Fallback: Read summary and top headers
-        num_rows = self.table.rowCount()
-        num_cols = self.table.columnCount()
+        num_rows = self.model.rowCount()
+        num_cols = self.model.columnCount()
         headers = []
         if num_rows > 0:
             for c in range(min(num_cols, 5)):
-                item = self.table.item(0, c)
-                if item and item.text().strip():
-                    headers.append(item.text().strip())
+                val = str(self.model.data(self.model.index(0, c), Qt.DisplayRole) or "").strip()
+                if val:
+                    headers.append(val)
         
         summary = f"CSV spreadsheet with {num_rows} rows and {num_cols} columns."
         if headers:
