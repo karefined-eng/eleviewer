@@ -81,6 +81,8 @@ def main_window_stylesheet():
         QLineEdit, QSpinBox, QCheckBox {{ color: {BRAND_PRIMARY}; }}
         QLineEdit, QSpinBox {{ background-color: {BRAND_MUTED}; border: 1px solid {BRAND_BORDER}; padding: 6px; border-radius: 6px; }}
         QLabel {{ color: {BRAND_PRIMARY}; }}
+        QComboBox {{ background-color: {BRAND_PANEL}; color: {BRAND_PRIMARY}; border: 1px solid {BRAND_BORDER}; padding: 5px; border-radius: 6px; }}
+        QComboBox QAbstractItemView {{ background-color: {BRAND_PANEL}; color: {BRAND_PRIMARY}; border: 1px solid {BRAND_BORDER}; selection-background-color: {accent['accent']}; selection-color: {accent['accent_fg']}; }}
     """
 
 

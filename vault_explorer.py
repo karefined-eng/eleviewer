@@ -45,7 +45,7 @@ class VaultExplorer(QWidget):
 
         self.vault_selector = QComboBox()
         self.vault_selector.setStyleSheet(
-            f"QComboBox {{ background: {BRAND_PANEL_2}; color: {BRAND_PRIMARY}; border: 1px solid {BRAND_BORDER}; padding: 4px; }}"
+            f"QComboBox {{ background: {BRAND_PANEL_2}; color: {BRAND_PRIMARY}; border: 1px solid {BRAND_BORDER}; padding: 4px; }} QComboBox QAbstractItemView {{ background: {BRAND_PANEL}; color: {BRAND_PRIMARY}; border: 1px solid {BRAND_BORDER}; selection-background-color: {get_brand_accent()}; selection-color: {BRAND_BACKGROUND}; }}"
         )
         self.vault_selector.currentIndexChanged.connect(self._on_vault_selected)
 
