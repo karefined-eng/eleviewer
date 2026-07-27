@@ -4,10 +4,7 @@ from typing import Iterable
 
 
 def normalize_version(version: str) -> str:
-    version = version.strip()
-    if version.startswith("v") or version.startswith("V"):
-        version = version[1:]
-    return version
+    return version.strip().lstrip("vV")
 
 
 def sync_package_versions(root: str | Path, version: str) -> str:

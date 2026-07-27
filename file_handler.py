@@ -103,8 +103,5 @@ def get_file_content(widget, file_path):
     elif ext == "xlsx":
         return widget.to_xlsx_bytes()
 
-    elif ext in ("csv", "tsv"):
-        return widget.toPlainText()
-
     else:
         return widget.toPlainText()

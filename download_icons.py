@@ -1,8 +1,7 @@
-import requests
+import urllib.request
 import os
 from pathlib import Path
 
-# List of icons used in EleViewer
 ICONS = [
     "file-plus", "panel-left", "folder-open", "save", "globe", "settings",
     "book-open", "type", "table", "monitor", "volume-2", "x", "play", "square",
@@ -17,24 +16,18 @@ ICONS_DIR = Path("icons")
 ICONS_DIR.mkdir(exist_ok=True)
 
 def download_lucide_icon(name, target_name=None):
-    if target_name is None:
-        target_name = name
-    url = f"https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/{name}.svg"
     try:
-        response = requests.get(url)
-        if response.status_code == 200:
-            with open(ICONS_DIR / f"{target_name}.svg", "wb") as f:
-                f.write(response.content)
-            print(f"Downloaded: {target_name}")
-        else:
-            print(f"Failed to download: {name} (Status: {response.status_code})")
+        urllib.request.urlretrieve(
+            f"https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/{name}.svg",
+            ICONS_DIR / f"{target_name or name}.svg"
+        )
+        print(f"Downloaded: {target_name or name}")
     except Exception as e:
         print(f"Error downloading {name}: {e}")
 
 if __name__ == "__main__":
     for icon_name in ICONS:
         if icon_name == "help-circle":
-            # Try both possible names
             download_lucide_icon("circle-help", "help-circle")
             if not (ICONS_DIR / "help-circle.svg").exists():
                 download_lucide_icon("help-circle")
