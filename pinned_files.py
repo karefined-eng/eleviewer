@@ -2,6 +2,7 @@ import json
 import os
 
 from paths import PINNED_FILE_PATH
+from save_utils import atomic_write
 
 
 def load_pinned_files(validate=True):
@@ -21,8 +22,8 @@ def load_pinned_files(validate=True):
 
 
 def _save_pinned_files(files):
-    with open(PINNED_FILE_PATH, "w", encoding="utf-8") as file:
-        json.dump(files, file, indent=4)
+    atomic_write(PINNED_FILE_PATH, json.dumps(files, indent=4))
+
 
 
 def save_pinned_file(path):

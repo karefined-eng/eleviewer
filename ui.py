@@ -3,7 +3,7 @@ from PySide6.QtWidgets import (
     QSplitter, QMenu, QToolBar, QToolButton, QVBoxLayout, QWidget,
     QDockWidget, QLabel, QSystemTrayIcon, QApplication, QScrollBar,
 )
-from PySide6.QtGui import QAction, QKeySequence, QShortcut, QIcon
+from PySide6.QtGui import QAction, QKeySequence, QShortcut, QIcon, QFontMetrics
 from PySide6.QtCore import Qt, QSize, QTimer, Slot, QUrl
 import os
 import sys
@@ -192,6 +192,25 @@ class MainWindow(QMainWindow):
             self.bookmarks_panel.hide()
             return
 
+        # Hide global Find/Replace panel if visible
+        if hasattr(self, "find_replace_panel") and self.find_replace_panel.isVisible():
+            self.find_replace_panel.hide()
+            return
+
+        # Collapse TTS reader bar if visible
+        if hasattr(self, "tts_bar") and self.tts_bar.isVisible():
+            self.tts_bar.hide()
+            return
+
+    def keyPressEvent(self, event):
+        """Override to guarantee Esc is processed by the MainWindow layer stack,
+        even when a QWebEngineView or other child widget has keyboard focus."""
+        if event.key() == Qt.Key_Escape:
+            self.handle_escape()
+            event.accept()
+        else:
+            super().keyPressEvent(event)
+
     def _check_for_updates_async(self):
         try:
             from updater import CheckUpdateThread
@@ -265,7 +284,12 @@ class MainWindow(QMainWindow):
     def _rotate_shortcuts(self):
         self.shortcut_index = (self.shortcut_index + 1) % len(self.shortcut_hints)
         next_idx = (self.shortcut_index + 1) % len(self.shortcut_hints)
-        self.status_center.setText(f"{self.shortcut_hints[self.shortcut_index]}  ·  {self.shortcut_hints[next_idx]}")
+        full_text = f"{self.shortcut_hints[self.shortcut_index]}  ·  {self.shortcut_hints[next_idx]}"
+        # Elide center text so it never overlaps the right-side indicators on narrow windows
+        fm = QFontMetrics(self.status_center.font())
+        available_w = max(200, self.width() - 320)  # 320px reserved for left + right labels
+        elided = fm.elidedText(full_text, Qt.ElideRight, available_w)
+        self.status_center.setText(elided)
 
     def _build_layout(self):
         self.main_splitter = QSplitter(Qt.Horizontal)
@@ -414,8 +438,10 @@ class MainWindow(QMainWindow):
         from PySide6.QtCore import Qt
 
         # Create global ApplicationShortcut instances for all Reflex Keys and common actions
-        # so they trigger reliably regardless of which child widget has focus and without ambiguous shortcut conflicts.
+        # so they trigger reliably regardless of which child widget has focus — including
+        # when a QWebEngineView (Chromium) has captured keyboard focus.
         shortcuts = [
+            ("Escape", self.handle_escape),
             ("Alt+E", self.bring_to_front_and_new_note),
             ("Alt+V", self.toggle_vault_panel),
             ("Ctrl+Q", self.open_quick_switcher),

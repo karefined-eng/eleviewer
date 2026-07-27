@@ -23,6 +23,9 @@ import traceback
 from datetime import datetime
 import urllib.request
 import json
+from paths import strip_pii
+
+
 def global_exception_handler(exc_type, exc_value, exc_traceback):
     if issubclass(exc_type, KeyboardInterrupt):
         sys.__excepthook__(exc_type, exc_value, exc_traceback)
@@ -32,11 +35,8 @@ def global_exception_handler(exc_type, exc_value, exc_traceback):
     tb_text = "".join(tb_lines)
     
     # SECURITY: Strip PII (User's home directory path) from the traceback
-    try:
-        user_home = os.path.expanduser("~")
-        tb_text = tb_text.replace(user_home, "~")
-    except Exception:
-        pass
+    tb_text = strip_pii(tb_text)
+
         
     # Automatic clipboard log grabber
     clipboard = QApplication.clipboard()

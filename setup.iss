@@ -2,9 +2,15 @@
 ; This script generates the highly compressed Windows installer for EleViewer
 ; and sets up file associations and context menus.
 
+; CI/CD passes version via: iscc /DAppVersion=X.Y.Z setup.iss
+; Falls back to 1.3.0 for local manual builds.
+#ifndef AppVersion
+  #define AppVersion "1.3.0"
+#endif
+
 [Setup]
 AppName=EleViewer
-AppVersion=1.3.0
+AppVersion={#AppVersion}
 AppPublisher=karefined-eng
 AppPublisherURL=https://eleviewer.vercel.app
 AppSupportURL=https://github.com/karefined-eng/eleviewer/issues
@@ -15,7 +21,7 @@ DisableProgramGroupPage=yes
 Compression=lzma2/ultra64
 SolidCompression=yes
 OutputDir=dist
-OutputBaseFilename=EleViewer_Setup_v1.3.0
+OutputBaseFilename=EleViewer_Setup_v{#AppVersion}
 SetupIconFile=icons\eleviewer.ico
 UninstallDisplayIcon={app}\EleViewer.exe
 PrivilegesRequired=lowest
@@ -59,6 +65,20 @@ Name: "{autodesktop}\EleViewer"; Filename: "{app}\EleViewer.exe"; Tasks: desktop
 Root: HKCR; Subkey: "*\shell\EleViewer"; ValueType: string; ValueName: ""; ValueData: "Open with EleViewer"; Flags: uninsdeletekey; Tasks: contextmenu
 Root: HKCR; Subkey: "*\shell\EleViewer"; ValueType: string; ValueName: "Icon"; ValueData: """{app}\EleViewer.exe"""; Flags: uninsdeletekey; Tasks: contextmenu
 Root: HKCR; Subkey: "*\shell\EleViewer\command"; ValueType: string; ValueName: ""; ValueData: """{app}\EleViewer.exe"" ""%1"""; Flags: uninsdeletekey; Tasks: contextmenu
+
+; Application Capabilities for Windows 10/11 "Open With" dialog (Per-User Installation)
+Root: HKCU; Subkey: "Software\RegisteredApplications"; ValueType: string; ValueName: "EleViewer"; ValueData: "Software\EleViewer\Capabilities"; Flags: uninsdeletevalue; Tasks: associate
+Root: HKCU; Subkey: "Software\EleViewer\Capabilities"; ValueType: string; ValueName: "ApplicationDescription"; ValueData: "Lightweight Document Viewer & Study Workspace"; Flags: uninsdeletekey; Tasks: associate
+Root: HKCU; Subkey: "Software\EleViewer\Capabilities"; ValueType: string; ValueName: "ApplicationName"; ValueData: "EleViewer"; Flags: uninsdeletekey; Tasks: associate
+Root: HKCU; Subkey: "Software\EleViewer\Capabilities\FileAssociations"; ValueType: string; ValueName: ".pdf"; ValueData: "EleViewer.PDF"; Flags: uninsdeletevalue; Tasks: associate
+Root: HKCU; Subkey: "Software\EleViewer\Capabilities\FileAssociations"; ValueType: string; ValueName: ".md"; ValueData: "EleViewer.Markdown"; Flags: uninsdeletevalue; Tasks: associate
+Root: HKCU; Subkey: "Software\EleViewer\Capabilities\FileAssociations"; ValueType: string; ValueName: ".docx"; ValueData: "EleViewer.Docx"; Flags: uninsdeletevalue; Tasks: associate
+Root: HKCU; Subkey: "Software\EleViewer\Capabilities\FileAssociations"; ValueType: string; ValueName: ".xlsx"; ValueData: "EleViewer.Xlsx"; Flags: uninsdeletevalue; Tasks: associate
+Root: HKCU; Subkey: "Software\EleViewer\Capabilities\FileAssociations"; ValueType: string; ValueName: ".pptx"; ValueData: "EleViewer.Pptx"; Flags: uninsdeletevalue; Tasks: associate
+Root: HKCU; Subkey: "Software\EleViewer\Capabilities\FileAssociations"; ValueType: string; ValueName: ".csv"; ValueData: "EleViewer.Csv"; Flags: uninsdeletevalue; Tasks: associate
+Root: HKCU; Subkey: "Software\EleViewer\Capabilities\FileAssociations"; ValueType: string; ValueName: ".txt"; ValueData: "EleViewer.Txt"; Flags: uninsdeletevalue; Tasks: associate
+Root: HKCU; Subkey: "Software\EleViewer\Capabilities\FileAssociations"; ValueType: string; ValueName: ".html"; ValueData: "EleViewer.Html"; Flags: uninsdeletevalue; Tasks: associate
+
 
 ; File Associations (.md)
 Root: HKCR; Subkey: ".md"; ValueType: string; ValueName: ""; ValueData: "EleViewer.Markdown"; Flags: uninsdeletevalue; Tasks: associate

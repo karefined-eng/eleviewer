@@ -8,6 +8,7 @@ from PySide6.QtCore import Qt, Signal, QTimer, QThread
 from theme import BRAND_BACKGROUND, BRAND_PANEL, BRAND_BORDER, BRAND_PRIMARY, BRAND_MUTED, BRAND_MUTED_FG, get_brand_accent
 from file_icons import file_type_icon
 from settings import load_settings
+from paths import scandir_walk
 
 
 # FIX: search runs on QThreadPool worker to prevent GUI thread freezing
@@ -36,7 +37,8 @@ class VaultSearchWorker(QThread):
 
             vault_name = vault_resolved.name
             # SECURITY: followlinks=False prevents traversing symlinks outside vault
-            for root, dirs, files in os.walk(str(vault_resolved), followlinks=False):
+            for root, dirs, files in scandir_walk(str(vault_resolved), followlinks=False):
+
                 if self._is_cancelled or count >= 100:
                     break
                 resolved_root = Path(root).resolve()
@@ -160,6 +162,19 @@ class VaultSearchDialog(QDialog):
         self.file_selected.emit(path)
         self.accept()
         
+    def _cleanup_worker(self):
+        if self._search_worker and self._search_worker.isRunning():
+            self._search_worker.cancel()
+            self._search_worker.wait(500)
+
+    def accept(self):
+        self._cleanup_worker()
+        super().accept()
+
+    def reject(self):
+        self._cleanup_worker()
+        super().reject()
+
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_Escape:
             self.reject()
@@ -178,3 +193,4 @@ class VaultSearchDialog(QDialog):
                     self.results_list.keyPressEvent(event)
         else:
             super().keyPressEvent(event)
+
