@@ -88,4 +88,13 @@ When invoked to work on the Python PySide6 desktop application, adhere to these 
 - **Mandatory `os.scandir` Usage:** Never run synchronous filesystem scanning on the GUI thread or use `os.walk()` / `os.listdir()` for large directories. Always use **`os.scandir()`**, which retrieves file metadata (stat/type) directly from OS directory entries during iteration without extra system calls.
 - **Worker Communication:** Execute background vault indexing and recovery scanning inside a dedicated worker (`QThread` for persistent monitoring, `QRunnable`/`QThreadPool` with limited max thread count for bulk scanning) with a periodic GUI update signal (`found_files.emit(list)`) and a cancellation flag (`self.is_running`) to maintain 60 FPS without UI freezing.
 
+## 12. Lightweight Performance Auditing & Benchmarking Standards
+- **Lazy Module Ingestion (<100ms Cold Start):** Never import heavy third-party libraries (`openpyxl`, `python-docx`, `python-pptx`, `bleach`, `pygments`, `PySide6.QtPdf`) at top-level module load time in factory routers (such as `file_handler.py`). Always import them lazily inside component instantiation functions (e.g. `create_viewer_widget()`) so that text viewing and empty window initialization boot in under 100ms.
+- **Avoid Recursive Win32 Path Resolution Overhead:** Inside recursive directory scanning loops (`scandir_walk`), never invoke `Path(root).resolve()`. `Path.resolve()` issues expensive Win32 `GetFinalPathNameByHandleW` kernel calls for every directory step. Pre-resolve the root directory *once* before the loop, and use `os.path.abspath(root).startswith(vault_str)` for boundary validation.
+- **Empirical Benchmark Validation:** When performing speed or performance optimizations, validate results using a micro-benchmark measuring:
+  1. Cold-start module import latency (`time.perf_counter()`).
+  2. Directory traversal throughput (files & directories per millisecond).
+  3. Atomic file write speed (`atomic_write` + `os.fsync()`).
+  4. 100% pass rate on `test_eleviewer_fixes.py` regression suite.
+
 

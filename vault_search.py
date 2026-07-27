@@ -35,15 +35,16 @@ class VaultSearchWorker(QThread):
             except Exception:
                 continue
 
+            vault_str = str(vault_resolved)
             vault_name = vault_resolved.name
             # SECURITY: followlinks=False prevents traversing symlinks outside vault
-            for root, dirs, files in scandir_walk(str(vault_resolved), followlinks=False):
+            for root, dirs, files in scandir_walk(vault_str, followlinks=False):
 
                 if self._is_cancelled or count >= 100:
                     break
-                resolved_root = Path(root).resolve()
+                abs_root = os.path.abspath(root)
                 # SECURITY: block paths that escape vault boundary
-                if not str(resolved_root).startswith(str(vault_resolved)):
+                if not abs_root.startswith(vault_str):
                     dirs.clear()
                     continue
 
