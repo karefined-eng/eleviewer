@@ -65,10 +65,10 @@ class WhatsNewDialog(QDialog):
                 <li>When offline, it <b>seamlessly falls back</b> to your local Windows voices — no setup or manual switching needed.</li>
             </ul>
 
-            <b>2. Smarter Document Viewing</b>
+            <b>2. Smarter Native Document Viewing</b>
             <ul>
+                <li><b>Inline Image Rendering:</b> DOCX and PPTX files now render actual embedded pictures directly inside your study cards using our zero-dependency native byte extractor! No heavy bloat, just your visuals.</li>
                 <li><b>XLSX View-Only Mode:</b> Spreadsheets now display computed formula values (not raw <code>=SUM()</code> strings) in a protected read-only grid.</li>
-                <li><b>Image Placeholders:</b> DOCX and PPTX files show 📷 markers where embedded images exist, so you never miss visual content.</li>
                 <li><b>CSV Smart Encoding:</b> Files exported from Excel in Windows-1252 or Latin-1 now render correctly without garbled characters.</li>
             </ul>
 
