@@ -129,6 +129,13 @@ class CsvViewer(QWidget):
                 font-size: 12px;
                 min-width: 90px;
             }}
+            QComboBox QAbstractItemView {{
+                background-color: {BRAND_PANEL};
+                color: {BRAND_PRIMARY};
+                border: 1px solid {BRAND_BORDER};
+                selection-background-color: #6cb6ff;
+                selection-color: #0c1826;
+            }}
             QComboBox::drop-down {{ border: none; }}
             QPushButton {{
                 background-color: {BRAND_PANEL_2};

@@ -48,6 +48,13 @@ class TtsReaderBar(QFrame):
                 font-size: 11px;
                 min-width: 130px;
             }}
+            QComboBox QAbstractItemView {{
+                background-color: #1c1c1c;
+                color: {BRAND_PRIMARY};
+                border: 1px solid {BRAND_BORDER};
+                selection-background-color: #6cb6ff;
+                selection-color: #0c1826;
+            }}
             QToolButton {{
                 background: transparent;
                 border: none;
@@ -129,6 +136,13 @@ class TtsReaderBar(QFrame):
                 padding: 2px 6px;
                 font-size: 11px;
                 min-width: 130px;
+            }}
+            QComboBox QAbstractItemView {{
+                background-color: #1c1c1c;
+                color: {BRAND_PRIMARY};
+                border: 1px solid {BRAND_BORDER};
+                selection-background-color: #6cb6ff;
+                selection-color: #0c1826;
             }}
             QToolButton {{
                 background: transparent;

@@ -88,6 +88,7 @@ class VaultSearchDialog(QDialog):
             QListWidget::item {{ padding: 4px; }}
             QListWidget::item:selected {{ background: {accent}; color: {BRAND_BACKGROUND}; }}
             QComboBox {{ background: {BRAND_PANEL}; color: {BRAND_PRIMARY}; border: 1px solid {BRAND_BORDER}; padding: 4px; }}
+            QComboBox QAbstractItemView {{ background: {BRAND_PANEL}; color: {BRAND_PRIMARY}; border: 1px solid {BRAND_BORDER}; selection-background-color: {accent}; selection-color: {BRAND_BACKGROUND}; }}
         """)
         
         layout = QVBoxLayout()

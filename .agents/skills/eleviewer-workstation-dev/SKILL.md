@@ -17,6 +17,7 @@ When invoked to work on the Python PySide6 desktop application, adhere to these 
   ```python
   from theme import BRAND_PRIMARY, BRAND_PANEL, BRAND_PANEL_2, BRAND_ACCENT, BRAND_BORDER, BRAND_BACKGROUND
   ```
+- **QComboBox Popup Styling (`QAbstractItemView`):** On Windows, when styling a `QComboBox`, you MUST also explicitly style its popup list view (`QComboBox QAbstractItemView { background: ...; color: ...; }`), otherwise the dropdown items will default to dark Windows system font colors on a dark background, making them illegible.
 
 ## 3. Off-Thread Concurrency (`QThread`)
 - To guarantee zero GUI freezing during heavy operations, all network requests, file indexing, and auto-save tasks MUST be executed on background `QThread` workers:
