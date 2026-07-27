@@ -141,6 +141,7 @@ class PptxViewer(QWidget):
                 for idx, slide in enumerate(prs.slides, start=1):
                     title = f"Slide {idx}"
                     texts = []
+                    image_count = 0
                     for shape in slide.shapes:
                         if shape.has_text_frame:
                             for paragraph in shape.text_frame.paragraphs:
@@ -149,6 +150,24 @@ class PptxViewer(QWidget):
                                     if not texts and shape == slide.shapes.title:
                                         title = text
                                     texts.append(text)
+                        elif hasattr(shape, "shape_type"):
+                            # MSO_SHAPE_TYPE.PICTURE == 13
+                            try:
+                                from pptx.enum.shapes import MSO_SHAPE_TYPE
+                                if shape.shape_type == MSO_SHAPE_TYPE.PICTURE:
+                                    try:
+                                        import base64
+                                        img_bytes = shape.image.blob
+                                        img_ext = shape.image.ext.lower()
+                                        if img_bytes and img_ext:
+                                            b64_data = base64.b64encode(img_bytes).decode('utf-8')
+                                            mime_type = "image/jpeg" if img_ext == "jpg" else f"image/{img_ext}"
+                                            texts.append(f'<img src="data:{mime_type};base64,{b64_data}" style="max-width:100%; border-radius:4px; margin-top:10px; margin-bottom:10px;" />')
+                                            image_count += 1
+                                    except Exception as e:
+                                        print(f"Failed to extract image: {e}")
+                            except Exception:
+                                pass
                     notes = ""
                     if slide.has_notes_slide and slide.notes_slide.notes_text_frame:
                         notes = slide.notes_slide.notes_text_frame.text.strip()

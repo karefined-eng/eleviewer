@@ -10,12 +10,16 @@ A lightweight Windows document editor supporting **DOCX**, **XLSX**, **PPTX**, *
 
 ### 📁 File Support
 Opens & edits **DOCX, XLSX, PPTX, PDF, MD, TXT, CSV and HTML** — all in one workspace.
+- **XLSX View-Only Mode** — displays computed formula values (not raw formulas) in a read-only grid, protecting spreadsheet integrity while letting you study the data.
+- **Image Placeholders** — DOCX and PPTX files with embedded images display `📷 [Image]` markers so you know where visuals exist, even in text-only rendering.
+- **CSV Smart Encoding** — automatically detects file encoding via `chardet` so Excel-exported CSVs in Windows-1252, Latin-1, or UTF-8 render without garbled characters.
 - **CSV Table Workstation** — dual Table Grid View ⇄ Raw Text View with interactive cell editing, row/column insertion, delimiter overrides, and non-destructive text preservation.
 - **HTML Live Workstation** — split-screen syntax editor with debounced live preview, compact monochromatic styling, and 1-click migration into the right-hand Web Panel.
 - **Global Hyperlink Interception** — clicks on web or file links in documents automatically open inside EleViewer's Web Panel or editor tabs without launching external system browsers.
 
 ### 🔊 Reading & Study Tools
 - **Universal Text-to-Speech** — reads lectures, notes, Word docs, Markdown, CSV tables, HTML text, and PDFs aloud for hands-free studying (Toggle with `F9` or the toolbar button). Reads highlighted text selection or the full document.
+- **Hybrid Neural TTS** — automatically uses high-quality Microsoft Neural voices (`edge-tts`) when online, and seamlessly falls back to native Windows SAPI5 voices (`pyttsx3`) when offline. No setup required.
 - **Persistent Bookmarks** — drop a bookmark anywhere in your documents (`Ctrl+D`), even in 400-page textbooks or lengthy notes, and jump back instantly.
 
 ### 🗂️ Organization & System Tray
@@ -33,6 +37,7 @@ Opens & edits **DOCX, XLSX, PPTX, PDF, MD, TXT, CSV and HTML** — all in one wo
 - **Symlink Path Traversal Guards** — strict canonical root validation to isolate local file access.
 - **Off-Thread Concurrency** — draft recovery autosave, live vault search, and feedback submissions run on background `QThread` workers.
 - **Dynamic UI Accents** — Status bar and active icons pop with your chosen theme color.
+- **Lucide Icon Set** — clean, consistent, professional SVG icons throughout the UI, replacing legacy bulky glyphs.
 
 ### 💻 Specs
 - 16 MB, single portable `.exe` — no install needed.
@@ -131,7 +136,7 @@ Key directories and modules:
 
 - **ModuleNotFoundError (e.g., 'PySide6', 'docx')**: Ensure you've run `pip install -r requirements.txt`.
 - **Web panel not available**: Run `pip install PySide6-WebEngine`.
-- **PDF read-aloud not working**: Ensure `pyttsx3` is installed and Windows speech voices are enabled in OS settings.
+- **PDF read-aloud not working**: Ensure `pyttsx3` is installed and Windows speech voices are enabled in OS settings. For higher quality neural voices, install `edge-tts` and `pygame` (requires internet connection).
 
 ## 🤝 Contributing
 

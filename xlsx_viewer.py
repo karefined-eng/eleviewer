@@ -1,9 +1,10 @@
 from pathlib import Path
 
 from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QTableWidget, QTableWidgetItem, QTabBar, QHeaderView,
+    QWidget, QVBoxLayout, QHBoxLayout, QTableView, QTabBar, QHeaderView,
+    QAbstractItemView, QLabel,
 )
-from PySide6.QtCore import Signal, Qt
+from PySide6.QtCore import Signal, Qt, QAbstractTableModel, QModelIndex
 from openpyxl import load_workbook
 from openpyxl.cell.cell import MergedCell
 import io
@@ -14,8 +15,73 @@ from theme import (
 )
 
 
+class XlsxTableModel(QAbstractTableModel):
+    """Virtualized model for high-performance rendering of Excel worksheets."""
+    def __init__(self, data=None, parent=None):
+        super().__init__(parent)
+        self._data = data if data else [[""]]
+        self._max_cols = max((len(r) for r in self._data), default=1)
+
+    def rowCount(self, parent=QModelIndex()):
+        return len(self._data)
+
+    def columnCount(self, parent=QModelIndex()):
+        return self._max_cols
+
+    def data(self, index, role=Qt.DisplayRole):
+        if not index.isValid():
+            return None
+        r, c = index.row(), index.column()
+        if role in (Qt.DisplayRole, Qt.EditRole):
+            if r < len(self._data) and c < len(self._data[r]):
+                return str(self._data[r][c])
+            return ""
+        return None
+
+    def setData(self, index, value, role=Qt.EditRole):
+        if index.isValid() and role == Qt.EditRole:
+            r, c = index.row(), index.column()
+            while len(self._data) <= r:
+                self._data.append([])
+            while len(self._data[r]) <= c:
+                self._data[r].append("")
+            self._data[r][c] = str(value)
+            self.dataChanged.emit(index, index, [Qt.DisplayRole, Qt.EditRole])
+            return True
+        return False
+
+    def flags(self, index):
+        if not index.isValid():
+            return Qt.NoItemFlags
+        return Qt.ItemIsSelectable | Qt.ItemIsEnabled | Qt.ItemIsEditable
+
+    def headerData(self, section, orientation, role=Qt.DisplayRole):
+        if role == Qt.DisplayRole:
+            if orientation == Qt.Horizontal:
+                return self._col_to_letter(section)
+            elif orientation == Qt.Vertical:
+                return str(section + 1)
+        return None
+
+    def _col_to_letter(self, col_idx):
+        result = ""
+        while col_idx >= 0:
+            result = chr(col_idx % 26 + 65) + result
+            col_idx = col_idx // 26 - 1
+        return result
+
+    def set_data(self, data):
+        self.beginResetModel()
+        self._data = data if data else [[""]]
+        self._max_cols = max((len(r) for r in self._data), default=1)
+        self.endResetModel()
+
+    def get_data(self):
+        return self._data
+
+
 class XlsxViewer(QWidget):
-    """XLSX viewer with Google Sheets-style bottom sheet tabs."""
+    """XLSX viewer with Google Sheets-style bottom sheet tabs and virtualized grid."""
 
     textChanged = Signal()
 
@@ -32,17 +98,32 @@ class XlsxViewer(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
 
-        self.table = QTableWidget()
+        # Read-only info banner
+        banner_row = QHBoxLayout()
+        banner_row.setContentsMargins(6, 3, 6, 3)
+        self._readonly_label = QLabel("\U0001f512 View-only — formula values shown. Editing disabled to protect formulas.")
+        self._readonly_label.setStyleSheet(
+            f"color: {BRAND_PRIMARY}; font-size: 11px; opacity: 0.7;"
+        )
+        banner_row.addWidget(self._readonly_label)
+        banner_row.addStretch()
+        layout.addLayout(banner_row)
+
+        self.model = XlsxTableModel()
+        self.model.dataChanged.connect(self._on_cell_changed)
+        self.table = QTableView()
+        self.table.setModel(self.model)
+        # Option C: strictly view-only — no editing allowed so formulas are never overwritten
+        self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.table.setStyleSheet(f"""
-            QTableWidget {{
+            QTableView {{
                 background: {BRAND_PANEL};
                 color: {BRAND_PRIMARY};
                 gridline-color: {BRAND_BORDER};
             }}
-            QTableWidget::item {{ padding: 5px; }}
-            QTableWidget::item:selected {{ background: {get_brand_accent()}; color: {BRAND_BACKGROUND}; }}
+            QTableView::item {{ padding: 5px; }}
+            QTableView::item:selected {{ background: {get_brand_accent()}; color: {BRAND_BACKGROUND}; }}
         """)
-        self.table.itemChanged.connect(self._on_cell_changed)
 
         self.sheet_tabs = QTabBar()
         self.sheet_tabs.setDrawBase(True)
@@ -71,7 +152,7 @@ class XlsxViewer(QWidget):
 
     def load_from_path(self, file_path):
         try:
-            self.workbook = load_workbook(file_path, data_only=False, keep_vba=False)
+            self.workbook = load_workbook(file_path, data_only=True, keep_vba=False)
             self.sheet_tabs.blockSignals(True)
             while self.sheet_tabs.count():
                 self.sheet_tabs.removeTab(0)
@@ -103,16 +184,15 @@ class XlsxViewer(QWidget):
         if not self.workbook or not self.current_sheet_name:
             return
         ws = self.workbook[self.current_sheet_name]
-        for row_idx in range(self.table.rowCount()):
-            for col_idx in range(self.table.columnCount()):
+        grid_data = self.model.get_data()
+        for row_idx, row in enumerate(grid_data):
+            for col_idx, val in enumerate(row):
                 try:
                     cell = ws.cell(row=row_idx + 1, column=col_idx + 1)
                     if isinstance(cell, MergedCell):
                         continue
-                    item = self.table.item(row_idx, col_idx)
-                    value = item.text() if item else ""
-                    if str(cell.value or "") != value:
-                        cell.value = value
+                    if str(cell.value or "") != str(val or ""):
+                        cell.value = val
                 except Exception:
                     continue
 
@@ -127,29 +207,28 @@ class XlsxViewer(QWidget):
         max_col = max(ws.max_column or 1, 10)
         self.merged_cells_ranges = set(ws.merged_cells.ranges)
 
-        self.table.blockSignals(True)
-        self.table.setRowCount(max_row)
-        self.table.setColumnCount(max_col)
-
+        rows_data = []
         for row_idx in range(1, max_row + 1):
+            row_vals = []
             for col_idx in range(1, max_col + 1):
                 try:
                     cell = ws.cell(row=row_idx, column=col_idx)
-                    is_merged = isinstance(cell, MergedCell)
                     value = cell.value if cell.value is not None else ""
-                    item = QTableWidgetItem(str(value))
-                    if is_merged:
-                        item.setFlags(item.flags() & ~Qt.ItemIsEditable)
-                    self.table.setItem(row_idx - 1, col_idx - 1, item)
+                    row_vals.append(str(value))
                 except Exception:
-                    self.table.setItem(row_idx - 1, col_idx - 1, QTableWidgetItem(""))
+                    row_vals.append("")
+            rows_data.append(row_vals)
 
+        self.model.set_data(rows_data)
         header = self.table.horizontalHeader()
-        header.setSectionResizeMode(QHeaderView.ResizeToContents)
-        self.table.blockSignals(False)
+        header.setSectionResizeMode(QHeaderView.Interactive)
+        for c in range(min(max_col, 15)):
+            self.table.resizeColumnToContents(c)
+            if self.table.columnWidth(c) < 80:
+                self.table.setColumnWidth(c, 80)
         self._loading_sheet = False
 
-    def _on_cell_changed(self, item):
+    def _on_cell_changed(self, top_left=None, bottom_right=None, roles=None):
         if self._loading_sheet:
             return
         self.is_modified = True
@@ -167,12 +246,8 @@ class XlsxViewer(QWidget):
 
     def toPlainText(self):
         text_rows = []
-        for row_idx in range(self.table.rowCount()):
-            row_vals = []
-            for col_idx in range(self.table.columnCount()):
-                item = self.table.item(row_idx, col_idx)
-                row_vals.append(item.text() if item else "")
-            text_rows.append(" | ".join(row_vals))
+        for row in self.model.get_data():
+            text_rows.append(" | ".join(row))
         return "\n".join(text_rows)
 
     def setPlainText(self, text):

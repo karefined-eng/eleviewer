@@ -59,25 +59,31 @@ class WhatsNewDialog(QDialog):
         <div>
             Thank you for studying with EleViewer! Here is what we just shipped based entirely on anonymous community feedback:
             <br><br>
-            <b>1. CSV Table Workstation & Editor</b>
+            <b>1. Hybrid Neural Text-to-Speech</b>
+            <ul>
+                <li>EleViewer now uses <b>Microsoft Neural voices</b> (Aria, Guy, Jenny, and 400+ more) for natural, human-like reading when you're online.</li>
+                <li>When offline, it <b>seamlessly falls back</b> to your local Windows voices — no setup or manual switching needed.</li>
+            </ul>
+
+            <b>2. Smarter Document Viewing</b>
+            <ul>
+                <li><b>XLSX View-Only Mode:</b> Spreadsheets now display computed formula values (not raw <code>=SUM()</code> strings) in a protected read-only grid.</li>
+                <li><b>Image Placeholders:</b> DOCX and PPTX files show 📷 markers where embedded images exist, so you never miss visual content.</li>
+                <li><b>CSV Smart Encoding:</b> Files exported from Excel in Windows-1252 or Latin-1 now render correctly without garbled characters.</li>
+            </ul>
+
+            <b>3. Lucide Icon Refresh</b>
+            <ul>
+                <li>Every icon in the app has been replaced with clean, consistent <b>Lucide</b> line-art SVGs for a professional, modern look.</li>
+            </ul>
+
+            <b>4. CSV Table Workstation & Editor</b>
             <ul>
                 <li>Dual view modes: toggle instantly between <b>Table Grid View</b> (Excel/Sheets style) and <b>Raw Text View</b>.</li>
                 <li>Add rows, add columns, delete selected cells, and override delimiters on-the-fly without corrupting leading zeroes!</li>
             </ul>
 
-            <b>2. HTML Live Workstation & 1-Click Browser Migration</b>
-            <ul>
-                <li>Split-screen live webpage workstation with debounced preview and 3-way view switcher.</li>
-                <li>Click the new <b>Open in Browser Tab</b> button to push local HTML or preview URLs directly into the right-hand Web Panel!</li>
-            </ul>
-
-            <b>3. Obsidian-Inspired Web Panel & Link Interception</b>
-            <ul>
-                <li>The Web Panel now features dedicated <b>Refresh</b> and <b>Bookmark</b> toolbar controls.</li>
-                <li><b>Zero External Browser Launches:</b> Clicking web links across documents or slide notes now automatically opens inside EleViewer's Web Panel!</li>
-            </ul>
-            
-            <b>4. Expanded Universal TTS & Robust Shortcuts</b>
+            <b>5. Expanded Universal TTS & Robust Shortcuts</b>
             <ul>
                 <li>Pressing <code>F9</code> now reads aloud CSV spreadsheets and HTML pages alongside PDFs, DOCX, and PPTX!</li>
                 <li>Restored full reliability to <code>Alt+V</code> (Toggle Vault) and <code>Ctrl+W</code> tab closing with intelligent Web Panel focus detection.</li>
