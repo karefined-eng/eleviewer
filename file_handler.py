@@ -1,13 +1,7 @@
 from pathlib import Path
 
-from editor import EditorTab
-from docx_viewer import DocxViewer
-from xlsx_viewer import XlsxViewer
-from pptx_viewer import PptxViewer
-from markdown_renderer import MarkdownViewer
-from pdf_viewer import PdfViewer
-from csv_viewer import CsvViewer
-from html_viewer import HtmlViewer
+# Heavy viewers are lazily imported inside create_viewer_widget() for <100ms cold start
+
 
 BINARY_FORMATS = {"docx", "xlsx", "pdf", "pptx"}
 TEXT_RESTORE_FORMATS = {"txt", "md", "csv", "tsv", "html", "htm", ""}
@@ -43,21 +37,25 @@ def create_viewer_widget(file_path, content=None):
     ext = get_file_extension(file_path)
 
     if ext == "docx":
+        from docx_viewer import DocxViewer
         viewer = DocxViewer(file_path)
         viewer.file_path = file_path
         return viewer
 
     elif ext == "xlsx":
+        from xlsx_viewer import XlsxViewer
         viewer = XlsxViewer(file_path)
         viewer.file_path = file_path
         return viewer
 
     elif ext in ("csv", "tsv"):
+        from csv_viewer import CsvViewer
         viewer = CsvViewer(file_path, content=content)
         viewer.file_path = file_path
         return viewer
 
     elif ext == "md":
+        from markdown_renderer import MarkdownViewer
         viewer = MarkdownViewer(file_path, is_html=False)
         viewer.file_path = file_path
         if content is not None:
@@ -65,21 +63,25 @@ def create_viewer_widget(file_path, content=None):
         return viewer
 
     elif ext in ("html", "htm"):
+        from html_viewer import HtmlViewer
         viewer = HtmlViewer(file_path, content=content)
         viewer.file_path = file_path
         return viewer
 
     elif ext == "pdf":
+        from pdf_viewer import PdfViewer
         viewer = PdfViewer(file_path)
         viewer.file_path = file_path
         return viewer
 
     elif ext == "pptx":
+        from pptx_viewer import PptxViewer
         viewer = PptxViewer(file_path)
         viewer.file_path = file_path
         return viewer
 
     else:
+        from editor import EditorTab
         editor = EditorTab()
         editor.file_path = file_path
 
