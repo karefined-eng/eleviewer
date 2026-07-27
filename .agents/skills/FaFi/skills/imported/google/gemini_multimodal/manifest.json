@@ -1,0 +1,61 @@
+{
+  "manifest_version": "1.0",
+  "type": "skill",
+  "name": "gemini_multimodal",
+  "version": "1.0.0",
+  "description": "Nutzt Google Gemini für multimodale Verarbeitung (Text, Bild, Video, Audio).",
+  "author": "Skill Hub (Imported)",
+  "tags": ["gemini", "google", "multimodal", "vision", "video", "audio", "imported"],
+  "capabilities": ["image_analysis", "video_analysis", "audio_analysis", "multimodal"],
+  "implementation": {
+    "type": "remote",
+    "language": "python",
+    "entrypoint": "main.py",
+    "remote_config": {
+      "service": "google_ai",
+      "model": "gemini-2.0-flash",
+      "api_key_env": "GOOGLE_AI_API_KEY"
+    }
+  },
+  "interface": {
+    "inputs": [
+      {
+        "name": "prompt",
+        "type": "string",
+        "description": "Textanweisung oder Frage",
+        "required": true
+      },
+      {
+        "name": "media_type",
+        "type": "string",
+        "description": "Art des Mediums (text, image, video, audio)",
+        "required": false,
+        "default": "text",
+        "enum": ["text", "image", "video", "audio"]
+      },
+      {
+        "name": "media_url",
+        "type": "string",
+        "description": "URL oder Base64 des Mediums (für image/video/audio)",
+        "required": false
+      }
+    ],
+    "outputs": [
+      {
+        "name": "response",
+        "type": "string",
+        "description": "Gemini-Antwort"
+      },
+      {
+        "name": "metadata",
+        "type": "object",
+        "description": "Zusätzliche Metadaten (Token-Nutzung, etc.)"
+      }
+    ]
+  },
+  "metadata": {
+    "source_platform": "Google Gemini",
+    "imported": true,
+    "created_at": "2026-01-23T12:00:00Z"
+  }
+}

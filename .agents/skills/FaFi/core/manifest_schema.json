@@ -1,0 +1,195 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://skill-agent-hub.io/schemas/manifest.json",
+  "title": "Skill/Agent Manifest Schema",
+  "description": "Schema für die Definition von Skills und Agents im Multi-Agent-Orchestrierungssystem",
+  "type": "object",
+  "required": ["manifest_version", "type", "name", "version", "description", "interface"],
+  "properties": {
+    "manifest_version": {
+      "type": "string",
+      "description": "Version des Manifest-Schemas",
+      "enum": ["1.0"]
+    },
+    "type": {
+      "type": "string",
+      "description": "Art der Einheit",
+      "enum": ["skill", "agent"]
+    },
+    "name": {
+      "type": "string",
+      "description": "Eindeutiger Bezeichner (snake_case)",
+      "pattern": "^[a-z][a-z0-9_]*$"
+    },
+    "version": {
+      "type": "string",
+      "description": "Semantische Versionsnummer",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "description": {
+      "type": "string",
+      "description": "Kurze Beschreibung der Funktionalität"
+    },
+    "author": {
+      "type": "string",
+      "description": "Autor oder Organisation"
+    },
+    "tags": {
+      "type": "array",
+      "description": "Kategorisierungs-Tags für Discovery",
+      "items": {
+        "type": "string"
+      }
+    },
+    "capabilities": {
+      "type": "array",
+      "description": "Liste der Fähigkeiten, die dieser Skill/Agent bereitstellt",
+      "items": {
+        "type": "string"
+      }
+    },
+    "implementation": {
+      "type": "object",
+      "description": "Implementierungsdetails",
+      "properties": {
+        "language": {
+          "type": "string",
+          "enum": ["python", "javascript", "typescript", "shell", "prompt"]
+        },
+        "entrypoint": {
+          "type": "string",
+          "description": "Hauptdatei für die Ausführung"
+        },
+        "dependencies": {
+          "type": "string",
+          "description": "Datei mit Abhängigkeiten (z.B. requirements.txt)"
+        },
+        "prompt_template": {
+          "type": "string",
+          "description": "Für prompt-basierte Skills: Pfad zur Prompt-Vorlage"
+        }
+      }
+    },
+    "interface": {
+      "type": "object",
+      "description": "Ein- und Ausgabeschnittstelle",
+      "required": ["inputs", "outputs"],
+      "properties": {
+        "inputs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/parameter"
+          }
+        },
+        "outputs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/parameter"
+          }
+        }
+      }
+    },
+    "dependencies": {
+      "type": "array",
+      "description": "Liste von Skills/Agents, von denen diese Einheit abhängt",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "orchestration": {
+      "type": "object",
+      "description": "Nur für Agents: Orchestrierungslogik",
+      "properties": {
+        "strategy": {
+          "type": "string",
+          "enum": ["sequential", "parallel", "conditional", "dynamic"],
+          "description": "Art der Orchestrierung"
+        },
+        "steps": {
+          "type": "array",
+          "description": "Definierte Schritte (für nicht-dynamische Strategien)",
+          "items": {
+            "type": "object",
+            "properties": {
+              "skill": {
+                "type": "string"
+              },
+              "condition": {
+                "type": "string"
+              },
+              "input_mapping": {
+                "type": "object"
+              },
+              "output_mapping": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "goal_description": {
+          "type": "string",
+          "description": "Für dynamische Orchestrierung: Beschreibung des Ziels"
+        }
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Zusätzliche Metadaten",
+      "properties": {
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "license": {
+          "type": "string"
+        },
+        "repository": {
+          "type": "string",
+          "format": "uri"
+        }
+      }
+    }
+  },
+  "definitions": {
+    "parameter": {
+      "type": "object",
+      "required": ["name", "type", "description"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["string", "number", "boolean", "array", "object", "file"]
+        },
+        "description": {
+          "type": "string"
+        },
+        "required": {
+          "type": "boolean",
+          "default": true
+        },
+        "default": {
+          "description": "Standardwert, falls nicht angegeben"
+        },
+        "enum": {
+          "type": "array",
+          "description": "Erlaubte Werte"
+        }
+      }
+    }
+  }
+}

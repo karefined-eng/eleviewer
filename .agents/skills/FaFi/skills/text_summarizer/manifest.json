@@ -1,0 +1,61 @@
+{
+  "manifest_version": "1.0",
+  "type": "skill",
+  "name": "text_summarizer",
+  "version": "1.0.0",
+  "description": "Fasst lange Texte auf eine gewünschte Länge zusammen. Unterstützt verschiedene Zusammenfassungsstile.",
+  "author": "Skill Hub",
+  "tags": ["text", "nlp", "summary", "content"],
+  "capabilities": ["text_summary", "content_reduction", "nlp"],
+  "implementation": {
+    "language": "python",
+    "entrypoint": "main.py",
+    "dependencies": "requirements.txt"
+  },
+  "interface": {
+    "inputs": [
+      {
+        "name": "text",
+        "type": "string",
+        "description": "Der zu kürzende Quelltext",
+        "required": true
+      },
+      {
+        "name": "max_length",
+        "type": "number",
+        "description": "Maximale Länge der Zusammenfassung in Wörtern",
+        "required": false,
+        "default": 150
+      },
+      {
+        "name": "style",
+        "type": "string",
+        "description": "Stil der Zusammenfassung",
+        "required": false,
+        "default": "neutral",
+        "enum": ["neutral", "formal", "casual", "bullet_points"]
+      }
+    ],
+    "outputs": [
+      {
+        "name": "summary",
+        "type": "string",
+        "description": "Der zusammengefasste Text"
+      },
+      {
+        "name": "original_length",
+        "type": "number",
+        "description": "Wortanzahl des Originaltexts"
+      },
+      {
+        "name": "summary_length",
+        "type": "number",
+        "description": "Wortanzahl der Zusammenfassung"
+      }
+    ]
+  },
+  "metadata": {
+    "created_at": "2026-01-23T10:00:00Z",
+    "license": "MIT"
+  }
+}

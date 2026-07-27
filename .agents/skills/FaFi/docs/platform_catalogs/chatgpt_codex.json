@@ -1,0 +1,521 @@
+{
+  "catalog": {
+    "bidirectional": true,
+    "tools": [
+      {
+        "function": {
+          "description": "Generiert Bilder mit DALL-E basierend auf einer Textbeschreibung.",
+          "name": "openai_dalle_generate",
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "model": {
+                "description": "DALL-E Modell (dall-e-3, dall-e-2)",
+                "type": "string"
+              },
+              "n": {
+                "description": "Anzahl der zu generierenden Bilder",
+                "type": "number"
+              },
+              "prompt": {
+                "description": "Bildbeschreibung f\u00fcr die Generierung",
+                "type": "string"
+              },
+              "quality": {
+                "description": "Qualit\u00e4t (standard, hd)",
+                "type": "string"
+              },
+              "size": {
+                "description": "Bildgr\u00f6\u00dfe (1024x1024, 1792x1024, 1024x1792)",
+                "type": "string"
+              }
+            },
+            "required": [
+              "prompt"
+            ],
+            "type": "object"
+          }
+        },
+        "type": "function"
+      },
+      {
+        "function": {
+          "description": "F\u00fchrt eine Chat-Completion mit GPT-Modellen durch und gibt die Antwort zur\u00fcck.",
+          "name": "openai_chat_completion",
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "max_tokens": {
+                "description": "Maximale Token-Anzahl f\u00fcr die Antwort",
+                "type": "number"
+              },
+              "messages": {
+                "description": "Chat-Nachrichten im Format [{role: 'user'|'assistant'|'system', content: 'text'}]",
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "model": {
+                "description": "GPT-Modell (gpt-4o, gpt-4-turbo, gpt-3.5-turbo)",
+                "type": "string"
+              },
+              "temperature": {
+                "description": "Temperatur f\u00fcr die Generierung (0-2)",
+                "type": "number"
+              }
+            },
+            "required": [
+              "messages"
+            ],
+            "type": "object"
+          }
+        },
+        "type": "function"
+      },
+      {
+        "function": {
+          "description": "F\u00fchrt Shell-Befehle in der Manus-Sandbox aus und gibt die Ausgabe zur\u00fcck.",
+          "name": "manus_shell_execute",
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "command": {
+                "description": "Shell-Befehl zur Ausf\u00fchrung",
+                "type": "string"
+              },
+              "session": {
+                "description": "Session-ID f\u00fcr die Shell",
+                "type": "string"
+              },
+              "timeout": {
+                "description": "Timeout in Sekunden",
+                "type": "number"
+              },
+              "working_dir": {
+                "description": "Arbeitsverzeichnis",
+                "type": "string"
+              }
+            },
+            "required": [
+              "command"
+            ],
+            "type": "object"
+          }
+        },
+        "type": "function"
+      },
+      {
+        "function": {
+          "description": "Analysiert Code mit Claude Code und identifiziert Probleme, Verbesserungen und Best Practices.",
+          "name": "claude_code_analyze",
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "code": {
+                "description": "Code zur Analyse",
+                "type": "string"
+              },
+              "focus": {
+                "description": "Analysefokus: bugs, security, performance, style, all",
+                "type": "string"
+              },
+              "language": {
+                "description": "Programmiersprache (python, javascript, typescript, etc.)",
+                "type": "string"
+              }
+            },
+            "required": [
+              "code"
+            ],
+            "type": "object"
+          }
+        },
+        "type": "function"
+      },
+      {
+        "function": {
+          "description": "F\u00fchrt eine Chat-Completion mit Claude durch und gibt die Antwort zur\u00fcck.",
+          "name": "claude_chat_completion",
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "max_tokens": {
+                "description": "Maximale Token-Anzahl f\u00fcr die Antwort",
+                "type": "number"
+              },
+              "messages": {
+                "description": "Chat-Nachrichten im Format [{role: 'user'|'assistant', content: 'text'}]",
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "model": {
+                "description": "Claude-Modell (claude-3-opus, claude-3-sonnet, claude-3-haiku)",
+                "type": "string"
+              },
+              "system": {
+                "description": "System-Prompt",
+                "type": "string"
+              },
+              "temperature": {
+                "description": "Temperatur f\u00fcr die Generierung (0-1)",
+                "type": "number"
+              }
+            },
+            "required": [
+              "messages"
+            ],
+            "type": "object"
+          }
+        },
+        "type": "function"
+      },
+      {
+        "function": {
+          "description": "F\u00fchrt einen Antigravity-Workflow aus und gibt das Ergebnis zur\u00fcck.",
+          "name": "antigravity_execute_workflow",
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "async_mode": {
+                "description": "Asynchrone Ausf\u00fchrung",
+                "type": "boolean"
+              },
+              "inputs": {
+                "description": "Eingabeparameter f\u00fcr den Workflow",
+                "type": "object"
+              },
+              "workflow_id": {
+                "description": "ID des auszuf\u00fchrenden Workflows",
+                "type": "string"
+              }
+            },
+            "required": [
+              "workflow_id",
+              "inputs"
+            ],
+            "type": "object"
+          }
+        },
+        "type": "function"
+      },
+      {
+        "function": {
+          "description": "Nutzt Abacus AI Deep Agent f\u00fcr autonome, mehrstufige Aufgabenausf\u00fchrung.",
+          "name": "abacus_deep_agent",
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "context": {
+                "description": "Zus\u00e4tzlicher Kontext f\u00fcr die Aufgabe",
+                "type": "object"
+              },
+              "max_steps": {
+                "description": "Maximale Anzahl von Schritten",
+                "type": "number"
+              },
+              "task": {
+                "description": "Aufgabenbeschreibung f\u00fcr den Deep Agent",
+                "type": "string"
+              },
+              "tools": {
+                "description": "Liste der erlaubten Tools",
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            },
+            "required": [
+              "task"
+            ],
+            "type": "object"
+          }
+        },
+        "type": "function"
+      },
+      {
+        "function": {
+          "description": "F\u00fchrt Microsoft 365 Operationen \u00fcber die Graph API durch (E-Mail, Kalender, OneDrive, Teams).",
+          "name": "microsoft365_graph_api",
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "data": {
+                "description": "Daten f\u00fcr die Operation",
+                "type": "object"
+              },
+              "operation": {
+                "description": "Graph API Operation",
+                "type": "string"
+              }
+            },
+            "required": [
+              "operation",
+              "data"
+            ],
+            "type": "object"
+          }
+        },
+        "type": "function"
+      },
+      {
+        "function": {
+          "description": "Nutzt Google Gemini f\u00fcr multimodale Verarbeitung (Text, Bild, Video, Audio).",
+          "name": "gemini_multimodal",
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "media_type": {
+                "description": "Art des Mediums (text, image, video, audio)",
+                "type": "string"
+              },
+              "media_url": {
+                "description": "URL oder Base64 des Mediums (f\u00fcr image/video/audio)",
+                "type": "string"
+              },
+              "prompt": {
+                "description": "Textanweisung oder Frage",
+                "type": "string"
+              }
+            },
+            "required": [
+              "prompt"
+            ],
+            "type": "object"
+          }
+        },
+        "type": "function"
+      },
+      {
+        "function": {
+          "description": "F\u00fchrt CRM-Operationen in HubSpot durch (Kontakte, Unternehmen, Deals). Nutzt den HubSpot MCP-Server.",
+          "name": "hubspot_crm_operations",
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "data": {
+                "description": "Daten f\u00fcr die Operation (abh\u00e4ngig von der gew\u00e4hlten Operation)",
+                "type": "object"
+              },
+              "operation": {
+                "description": "CRM-Operation (create_contact, search_contacts, create_company, create_deal, update_contact)",
+                "type": "string"
+              }
+            },
+            "required": [
+              "operation",
+              "data"
+            ],
+            "type": "object"
+          }
+        },
+        "type": "function"
+      },
+      {
+        "function": {
+          "description": "F\u00fchrt eine Echtzeit-Websuche mit Perplexity AI durch und gibt Ergebnisse mit Quellenangaben zur\u00fcck.",
+          "name": "perplexity_web_search",
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "focus": {
+                "description": "Suchfokus (web, academic, news, youtube, reddit)",
+                "type": "string"
+              },
+              "query": {
+                "description": "Suchanfrage",
+                "type": "string"
+              }
+            },
+            "required": [
+              "query"
+            ],
+            "type": "object"
+          }
+        },
+        "type": "function"
+      },
+      {
+        "function": {
+          "description": "Analysiert strukturierte Daten und erstellt statistische Zusammenfassungen.",
+          "name": "data_analyzer",
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "analysis_type": {
+                "description": "Art der Analyse",
+                "type": "string"
+              },
+              "columns": {
+                "description": "Spezifische Spalten f\u00fcr die Analyse",
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "data": {
+                "description": "Die zu analysierenden Daten (Liste von Dictionaries oder Pfad zu CSV)",
+                "type": "object"
+              }
+            },
+            "required": [
+              "data"
+            ],
+            "type": "object"
+          }
+        },
+        "type": "function"
+      },
+      {
+        "function": {
+          "description": "Liest verschiedene Dateiformate und extrahiert deren Inhalt als Text.",
+          "name": "file_reader",
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "encoding": {
+                "description": "Zeichenkodierung f\u00fcr Textdateien",
+                "type": "string"
+              },
+              "file_path": {
+                "description": "Pfad zur zu lesenden Datei",
+                "type": "string"
+              }
+            },
+            "required": [
+              "file_path"
+            ],
+            "type": "object"
+          }
+        },
+        "type": "function"
+      },
+      {
+        "function": {
+          "description": "Extrahiert Inhalte von Webseiten. Unterst\u00fctzt Text, Links und strukturierte Daten.",
+          "name": "web_scraper",
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "extract_type": {
+                "description": "Art der zu extrahierenden Daten",
+                "type": "string"
+              },
+              "selector": {
+                "description": "Optionaler CSS-Selektor f\u00fcr spezifische Elemente",
+                "type": "string"
+              },
+              "url": {
+                "description": "Die URL der zu scrapenden Webseite",
+                "type": "string"
+              }
+            },
+            "required": [
+              "url"
+            ],
+            "type": "object"
+          }
+        },
+        "type": "function"
+      },
+      {
+        "function": {
+          "description": "Fasst lange Texte auf eine gew\u00fcnschte L\u00e4nge zusammen. Unterst\u00fctzt verschiedene Zusammenfassungsstile.",
+          "name": "text_summarizer",
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "max_length": {
+                "description": "Maximale L\u00e4nge der Zusammenfassung in W\u00f6rtern",
+                "type": "number"
+              },
+              "style": {
+                "description": "Stil der Zusammenfassung",
+                "type": "string"
+              },
+              "text": {
+                "description": "Der zu k\u00fcrzende Quelltext",
+                "type": "string"
+              }
+            },
+            "required": [
+              "text"
+            ],
+            "type": "object"
+          }
+        },
+        "type": "function"
+      },
+      {
+        "function": {
+          "description": "[Multi-Step Agent] Erstellt strukturierte Inhalte basierend auf Quelldaten. Kombiniert Datenanalyse, Recherche und Texterstellung.",
+          "name": "agent_content_creator",
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "content_type": {
+                "description": "Art des zu erstellenden Inhalts",
+                "type": "string"
+              },
+              "length": {
+                "description": "Gew\u00fcnschte L\u00e4nge",
+                "type": "string"
+              },
+              "source_data": {
+                "description": "Quelldaten f\u00fcr den Inhalt (Text, Daten, URLs)",
+                "type": "object"
+              },
+              "style": {
+                "description": "Schreibstil",
+                "type": "string"
+              },
+              "topic": {
+                "description": "Thema oder Titel des Inhalts",
+                "type": "string"
+              }
+            },
+            "required": [
+              "content_type",
+              "topic"
+            ],
+            "type": "object"
+          }
+        },
+        "type": "function"
+      },
+      {
+        "function": {
+          "description": "[Multi-Step Agent] F\u00fchrt umfassende Recherchen zu einem Thema durch. Kombiniert Web-Scraping, Textanalyse und Zusammenfassung.",
+          "name": "agent_research_agent",
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "depth": {
+                "description": "Tiefe der Recherche",
+                "type": "string"
+              },
+              "sources": {
+                "description": "Optionale Liste von URLs als Quellen",
+                "type": "array"
+              },
+              "topic": {
+                "description": "Das zu recherchierende Thema",
+                "type": "string"
+              }
+            },
+            "required": [
+              "topic"
+            ],
+            "type": "object"
+          }
+        },
+        "type": "function"
+      }
+    ]
+  },
+  "platform": "chatgpt_codex",
+  "status": "success"
+}

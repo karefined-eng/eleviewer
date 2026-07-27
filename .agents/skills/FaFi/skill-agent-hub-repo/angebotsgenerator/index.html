@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FassadenFix - Angebotsgenerator</title>
+    <link rel="icon" type="image/jpeg" href="assets/logo-icon.jpg">
+    <link rel="stylesheet" href="css/styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+
+<body>
+    <!-- APP HEADER -->
+    <header class="app-header">
+        <div class="logo-container">
+            <a href="/" class="logo-link">
+                <img src="assets/logo.png" alt="FassadenFix Logo" class="logo-image" height="42">
+            </a>
+        </div>
+        <div class="app-title">Angebotsgenerator mit HubSpot-Integration</div>
+    </header>
+
+    <!-- MAIN CONTENT -->
+    <div class="main-container">
+        <!-- FORM PANEL -->
+        <div class="form-panel">
+            <div class="panel-header">Angebotsdaten eingeben</div>
+            <div class="form-content">
+                <!-- 1. AUFTRAGGEBER -->
+                <div class="form-section">
+                    <div class="form-section-title">
+                        <span>1. Auftraggeber</span>
+                        <span class="hubspot-badge" title="HubSpot Company + Contact">🔗 HubSpot</span>
+                    </div>
+
+                    <!-- 1.1 UNTERNEHMEN -->
+                    <div class="form-subsection">
+                        <div class="form-subsection-title">1.1 Unternehmen</div>
+                        <div class="form-group">
+                            <label>Unternehmen suchen (HubSpot)</label>
+                            <div class="search-container">
+                                <input type="text" id="companySearch" placeholder="Firmenname eingeben..."
+                                    oninput="searchCompanies(this.value)" autocomplete="off">
+                                <div class="search-results" id="companyResults"></div>
+                            </div>
+                        </div>
+                        <input type="hidden" id="hubspotCompanyId">
+                        <div class="form-group">
+                            <label>Unternehmensname <span class="required">*</span></label>
+                            <input type="text" id="companyName" placeholder="Firmenname" oninput="updatePreview()"
+                                required>
+                        </div>
+                        <div class="form-group">
+                            <label>Straße <span class="required">*</span></label>
+                            <input type="text" id="companyStreet" placeholder="Straßenname" oninput="updatePreview()"
+                                required>
+                        </div>
+                        <div class="form-row" style="grid-template-columns: 80px 1fr 100px;">
+                            <div class="form-group">
+                                <label>Hausnr. <span class="required">*</span></label>
+                                <input type="text" id="companyStreetNumber" placeholder="Nr." oninput="updatePreview()"
+                                    required>
+                            </div>
+                            <div class="form-group">
+                                <label>PLZ <span class="required">*</span></label>
+                                <input type="text" id="companyZip" placeholder="PLZ" oninput="updatePreview()" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Ort <span class="required">*</span></label>
+                                <input type="text" id="companyCity" placeholder="Stadt" oninput="updatePreview()"
+                                    required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Telefon</label>
+                                <input type="tel" id="companyPhone" placeholder="+49..." oninput="updatePreview()">
+                            </div>
+                            <div class="form-group">
+                                <label>E-Mail</label>
+                                <input type="email" id="companyEmail" placeholder="info@..." oninput="updatePreview()">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 1.2 ANSPRECHPARTNER -->
+                    <div class="form-subsection" style="margin-top:15px;padding-top:15px;border-top:1px dashed #ddd;">
+                        <div class="form-subsection-title">1.2 Ansprechpartner</div>
+                        <div class="form-group">
+                            <label>Kontakt auswählen</label>
+                            <select id="contactSelect" onchange="selectContact(this.value)">
+                                <option value="">-- Kontakt wählen oder neu anlegen --</option>
+                            </select>
+                        </div>
+                        <input type="hidden" id="hubspotContactId">
+                        <div class="form-row" style="grid-template-columns: 100px 1fr 1fr;">
+                            <div class="form-group">
+                                <label>Anrede</label>
+                                <select id="contactSalutation" onchange="updatePreview()">
+                                    <option value="" selected>-</option>
+                                    <option value="Herr">Herr</option>
+                                    <option value="Frau">Frau</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Vorname <span class="required">*</span></label>
+                                <input type="text" id="contactFirstname" placeholder="Vorname" oninput="updatePreview()"
+                                    required>
+                            </div>
+                            <div class="form-group">
+                                <label>Nachname <span class="required">*</span></label>
+                                <input type="text" id="contactLastname" placeholder="Nachname" oninput="updatePreview()"
+                                    required>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Position / Funktion</label>
+                            <input type="text" id="contactJobtitle" placeholder="z.B. Geschäftsführer, Facility Manager"
+                                oninput="updatePreview()">
+                        </div>
+                        <div class="form-group">
+                            <label>E-Mail <span class="required">*</span></label>
+                            <input type="email" id="contactEmail" placeholder="vorname.nachname@..."
+                                oninput="updatePreview()" required>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Telefon</label>
+                                <input type="tel" id="contactPhone" placeholder="Festnetz" oninput="updatePreview()">
+                            </div>
+                            <div class="form-group">
+                                <label>Mobil</label>
+                                <input type="tel" id="contactMobile" placeholder="Mobilnummer"
+                                    oninput="updatePreview()">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. ANGEBOTSDATEN -->
+                <div class="form-section">
+                    <div class="form-section-title">
+                        <span>2. Angebotsdaten</span>
+                        <span class="hubspot-badge" title="HubSpot Deal">🔗 HubSpot</span>
+                    </div>
+                    <input type="hidden" id="hubspotDealId">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Angebotsnummer <span style="font-size:10px;color:#666;">(aus Deal)</span></label>
+                            <input type="text" id="angebotsnummer" placeholder="wird automatisch vergeben" readonly
+                                style="background:#f5f5f5;color:#666;">
+                        </div>
+                        <div class="form-group">
+                            <label>Kundennummer <span style="font-size:10px;color:#666;">(aus Company)</span></label>
+                            <input type="text" id="kundennummer" placeholder="wird aus Auftraggeber übernommen" readonly
+                                style="background:#f5f5f5;color:#666;">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Datum <span class="required">*</span></label>
+                            <input type="date" id="angebotsdatum" oninput="updatePreview()" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Angebotsstatus <span style="font-size:10px;color:#666;">(aus Deal
+                                    Pipeline)</span></label>
+                            <select id="dealstage" disabled style="background:#f5f5f5;color:#666;">
+                                <option value="angebotserstellung" selected>Angebotserstellung</option>
+                                <option value="objektaufgenommen">Objekt aufgenommen</option>
+                                <option value="angebotvesendnet">Angebot versendnet</option>
+                                <option value="terminvereinbart">Termin vereinbart</option>
+                                <option value="auftragangenommen">Auftrag angenommen</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Zuständiger Mitarbeiter <span style="font-size:10px;color:#666;">(aus Deal
+                                Owner)</span></label>
+                        <select id="hubspotOwnerId" onchange="updateOwnerDetails()">
+                            <option value="">Wird aus HubSpot geladen...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Angebotssumme (Brutto)</label>
+                        <input type="text" id="dealAmount" readonly
+                            style="background:#f5f5f5;font-weight:600;color:#7AB800;">
+                    </div>
+
+                    <!-- 2.1 RABATTE UND AKTIONEN -->
+                    <div class="form-subsection" style="margin-top:15px;padding-top:15px;border-top:1px dashed #ddd;">
+                        <div class="form-subsection-title" style="color:#7AB800;font-weight:600;">
+                            💰 Frühbucherrabatt 2026
+                        </div>
+
+                        <!-- Frühbucherrabatt -->
+                        <div style="background:#f0fdf4;border-radius:8px;padding:12px;border:1px solid #7AB80033;">
+                            <label class="checkbox-label" style="margin-bottom:8px;">
+                                <input type="checkbox" id="fruehbucherAktiv" checked
+                                    onchange="toggleRabatt('fruehbucher',this.checked)">
+                                <span style="font-weight:600;">Frühbucherrabatt aktivieren</span>
+                                <span id="fruehbucherAktuell"
+                                    style="font-size:11px;margin-left:8px;padding:2px 8px;background:#7AB800;color:white;border-radius:10px;">4,5%</span>
+                            </label>
+                            <div id="fruehbucherDetails" style="display:block;">
+                                <div class="form-group" style="margin:0;">
+                                    <label style="font-size:11px;">Rabattstufe</label>
+                                    <select id="fruehbucherProzent" onchange="updateRabatte()">
+                                        <option value="6" disabled style="color:#999;">6,0% Rabatt (Beauftragung bis
+                                            31.12.2025) — ABGELAUFEN</option>
+                                        <option value="4.5" selected>4,5% Rabatt (Beauftragung bis 31.01.2026)</option>
+                                        <option value="3">3,0% Rabatt (Beauftragung bis 28.02.2026)</option>
+                                        <option value="1.5">1,5% Rabatt (Beauftragung bis 31.03.2026)</option>
+                                    </select>
+                                </div>
+                                <div
+                                    style="margin-top:10px;background:#fff;border-radius:6px;padding:10px;border:1px solid #7AB80033;">
+                                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                                        <span style="font-size:12px;">Ersparnis bei aktuellem Angebot:</span>
+                                        <strong style="font-size:16px;color:#7AB800;" id="fruehbucherErsparnis">0,00
+                                            €</strong>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. ANGEBOTSERSTELLUNG (Immobilien + Positionen) -->
+            <div class="form-section">
+                <div class="form-section-title"
+                    style="background:linear-gradient(135deg, #7AB800 0%, #5a9000 100%);color:white;padding:12px 15px;margin:-15px -15px 15px -15px;border-radius:8px 8px 0 0;">
+                    <span style="font-size:14px;">📋 3. Angebotserstellung</span>
+                    <button class="btn"
+                        style="padding:4px 12px;font-size:11px;background:white;color:#7AB800;border:none;"
+                        onclick="addImmobilie()">+ Immobilie hinzufügen</button>
+                </div>
+
+                <!-- Übersicht -->
+                <div
+                    style="background:#f0fdf4;border-radius:8px;padding:12px;margin-bottom:15px;border:1px solid #7AB80033;">
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px;font-size:12px;">
+                        <div>
+                            <div style="color:#666;margin-bottom:4px;">Immobilien:</div>
+                            <strong id="immoCount" style="font-size:16px;color:#7AB800;">0</strong>
+                        </div>
+                        <div>
+                            <div style="color:#666;margin-bottom:4px;">Positionen gesamt:</div>
+                            <strong id="posCount" style="font-size:16px;">0</strong>
+                        </div>
+                    </div>
+                    <div
+                        style="display:flex;justify-content:space-between;border-top:1px solid #7AB80033;padding-top:10px;margin-top:10px;">
+                        <span style="font-weight:600;">Angebotssumme Netto:</span>
+                        <strong style="color:#7AB800;font-size:16px;" id="posNettoSum">0,00 €</strong>
+                    </div>
+                </div>
+
+                <!-- Immobilien + Positionen Container (wird von JS befüllt) -->
+                <div id="immobilienContainer"></div>
+
+                <!-- Versteckte Statistik-Elemente für Kompatibilität -->
+                <span id="bedarfsCount" style="display:none;">0</span>
+                <span id="gruppeReinigung" style="display:none;">0</span>
+                <span id="gruppeRabatte" style="display:none;">0</span>
+                <span id="gruppeTechnik" style="display:none;">0</span>
+                <span id="gruppeNebenkosten" style="display:none;">0</span>
+                <div id="positionsContainer" style="display:none;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PREVIEW PANEL -->
+    <div class="preview-panel">
+        <div class="preview-header">
+            <span class="preview-title">
+                Vorschau
+                <span style="font-size:11px;color:#666;font-weight:normal;margin-left:10px;" id="previewStatus"></span>
+            </span>
+            <div class="preview-actions">
+                <button class="btn btn-primary" onclick="generatePDF()" title="PDF erstellen">📄 PDF Export</button>
+                <button class="btn btn-hubspot" onclick="syncToHubspot()" title="Mit HubSpot synchronisieren">🔄
+                    HubSpot Sync</button>
+                <button class="btn btn-secondary" onclick="window.print()" title="Drucken">🖨️ Drucken</button>
+            </div>
+        </div>
+        <div class="preview-container">
+            <div class="pdf-page" id="pdfPreview"></div>
+        </div>
+    </div>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal" id="hubspotModal">
+        <div class="modal-content">
+            <h3 class="modal-title">HubSpot Synchronisation</h3>
+            <p id="modalMessage"></p>
+            <div class="modal-buttons">
+                <button class="btn btn-secondary" onclick="closeModal()">Schließen</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Modules -->
+    <script src="js/app.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/preview.js"></script>
+    <script src="js/hubspot.js"></script>
+    <script src="js/pdf.js"></script>
+</body>
+
+</html>

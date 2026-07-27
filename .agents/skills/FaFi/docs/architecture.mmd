@@ -1,0 +1,47 @@
+graph TD
+    subgraph "Externe KI-Tools"
+        A[Antigravity]
+        B[Claude Cowork/Code]
+        C[Manus 1.6]
+        D[ChatGPT Codex]
+    end
+
+    subgraph "Orchestrierungs-System"
+        PA[Plattform-Adapter]
+        AS[API-Server<br/>Flask REST API]
+        O[Orchestrator-Engine]
+        DS[Discovery-Service]
+        R[Registry-Dienst<br/>SQLite DB]
+    end
+
+    subgraph "Skill & Agent Bibliothek"
+        S1[text_summarizer]
+        S2[web_scraper]
+        S3[file_reader]
+        S4[data_analyzer]
+        AG1[research_agent]
+        AG2[content_creator]
+    end
+
+    A --> PA
+    B --> PA
+    C --> PA
+    D --> PA
+    
+    PA --> AS
+    AS --> O
+    AS --> DS
+    O --> R
+    DS --> R
+    
+    R --> S1
+    R --> S2
+    R --> S3
+    R --> S4
+    R --> AG1
+    R --> AG2
+    
+    AG1 -.-> S1
+    AG1 -.-> S2
+    AG2 -.-> S1
+    AG2 -.-> S4

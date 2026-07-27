@@ -1,0 +1,388 @@
+{
+  "tool_config": {
+    "function_calling_config": {
+      "mode": "AUTO"
+    }
+  },
+  "tools": [
+    {
+      "function_declarations": [
+        {
+          "description": "Generiert Bilder mit DALL-E basierend auf einer Textbeschreibung.",
+          "name": "openai_dalle_generate",
+          "parameters": {
+            "properties": {
+              "model": {
+                "description": "DALL-E Modell (dall-e-3, dall-e-2)",
+                "type": "STRING"
+              },
+              "n": {
+                "description": "Anzahl der zu generierenden Bilder",
+                "type": "NUMBER"
+              },
+              "prompt": {
+                "description": "Bildbeschreibung f\u00fcr die Generierung",
+                "type": "STRING"
+              },
+              "quality": {
+                "description": "Qualit\u00e4t (standard, hd)",
+                "type": "STRING"
+              },
+              "size": {
+                "description": "Bildgr\u00f6\u00dfe (1024x1024, 1792x1024, 1024x1792)",
+                "type": "STRING"
+              }
+            },
+            "required": [
+              "prompt"
+            ],
+            "type": "object"
+          }
+        },
+        {
+          "description": "F\u00fchrt eine Chat-Completion mit GPT-Modellen durch und gibt die Antwort zur\u00fcck.",
+          "name": "openai_chat_completion",
+          "parameters": {
+            "properties": {
+              "max_tokens": {
+                "description": "Maximale Token-Anzahl f\u00fcr die Antwort",
+                "type": "NUMBER"
+              },
+              "messages": {
+                "description": "Chat-Nachrichten im Format [{role: 'user'|'assistant'|'system', content: 'text'}]",
+                "type": "ARRAY"
+              },
+              "model": {
+                "description": "GPT-Modell (gpt-4o, gpt-4-turbo, gpt-3.5-turbo)",
+                "type": "STRING"
+              },
+              "temperature": {
+                "description": "Temperatur f\u00fcr die Generierung (0-2)",
+                "type": "NUMBER"
+              }
+            },
+            "required": [
+              "messages"
+            ],
+            "type": "object"
+          }
+        },
+        {
+          "description": "F\u00fchrt Shell-Befehle in der Manus-Sandbox aus und gibt die Ausgabe zur\u00fcck.",
+          "name": "manus_shell_execute",
+          "parameters": {
+            "properties": {
+              "command": {
+                "description": "Shell-Befehl zur Ausf\u00fchrung",
+                "type": "STRING"
+              },
+              "session": {
+                "description": "Session-ID f\u00fcr die Shell",
+                "type": "STRING"
+              },
+              "timeout": {
+                "description": "Timeout in Sekunden",
+                "type": "NUMBER"
+              },
+              "working_dir": {
+                "description": "Arbeitsverzeichnis",
+                "type": "STRING"
+              }
+            },
+            "required": [
+              "command"
+            ],
+            "type": "object"
+          }
+        },
+        {
+          "description": "Analysiert Code mit Claude Code und identifiziert Probleme, Verbesserungen und Best Practices.",
+          "name": "claude_code_analyze",
+          "parameters": {
+            "properties": {
+              "code": {
+                "description": "Code zur Analyse",
+                "type": "STRING"
+              },
+              "focus": {
+                "description": "Analysefokus: bugs, security, performance, style, all",
+                "type": "STRING"
+              },
+              "language": {
+                "description": "Programmiersprache (python, javascript, typescript, etc.)",
+                "type": "STRING"
+              }
+            },
+            "required": [
+              "code"
+            ],
+            "type": "object"
+          }
+        },
+        {
+          "description": "F\u00fchrt eine Chat-Completion mit Claude durch und gibt die Antwort zur\u00fcck.",
+          "name": "claude_chat_completion",
+          "parameters": {
+            "properties": {
+              "max_tokens": {
+                "description": "Maximale Token-Anzahl f\u00fcr die Antwort",
+                "type": "NUMBER"
+              },
+              "messages": {
+                "description": "Chat-Nachrichten im Format [{role: 'user'|'assistant', content: 'text'}]",
+                "type": "ARRAY"
+              },
+              "model": {
+                "description": "Claude-Modell (claude-3-opus, claude-3-sonnet, claude-3-haiku)",
+                "type": "STRING"
+              },
+              "system": {
+                "description": "System-Prompt",
+                "type": "STRING"
+              },
+              "temperature": {
+                "description": "Temperatur f\u00fcr die Generierung (0-1)",
+                "type": "NUMBER"
+              }
+            },
+            "required": [
+              "messages"
+            ],
+            "type": "object"
+          }
+        },
+        {
+          "description": "F\u00fchrt einen Antigravity-Workflow aus und gibt das Ergebnis zur\u00fcck.",
+          "name": "antigravity_execute_workflow",
+          "parameters": {
+            "properties": {
+              "async_mode": {
+                "description": "Asynchrone Ausf\u00fchrung",
+                "type": "BOOLEAN"
+              },
+              "inputs": {
+                "description": "Eingabeparameter f\u00fcr den Workflow",
+                "type": "OBJECT"
+              },
+              "workflow_id": {
+                "description": "ID des auszuf\u00fchrenden Workflows",
+                "type": "STRING"
+              }
+            },
+            "required": [
+              "workflow_id",
+              "inputs"
+            ],
+            "type": "object"
+          }
+        },
+        {
+          "description": "Nutzt Abacus AI Deep Agent f\u00fcr autonome, mehrstufige Aufgabenausf\u00fchrung.",
+          "name": "abacus_deep_agent",
+          "parameters": {
+            "properties": {
+              "context": {
+                "description": "Zus\u00e4tzlicher Kontext f\u00fcr die Aufgabe",
+                "type": "OBJECT"
+              },
+              "max_steps": {
+                "description": "Maximale Anzahl von Schritten",
+                "type": "NUMBER"
+              },
+              "task": {
+                "description": "Aufgabenbeschreibung f\u00fcr den Deep Agent",
+                "type": "STRING"
+              },
+              "tools": {
+                "description": "Liste der erlaubten Tools",
+                "type": "ARRAY"
+              }
+            },
+            "required": [
+              "task"
+            ],
+            "type": "object"
+          }
+        },
+        {
+          "description": "F\u00fchrt Microsoft 365 Operationen \u00fcber die Graph API durch (E-Mail, Kalender, OneDrive, Teams).",
+          "name": "microsoft365_graph_api",
+          "parameters": {
+            "properties": {
+              "data": {
+                "description": "Daten f\u00fcr die Operation",
+                "type": "OBJECT"
+              },
+              "operation": {
+                "description": "Graph API Operation",
+                "type": "STRING"
+              }
+            },
+            "required": [
+              "operation",
+              "data"
+            ],
+            "type": "object"
+          }
+        },
+        {
+          "description": "Nutzt Google Gemini f\u00fcr multimodale Verarbeitung (Text, Bild, Video, Audio).",
+          "name": "gemini_multimodal",
+          "parameters": {
+            "properties": {
+              "media_type": {
+                "description": "Art des Mediums (text, image, video, audio)",
+                "type": "STRING"
+              },
+              "media_url": {
+                "description": "URL oder Base64 des Mediums (f\u00fcr image/video/audio)",
+                "type": "STRING"
+              },
+              "prompt": {
+                "description": "Textanweisung oder Frage",
+                "type": "STRING"
+              }
+            },
+            "required": [
+              "prompt"
+            ],
+            "type": "object"
+          }
+        },
+        {
+          "description": "F\u00fchrt CRM-Operationen in HubSpot durch (Kontakte, Unternehmen, Deals). Nutzt den HubSpot MCP-Server.",
+          "name": "hubspot_crm_operations",
+          "parameters": {
+            "properties": {
+              "data": {
+                "description": "Daten f\u00fcr die Operation (abh\u00e4ngig von der gew\u00e4hlten Operation)",
+                "type": "OBJECT"
+              },
+              "operation": {
+                "description": "CRM-Operation (create_contact, search_contacts, create_company, create_deal, update_contact)",
+                "type": "STRING"
+              }
+            },
+            "required": [
+              "operation",
+              "data"
+            ],
+            "type": "object"
+          }
+        },
+        {
+          "description": "F\u00fchrt eine Echtzeit-Websuche mit Perplexity AI durch und gibt Ergebnisse mit Quellenangaben zur\u00fcck.",
+          "name": "perplexity_web_search",
+          "parameters": {
+            "properties": {
+              "focus": {
+                "description": "Suchfokus (web, academic, news, youtube, reddit)",
+                "type": "STRING"
+              },
+              "query": {
+                "description": "Suchanfrage",
+                "type": "STRING"
+              }
+            },
+            "required": [
+              "query"
+            ],
+            "type": "object"
+          }
+        },
+        {
+          "description": "Analysiert strukturierte Daten und erstellt statistische Zusammenfassungen.",
+          "name": "data_analyzer",
+          "parameters": {
+            "properties": {
+              "analysis_type": {
+                "description": "Art der Analyse",
+                "type": "STRING"
+              },
+              "columns": {
+                "description": "Spezifische Spalten f\u00fcr die Analyse",
+                "type": "ARRAY"
+              },
+              "data": {
+                "description": "Die zu analysierenden Daten (Liste von Dictionaries oder Pfad zu CSV)",
+                "type": "OBJECT"
+              }
+            },
+            "required": [
+              "data"
+            ],
+            "type": "object"
+          }
+        },
+        {
+          "description": "Liest verschiedene Dateiformate und extrahiert deren Inhalt als Text.",
+          "name": "file_reader",
+          "parameters": {
+            "properties": {
+              "encoding": {
+                "description": "Zeichenkodierung f\u00fcr Textdateien",
+                "type": "STRING"
+              },
+              "file_path": {
+                "description": "Pfad zur zu lesenden Datei",
+                "type": "STRING"
+              }
+            },
+            "required": [
+              "file_path"
+            ],
+            "type": "object"
+          }
+        },
+        {
+          "description": "Extrahiert Inhalte von Webseiten. Unterst\u00fctzt Text, Links und strukturierte Daten.",
+          "name": "web_scraper",
+          "parameters": {
+            "properties": {
+              "extract_type": {
+                "description": "Art der zu extrahierenden Daten",
+                "type": "STRING"
+              },
+              "selector": {
+                "description": "Optionaler CSS-Selektor f\u00fcr spezifische Elemente",
+                "type": "STRING"
+              },
+              "url": {
+                "description": "Die URL der zu scrapenden Webseite",
+                "type": "STRING"
+              }
+            },
+            "required": [
+              "url"
+            ],
+            "type": "object"
+          }
+        },
+        {
+          "description": "Fasst lange Texte auf eine gew\u00fcnschte L\u00e4nge zusammen. Unterst\u00fctzt verschiedene Zusammenfassungsstile.",
+          "name": "text_summarizer",
+          "parameters": {
+            "properties": {
+              "max_length": {
+                "description": "Maximale L\u00e4nge der Zusammenfassung in W\u00f6rtern",
+                "type": "NUMBER"
+              },
+              "style": {
+                "description": "Stil der Zusammenfassung",
+                "type": "STRING"
+              },
+              "text": {
+                "description": "Der zu k\u00fcrzende Quelltext",
+                "type": "STRING"
+              }
+            },
+            "required": [
+              "text"
+            ],
+            "type": "object"
+          }
+        }
+      ]
+    }
+  ]
+}

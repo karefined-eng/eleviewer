@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: fassadenfix-backend
+    runtime: node
+    region: frankfurt
+    plan: free
+    rootDir: angebotsgenerator/backend
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: HUBSPOT_API_KEY
+        sync: false # User muss diesen Wert in Render Dashboard setzen
+      - key: OPENAI_API_KEY
+        sync: false # User muss diesen Wert in Render Dashboard setzen

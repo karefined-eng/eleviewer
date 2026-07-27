@@ -1,0 +1,53 @@
+{
+  "manifest_version": "1.0",
+  "type": "skill",
+  "name": "ff_hr_onboarding",
+  "version": "1.0.0",
+  "description": "Fuehrt neue Mitarbeiter durch den strukturierten Onboarding-Prozess. Verwenden fuer: Checklisten-Workflow, Dokumenten-Sammlung, Statusverfolgung, automatische Erinnerungen.",
+  "author": "FassadenFix",
+  "tags": [
+    "hr",
+    "onboarding",
+    "checkliste",
+    "workflow",
+    "mitarbeiter",
+    "einstellung",
+    "fassadenfix"
+  ],
+  "capabilities": [
+    "hr_management",
+    "workflow_management",
+    "checklist_processing",
+    "document_collection",
+    "pdf_generation"
+  ],
+  "implementation": {
+    "language": "python",
+    "entrypoint": "main.py"
+  },
+  "interface": {
+    "inputs": [
+      {"name": "mitarbeiter_name", "type": "string", "description": "Name des neuen Mitarbeiters", "required": true},
+      {"name": "position", "type": "string", "description": "Position/Stelle", "required": true},
+      {"name": "eintrittsdatum", "type": "string", "description": "Geplantes Eintrittsdatum", "required": true},
+      {"name": "vorgesetzter", "type": "string", "description": "Name des Vorgesetzten", "required": false},
+      {"name": "hr_verantwortlich", "type": "string", "description": "HR-Ansprechpartner", "required": false}
+    ],
+    "outputs": [
+      {"name": "onboarding_json", "type": "object", "description": "Strukturierte Onboarding-Daten als JSON"},
+      {"name": "pdf_path", "type": "string", "description": "Pfad zur generierten Checkliste"},
+      {"name": "fortschritt", "type": "number", "description": "Fortschritt in Prozent"},
+      {"name": "naechster_schritt", "type": "string", "description": "Naechster offener Schritt"},
+      {"name": "success", "type": "boolean", "description": "Ob das Onboarding gestartet wurde"}
+    ]
+  },
+  "dependencies": ["fassadenfix_branding", "ff_hr_einstellung"],
+  "orchestration": {"default_enabled": false, "priority": 60, "scope": "hr"},
+  "metadata": {
+    "created_at": "2026-02-02T12:00:00Z",
+    "updated_at": "2026-02-02T12:00:00Z",
+    "license": "Proprietary - FassadenFix GmbH",
+    "documentation": "SKILL.md",
+    "original_template": "FF-HR-ONB-001_Onboarding_Checkliste.docx"
+  }
+}
