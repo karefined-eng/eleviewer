@@ -57,6 +57,12 @@ class TtsReaderBar(QFrame):
             QToolButton:hover {{
                 background-color: #2a2a2a;
             }}
+            QToolButton#TtsStopBtn:hover {{
+                background-color: rgba(239, 68, 68, 0.25);
+            }}
+            QToolButton#TtsStopBtn:pressed {{
+                background-color: rgba(239, 68, 68, 0.6);
+            }}
         """)
 
         layout = QHBoxLayout(self)
@@ -81,7 +87,8 @@ class TtsReaderBar(QFrame):
 
         # Stop button
         self.btn_stop = QToolButton()
-        self.btn_stop.setIcon(icon("square", size=18, color=BRAND_PRIMARY))
+        self.btn_stop.setObjectName("TtsStopBtn")
+        self.btn_stop.setIcon(icon("square", size=18, color="#ef4444"))
         self.btn_stop.setToolTip("Stop reading")
         self.btn_stop.clicked.connect(self.stop_requested.emit)
         layout.addWidget(self.btn_stop)
@@ -131,6 +138,12 @@ class TtsReaderBar(QFrame):
             }}
             QToolButton:hover {{
                 background-color: #2a2a2a;
+            }}
+            QToolButton#TtsStopBtn:hover {{
+                background-color: rgba(239, 68, 68, 0.25);
+            }}
+            QToolButton#TtsStopBtn:pressed {{
+                background-color: rgba(239, 68, 68, 0.6);
             }}
         """)
 

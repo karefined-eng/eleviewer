@@ -48,6 +48,7 @@ class TtsEngine:
                 if cmd == "init":
                     try:
                         engine = pyttsx3.init()
+                        self._engine_instance = engine
                         voices = engine.getProperty("voices") or []
                         self._voices = [(v.id, v.name) for v in voices]
                         self._available = True
@@ -86,6 +87,16 @@ class TtsEngine:
 
     def stop(self):
         if TTS_AVAILABLE:
+            while not self._queue.empty():
+                try:
+                    self._queue.get_nowait()
+                except queue.Empty:
+                    break
+            if hasattr(self, "_engine_instance") and self._engine_instance:
+                try:
+                    self._engine_instance.stop()
+                except Exception:
+                    pass
             self._queue.put(("stop", None))
 
 
