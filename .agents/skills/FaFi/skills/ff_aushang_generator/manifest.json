@@ -1,0 +1,128 @@
+{
+  "manifest_version": "1.0",
+  "type": "skill",
+  "name": "ff_aushang_generator",
+  "version": "1.0.0",
+  "description": "Generiert standortspezifische Mieterinformationen und Aushaenge. Verwenden fuer: Eingabe von Projektdaten (Ort, Datum, Ansprechpartner), Auswahl von Textbausteinen, PDF-Generierung.",
+  "author": "FassadenFix",
+  "tags": [
+    "aushang",
+    "mieterinformation",
+    "kommunikation",
+    "pdf",
+    "vorlage",
+    "textbausteine",
+    "fassadenfix"
+  ],
+  "capabilities": [
+    "document_generation",
+    "pdf_generation",
+    "template_processing",
+    "text_blocks"
+  ],
+  "implementation": {
+    "language": "python",
+    "entrypoint": "main.py"
+  },
+  "interface": {
+    "inputs": [
+      {
+        "name": "ort",
+        "type": "string",
+        "description": "PLZ und Ort des Projekts",
+        "required": true
+      },
+      {
+        "name": "strasse",
+        "type": "string",
+        "description": "Strassenname",
+        "required": true
+      },
+      {
+        "name": "hausnummer",
+        "type": "string",
+        "description": "Hausnummer(n)",
+        "required": true
+      },
+      {
+        "name": "start_datum",
+        "type": "string",
+        "description": "Startdatum der Arbeiten",
+        "required": true
+      },
+      {
+        "name": "end_datum",
+        "type": "string",
+        "description": "Enddatum der Arbeiten",
+        "required": true
+      },
+      {
+        "name": "intro_baustein",
+        "type": "string",
+        "description": "Textbaustein fuer Einleitung",
+        "required": false,
+        "default": "intro_standard",
+        "enum": ["intro_standard", "intro_algen"]
+      },
+      {
+        "name": "hinweise_baustein",
+        "type": "string",
+        "description": "Textbaustein fuer Hinweise",
+        "required": false,
+        "default": "hinweise_standard",
+        "enum": ["hinweise_standard", "hinweise_hubbuehne"]
+      },
+      {
+        "name": "ansprechpartner",
+        "type": "string",
+        "description": "Name des Ansprechpartners (optional)",
+        "required": false
+      },
+      {
+        "name": "telefon",
+        "type": "string",
+        "description": "Telefonnummer (optional)",
+        "required": false
+      },
+      {
+        "name": "email",
+        "type": "string",
+        "description": "E-Mail-Adresse (optional)",
+        "required": false
+      }
+    ],
+    "outputs": [
+      {
+        "name": "aushang_json",
+        "type": "object",
+        "description": "Strukturierte Aushangdaten als JSON"
+      },
+      {
+        "name": "pdf_path",
+        "type": "string",
+        "description": "Pfad zum generierten PDF-Aushang"
+      },
+      {
+        "name": "success",
+        "type": "boolean",
+        "description": "Ob der Aushang erfolgreich generiert wurde"
+      }
+    ]
+  },
+  "dependencies": [
+    "fassadenfix_branding"
+  ],
+  "orchestration": {
+    "default_enabled": false,
+    "priority": 40,
+    "scope": "project",
+    "auto_inject": false
+  },
+  "metadata": {
+    "created_at": "2026-02-02T12:00:00Z",
+    "updated_at": "2026-02-02T12:00:00Z",
+    "license": "Proprietary - FassadenFix GmbH",
+    "documentation": "SKILL.md",
+    "original_templates": ["FF-AUS-001_Aushang_Mieterinformation.docx", "FF-MIE-*"]
+  }
+}
