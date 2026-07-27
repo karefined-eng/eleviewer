@@ -132,11 +132,15 @@ Key directories and modules:
 - Test suites are archived in `OneDrive\Documents\EleViewer\tests\`.
 - Data is stored in `%APPDATA%\EleViewer\` (`recent_files.json`, `settings.json`, `session.json`, `vault_index.db`, etc.)
 
-## 🔧 Troubleshooting
-
 - **ModuleNotFoundError (e.g., 'PySide6', 'docx')**: Ensure you've run `pip install -r requirements.txt`.
 - **Web panel not available**: Run `pip install PySide6-WebEngine`.
 - **PDF read-aloud not working**: Ensure `pyttsx3` is installed and Windows speech voices are enabled in OS settings. For higher quality neural voices, install `edge-tts` and `pygame` (requires internet connection).
+
+## 🛡️ The Offline-First Philosophy
+Independent utility apps often suffer from bloated file-rendering engines, heavy cloud dependencies, or unpolished UIs. EleViewer explicitly rejects this trend:
+- **No Heavy Wrappers:** Instead of bundling a 200MB LibreOffice clone, we use pure-Python data extraction (like `mammoth` and `python-pptx`) to parse binary data and base64-encode it directly into PySide6 native UIs.
+- **Zero Cloud Rendering:** No documents are ever uploaded to a server to be rendered.
+- **Graceful Degradation:** Cloud-assisted features (like Microsoft Neural TTS) seamlessly fall back to local Windows COM APIs when offline, ensuring your study session never crashes in a dead zone.
 
 ## 🤝 Contributing
 
