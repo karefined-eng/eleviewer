@@ -66,16 +66,11 @@ class TtsEngine:
         while True:
             try:
                 cmd, payload = self._queue.get()
-            except Exception:
-                continue
-
-            if cmd == "shutdown":
-                break
-
+                if cmd == "shutdown":
+                    break
                 elif cmd == "stop":
                     # Just an explicit stop handled by clearing queue and interrupting engines
                     pass
-
                 elif cmd == "init":
                     # Initialize local pyttsx3 engine
                     if PYTTSX3_AVAILABLE:
