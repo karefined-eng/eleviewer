@@ -6,6 +6,7 @@ import asyncio
 import os
 import tempfile
 import time
+import ctypes
 from pathlib import Path
 
 try:
@@ -19,6 +20,8 @@ try:
     PYTTSX3_AVAILABLE = True
 except ImportError:
     PYTTSX3_AVAILABLE = False
+
+TTS_AVAILABLE = EDGE_AVAILABLE or PYTTSX3_AVAILABLE
 
 
 class TtsEngine:
@@ -69,8 +72,11 @@ class TtsEngine:
             if cmd == "shutdown":
                 break
 
-            try:
-                if cmd == "init":
+                elif cmd == "stop":
+                    # Just an explicit stop handled by clearing queue and interrupting engines
+                    pass
+
+                elif cmd == "init":
                     # Initialize local pyttsx3 engine
                     if PYTTSX3_AVAILABLE:
                         try:
@@ -82,11 +88,10 @@ class TtsEngine:
                             self._local_available = False
                             print(f"[TTS] Local Pyttsx3 Init Error: {e}")
 
-                    # Fetch online edge-tts voices
-                    if EDGE_AVAILABLE:
+                    # Fetch online edge-tts voices (cached)
+                    if EDGE_AVAILABLE and not self._edge_voices:
                         try:
-                            # We use asyncio.run to do this synchronously in the worker thread
-                            all_voices = asyncio.run(self._fetch_edge_voices())
+                            all_voices = self._run_async(self._fetch_edge_voices())
                             voices = sorted(all_voices.voices, key=lambda x: x["FriendlyName"])
                             self._edge_voices = [(v["ShortName"], f"[Online] {v['FriendlyName']} ({v['Locale']})") for v in voices]
                             self._edge_available = True
@@ -117,7 +122,7 @@ class TtsEngine:
                     # Execute playback
                     if use_edge:
                         try:
-                            asyncio.run(self._speak_edge(text, voice_id))
+                            self._run_async(self._speak_edge(text, voice_id))
                         except Exception as e:
                             print(f"[TTS] Online generation failed ({e}), falling back to offline.")
                             if self._local_available:
@@ -131,30 +136,33 @@ class TtsEngine:
             except Exception as e:
                 self._report_error(str(e))
 
+    def _run_async(self, coro):
+        """Safe wrapper to run asyncio loop handling edge cases."""
+        try:
+            return asyncio.run(coro)
+        except RuntimeError:
+            loop = asyncio.get_event_loop()
+            return loop.run_until_complete(coro)
+
     async def _fetch_edge_voices(self):
         # 5-second timeout so we don't stall init forever if network is a blackhole
         return await asyncio.wait_for(edge_tts.VoicesManager.create(), timeout=5.0)
 
     async def _speak_edge(self, text, voice_id):
-        """Generate online audio and play via pygame synchronously."""
+        """Generate online audio and play via native Windows API synchronously."""
         communicate = edge_tts.Communicate(text, voice_id)
         
         # Download audio with timeout to trigger fallback if connection drops
         await asyncio.wait_for(communicate.save(str(self._audio_file)), timeout=10.0)
         
-        # Play using pygame
-        import pygame
-        if not pygame.mixer.get_init():
-            pygame.mixer.init()
-        
-        pygame.mixer.music.load(str(self._audio_file))
-        pygame.mixer.music.play()
-        
-        # Poll synchronously while playing (can be cleanly interrupted by main thread stop())
-        while pygame.mixer.music.get_busy():
-            time.sleep(0.1)
-            
-        pygame.mixer.music.unload()
+        # Play using native Windows mciSendString (Zero dependencies, plays MP3 natively)
+        if os.name == 'nt':
+            path_str = str(self._audio_file)
+            ctypes.windll.winmm.mciSendStringW('close edge_media', None, 0, None)
+            ctypes.windll.winmm.mciSendStringW(f'open "{path_str}" alias edge_media', None, 0, None)
+            # wait keyword blocks the thread until playback finishes (interruptible by close)
+            ctypes.windll.winmm.mciSendStringW('play edge_media wait', None, 0, None)
+            ctypes.windll.winmm.mciSendStringW('close edge_media', None, 0, None)
 
     def _speak_local(self, text, voice_id):
         """Synchronous local playback using pyttsx3."""
@@ -199,14 +207,13 @@ class TtsEngine:
             except queue.Empty:
                 break
                 
-        # 2. Interrupt Pygame (Edge TTS playback)
-        try:
-            import pygame
-            if pygame.mixer.get_init():
-                pygame.mixer.music.stop()
-                pygame.mixer.music.unload()
-        except Exception:
-            pass
+        # 2. Interrupt Edge TTS playback (native Windows MCI)
+        if os.name == 'nt':
+            try:
+                ctypes.windll.winmm.mciSendStringW('stop edge_media', None, 0, None)
+                ctypes.windll.winmm.mciSendStringW('close edge_media', None, 0, None)
+            except Exception:
+                pass
 
         # 3. Interrupt Pyttsx3
         if getattr(self, "_pyttsx3_engine", None):

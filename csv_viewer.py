@@ -190,6 +190,7 @@ class CsvViewer(QWidget):
         self.file_path = file_path
         self.is_modified = False
         self._loading = False
+        self._bookmark_callback = None
         self.current_delimiter = "auto"
         self.current_quoting = csv.QUOTE_MINIMAL
         self.current_encoding = "utf-8"
@@ -289,6 +290,11 @@ class CsvViewer(QWidget):
         tb_layout.addWidget(self.btn_del)
 
         tb_layout.addStretch()
+
+        self.btn_bookmark = QPushButton("🔖 Bookmark")
+        self.btn_bookmark.setToolTip("Bookmark current scroll position")
+        self.btn_bookmark.clicked.connect(self._add_bookmark_here)
+        tb_layout.addWidget(self.btn_bookmark)
 
         # View Switcher
         self.btn_toggle_view = QPushButton("📄 Raw Text")
@@ -502,6 +508,27 @@ class CsvViewer(QWidget):
 
     def to_csv_bytes(self):
         return self.toPlainText().encode("utf-8")
+
+    def set_bookmark_callback(self, callback):
+        self._bookmark_callback = callback
+
+    def _bookmark_payload(self):
+        name = os.path.basename(self.file_path) if self.file_path else "csv file"
+        return {
+            "page_number": 0,
+            "scroll_position_y": float(self.table.verticalScrollBar().value()),
+            "scroll_position_x": float(self.table.horizontalScrollBar().value()),
+            "label": f"Position in {name}",
+        }
+
+    def _add_bookmark_here(self):
+        if self._bookmark_callback:
+            self._bookmark_callback(self._bookmark_payload())
+
+    def go_to_bookmark(self, page_number=0, scroll_position_y=0.0, **kwargs):
+        self.table.verticalScrollBar().setValue(int(scroll_position_y))
+        if "scroll_position_x" in kwargs:
+            self.table.horizontalScrollBar().setValue(int(kwargs["scroll_position_x"]))
 
     # ── Universal TTS (F9) Support ────────────────────────────────────────
     def read_current_page(self, voice_id=None):

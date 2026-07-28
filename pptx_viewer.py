@@ -23,8 +23,11 @@ from PySide6.QtCore import Qt, Signal, QSize
 from PySide6.QtGui import QIntValidator, QKeyEvent
 
 from icons import icon
-from theme import compact_toolbar_stylesheet, ICON_SIZE_COMPACT, BRAND_PANEL, BRAND_BORDER, BRAND_PRIMARY, BRAND_MUTED_FG, get_brand_accent
-from tts_engine import TtsEngine
+from theme import (
+    compact_toolbar_stylesheet, ICON_SIZE_COMPACT,
+    BRAND_PANEL, BRAND_PANEL_2, BRAND_BORDER, BRAND_PRIMARY,
+    BRAND_MUTED_FG, BRAND_BACKGROUND, get_brand_accent,
+)
 
 
 class PptxViewer(QWidget):
@@ -37,11 +40,10 @@ class PptxViewer(QWidget):
         self.file_path = file_path
         self.is_modified = False
         self._status_callback = status_callback
+        self._bookmark_callback = None
         self.slides = []  # list of dicts: {"title": str, "content": str, "notes": str}
         self.current_slide = 0
         self.total_slides = 0
-
-        self.tts = TtsEngine(on_error=self._on_tts_error)
 
         self.setFocusPolicy(Qt.StrongFocus)
 
@@ -73,24 +75,26 @@ class PptxViewer(QWidget):
 
         self.btn_prev = _tb("chevron-left", "Previous Slide", self.prev_slide)
         self.btn_next = _tb("chevron-right", "Next Slide", self.next_slide)
+        self.btn_bookmark = _tb("book-open", "Bookmark this slide", self._add_bookmark_here)
 
         self.slide_input = QLineEdit()
         self.slide_input.setFixedWidth(44)
         self.slide_input.setAlignment(Qt.AlignCenter)
         self.slide_input.setValidator(QIntValidator(1, 9999))
         self.slide_input.setStyleSheet(
-            "QLineEdit { background:#242424; color:#f2f2f0; border:1px solid #2c2c2c;"
-            " border-radius:4px; padding:2px 4px; font-weight:bold; font-size:12px; }"
+            f"QLineEdit {{ background:{BRAND_PANEL_2}; color:{BRAND_PRIMARY}; border:1px solid {BRAND_BORDER};"
+            f" border-radius:4px; padding:2px 4px; font-weight:bold; font-size:12px; }}"
         )
         self.slide_input.returnPressed.connect(self._jump_to_slide)
         self.lbl_total = QLabel(" / 0")
-        self.lbl_total.setStyleSheet("color:#9b9b96; font-weight:bold; padding:0 6px 0 2px; font-size:12px;")
+        self.lbl_total.setStyleSheet(f"color:{BRAND_MUTED_FG}; font-weight:bold; padding:0 6px 0 2px; font-size:12px;")
 
         toolbar.addWidget(self.btn_prev)
         toolbar.addWidget(self.slide_input)
         toolbar.addWidget(self.lbl_total)
         toolbar.addWidget(self.btn_next)
         toolbar.addStretch()
+        toolbar.addWidget(self.btn_bookmark)
 
         # ── Main Splitter: Slide list + Slide Viewer ────────────────
         self.splitter = QSplitter(Qt.Horizontal)
@@ -104,16 +108,16 @@ class PptxViewer(QWidget):
                 border-right: 1px solid {BRAND_BORDER};
                 font-size: 12px;
             }}
-            QListWidget::item {{ padding: 6px; border-bottom: 1px solid #222; }}
-            QListWidget::item:selected {{ background: {get_brand_accent()}; color: #131313; font-weight: bold; }}
+            QListWidget::item {{ padding: 6px; border-bottom: 1px solid {BRAND_BORDER}; }}
+            QListWidget::item:selected {{ background: {get_brand_accent()}; color: {BRAND_BACKGROUND}; font-weight: bold; }}
         """)
         self.slide_list.currentRowChanged.connect(self.go_to_slide)
 
         self.viewer = QTextBrowser()
         self.viewer.setStyleSheet(f"""
             QTextBrowser {{
-                background: #131313;
-                color: #f2f2f0;
+                background: {BRAND_BACKGROUND};
+                color: {BRAND_PRIMARY};
                 border: none;
                 padding: 20px;
                 font-family: 'Segoe UI', sans-serif;
@@ -222,9 +226,23 @@ class PptxViewer(QWidget):
         except Exception as e:
             print(f"[PPTX Viewer] Fallback zip parse error: {e}")
 
-    def _on_tts_error(self, message):
-        if self._status_callback:
-            self._status_callback(f"TTS error: {message}", 4000)
+    def set_bookmark_callback(self, callback):
+        self._bookmark_callback = callback
+
+    def _bookmark_payload(self):
+        name = os.path.basename(self.file_path) if self.file_path else "presentation"
+        return {
+            "page_number": self.current_slide,
+            "scroll_position_y": 0.0,
+            "label": f"Slide {self.current_slide + 1} in {name}",
+        }
+
+    def _add_bookmark_here(self):
+        if self._bookmark_callback:
+            self._bookmark_callback(self._bookmark_payload())
+
+    def go_to_bookmark(self, page_number=0, scroll_position_y=0.0):
+        self.go_to_slide(int(page_number))
 
     def go_to_slide(self, index):
         if index < 0 or index >= self.total_slides:
@@ -236,24 +254,29 @@ class PptxViewer(QWidget):
         slide_data = self.slides[index]
         accent = get_brand_accent()
 
+        # Split content into text lines and HTML (images) so text gets
+        # newline formatting while <img> tags render as actual images.
+        raw_content = slide_data['content'] or ''
+        content_html = raw_content.replace('\n', '<br>') if raw_content else '<i>(No text content on this slide)</i>'
+
         html = f"""
         <div style="max-width: 700px; margin: 0 auto;">
             <div style="color: {accent}; font-size: 11px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">
                 SLIDE {index + 1} OF {self.total_slides}
             </div>
-            <h1 style="color: #ffffff; font-size: 22px; margin-top: 0; margin-bottom: 20px; border-bottom: 1px solid #2c2c2c; padding-bottom: 10px;">
+            <h1 style="color: {BRAND_PRIMARY}; font-size: 22px; margin-top: 0; margin-bottom: 20px; border-bottom: 1px solid {BRAND_BORDER}; padding-bottom: 10px;">
                 {slide_data['title']}
             </h1>
-            <div style="font-size: 15px; line-height: 1.7; color: #e0e0e0; white-space: pre-wrap;">
-                {slide_data['content'] or '<i>(No text content on this slide)</i>'}
+            <div style="font-size: 15px; line-height: 1.7; color: {BRAND_PRIMARY};">
+                {content_html}
             </div>
         """
 
         if slide_data.get("notes"):
             html += f"""
-            <div style="margin-top: 30px; padding: 12px; background: #1c1c1c; border-left: 3px solid {accent}; border-radius: 4px;">
-                <div style="color: #9b9b96; font-size: 11px; font-weight: bold; margin-bottom: 4px;">SPEAKER NOTES</div>
-                <div style="font-size: 13px; color: #cccccc;">{slide_data['notes']}</div>
+            <div style="margin-top: 30px; padding: 12px; background: {BRAND_PANEL}; border-left: 3px solid {accent}; border-radius: 4px;">
+                <div style="color: {BRAND_MUTED_FG}; font-size: 11px; font-weight: bold; margin-bottom: 4px;">SPEAKER NOTES</div>
+                <div style="font-size: 13px; color: {BRAND_MUTED_FG};">{slide_data['notes']}</div>
             </div>
             """
 
@@ -276,15 +299,11 @@ class PptxViewer(QWidget):
             pass
 
     def read_current_page(self, voice_id=None):
-        """TTS helper to read the active slide content."""
+        """Return text of current slide for TTS. Playback handled by MainWindow."""
         if 0 <= self.current_slide < self.total_slides:
             slide_data = self.slides[self.current_slide]
             text = f"{slide_data['title']}. {slide_data['content']}"
-            if text.strip():
-                self.tts.speak(text, voice_id=voice_id)
-                if self._status_callback:
-                    self._status_callback(f"Reading slide {self.current_slide + 1} aloud...", 2000)
-                return text
+            return text.strip() if text.strip() else ""
         return ""
 
     def toPlainText(self):

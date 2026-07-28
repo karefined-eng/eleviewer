@@ -99,7 +99,11 @@ class MainWindow(QMainWindow):
         self.restore_session()
 
         if self.tabs.count() == 0:
-            self.new_tab()
+            from settings import load_settings
+            if load_settings().get("fresh_session_behavior", "welcome") == "welcome":
+                self.tabs.addTab(self._create_welcome_widget(), "Welcome")
+            else:
+                self.new_tab()
 
         self.tabs.currentChanged.connect(self.update_status_bar)
         self.update_status_bar()
@@ -301,7 +305,7 @@ class MainWindow(QMainWindow):
         self.vault_panel.btn_add.clicked.connect(self.add_vault)
         self.main_splitter.addWidget(self.vault_panel)
 
-        self.editor_splitter = QSplitter(Qt.Horizontal)
+        self.editor_tabs_splitter = QSplitter(Qt.Horizontal)
         self.tabs = QTabWidget()
         self.tabs.setTabsClosable(True)
         self.tabs.setDocumentMode(True)
@@ -309,6 +313,19 @@ class MainWindow(QMainWindow):
         self.tabs.tabCloseRequested.connect(self.close_tab)
         self.tabs.setContextMenuPolicy(Qt.CustomContextMenu)
         self.tabs.customContextMenuRequested.connect(self.show_tab_context_menu)
+        
+        self.tabs_right = QTabWidget()
+        self.tabs_right.setTabsClosable(True)
+        self.tabs_right.setDocumentMode(True)
+        self.tabs_right.tabBar().setMovable(True)
+        self.tabs_right.tabCloseRequested.connect(lambda i: self._close_tab_in_widget(self.tabs_right, i))
+        self.tabs_right.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.tabs_right.customContextMenuRequested.connect(lambda pos: self.show_tab_context_menu(pos, self.tabs_right))
+        self.tabs_right.currentChanged.connect(self.update_status_bar)
+        self.tabs_right.hide()
+        
+        self.editor_tabs_splitter.addWidget(self.tabs)
+        self.editor_tabs_splitter.addWidget(self.tabs_right)
         
         self.find_replace_panel = FindReplaceWidget()
         self.find_replace_panel.hide()
@@ -326,7 +343,7 @@ class MainWindow(QMainWindow):
         editor_layout = QVBoxLayout()
         editor_layout.setContentsMargins(0, 0, 0, 0)
         editor_layout.setSpacing(0)
-        editor_layout.addWidget(self.tabs)
+        editor_layout.addWidget(self.editor_tabs_splitter)
         editor_layout.addWidget(self.find_replace_panel)
         editor_layout.addWidget(self.tts_bar)
         
@@ -668,17 +685,77 @@ class MainWindow(QMainWindow):
         self.update_tab_title(editor)
         self.update_status_bar()
 
+    def _create_welcome_widget(self):
+        w = QWidget()
+        w.is_welcome_tab = True
+        layout = QVBoxLayout(w)
+        layout.setAlignment(Qt.AlignCenter)
+        
+        title = QLabel("EleViewer")
+        title.setStyleSheet(f"font-size: 32px; font-weight: bold; color: {BRAND_PRIMARY};")
+        title.setAlignment(Qt.AlignCenter)
+        layout.addWidget(title)
+        
+        subtitle = QLabel("Lightweight Document Viewer & Study Workspace")
+        subtitle.setStyleSheet(f"font-size: 14px; color: {BRAND_MUTED_FG}; margin-bottom: 30px;")
+        subtitle.setAlignment(Qt.AlignCenter)
+        layout.addWidget(subtitle)
+        
+        shortcuts = [
+            ("Ctrl+O", "Open file"),
+            ("Ctrl+N", "New text note"),
+            ("Ctrl+T", "Web browser"),
+            ("Alt+V", "Open vault sidebar"),
+            ("Ctrl+Q", "Quick switcher"),
+            ("F9", "Read aloud (TTS)")
+        ]
+        
+        grid = QWidget()
+        grid_layout = QGridLayout(grid)
+        grid_layout.setSpacing(15)
+        for i, (key, desc) in enumerate(shortcuts):
+            k_lbl = QLabel(key)
+            k_lbl.setStyleSheet(f"background: {BRAND_PANEL_2}; padding: 4px 8px; border-radius: 4px; font-family: monospace; color: {get_brand_accent()}; font-weight: bold;")
+            k_lbl.setAlignment(Qt.AlignCenter)
+            d_lbl = QLabel(desc)
+            d_lbl.setStyleSheet(f"color: {BRAND_PRIMARY};")
+            grid_layout.addWidget(k_lbl, i // 2, (i % 2) * 2)
+            grid_layout.addWidget(d_lbl, i // 2, (i % 2) * 2 + 1)
+            
+        layout.addWidget(grid)
+        return w
+
+    def _replace_welcome_if_present(self):
+        if self.tabs.count() == 1:
+            w = self.tabs.widget(0)
+            if getattr(w, "is_welcome_tab", False):
+                self.tabs.removeTab(0)
+                w.deleteLater()
+
+    def add_editor_tab(self, widget, label, icon=None):
+        """Helper to append an editor tab safely."""
+        self._replace_welcome_if_present()
+        idx = self.tabs.addTab(widget, icon or QIcon(), label)
+        self.tabs.setCurrentIndex(idx)
+        return idx
+
     def _add_editor_tab(self, editor, name):
         self._connect_editor_signals(editor)
         path = getattr(editor, "file_path", None) or name
         tab_icon = _tab_icon_for(path)
-        index = self.tabs.addTab(editor, tab_icon, name)
-        self.tabs.setCurrentIndex(index)
+        index = self.add_editor_tab(editor, name, tab_icon)
         self.update_status_bar()
         
         self._check_file_load_milestone()
         
         return index
+
+    def new_tab(self):
+        self._replace_welcome_if_present()
+        from editor import EditorTab
+        editor = EditorTab()
+        editor.file_path = None
+        self._add_editor_tab(editor, "Untitled")
 
     def _check_file_load_milestone(self):
         settings = load_settings()
@@ -1004,11 +1081,12 @@ class MainWindow(QMainWindow):
             # Fallback if widget for action not found (shouldn't happen with valid action)
             self._build_new_file_menu().exec(self.mapToGlobal(self.toolbar.pos()))
 
-    def show_tab_context_menu(self, pos):
-        index = self.tabs.tabBar().tabAt(pos)
+    def show_tab_context_menu(self, pos, tab_widget=None):
+        tw = tab_widget or self.tabs
+        index = tw.tabBar().tabAt(pos)
         if index == -1:
             return
-        editor = self.tabs.widget(index)
+        editor = tw.widget(index)
         path = getattr(editor, "file_path", None)
         menu = QMenu(self)
         if path:
@@ -1019,8 +1097,38 @@ class MainWindow(QMainWindow):
                 pin_action = menu.addAction(icon("pin", size=ICON_SIZE_COMPACT), "Pin File")
                 pin_action.triggered.connect(lambda: self.pin_file(path))
             menu.addSeparator()
-        menu.addAction("Close Tab", lambda: self.close_tab(index))
-        menu.exec(self.tabs.mapToGlobal(pos))
+            
+        if tw == self.tabs:
+            split_action = menu.addAction(icon("sidebar", size=ICON_SIZE_COMPACT), "Split Right")
+            split_action.triggered.connect(lambda: self._move_tab_between_widgets(self.tabs, self.tabs_right, index))
+        else:
+            split_action = menu.addAction(icon("sidebar", size=ICON_SIZE_COMPACT), "Move Left")
+            split_action.triggered.connect(lambda: self._move_tab_between_widgets(self.tabs_right, self.tabs, index))
+            
+        menu.addAction("Close Tab", lambda: self._close_tab_in_widget(tw, index))
+        menu.exec(tw.mapToGlobal(pos))
+        
+    def _move_tab_between_widgets(self, src, dst, index):
+        w = src.widget(index)
+        text = src.tabText(index)
+        ic = src.tabIcon(index)
+        src.removeTab(index)
+        if src == self.tabs_right and src.count() == 0:
+            src.hide()
+        dst.addTab(w, ic, text)
+        dst.show()
+        dst.setCurrentWidget(w)
+        
+    def _close_tab_in_widget(self, tw, index):
+        if tw == self.tabs:
+            self.close_tab(index)
+        else:
+            w = tw.widget(index)
+            tw.removeTab(index)
+            w.deleteLater()
+            if tw.count() == 0:
+                tw.hide()
+            self.update_status_bar()
 
     def pin_file(self, path):
         save_pinned_file(path)
@@ -1139,6 +1247,10 @@ class MainWindow(QMainWindow):
         dlg.exec()
 
     def current_editor(self):
+        from PySide6.QtWidgets import QApplication
+        fw = QApplication.focusWidget()
+        if self.tabs_right.isVisible() and fw and (self.tabs_right.isAncestorOf(fw) or fw == self.tabs_right):
+            return self.tabs_right.currentWidget()
         return self.tabs.currentWidget()
 
     def switch_to_tab_if_open(self, path):
@@ -1348,13 +1460,71 @@ class MainWindow(QMainWindow):
         web_panel = WebPanel()
         self._web_dock = QDockWidget("Web Browser", self)
         self._web_dock.setWidget(web_panel)
-        self._web_dock.setMinimumWidth(360)
+        self._web_dock.setMinimumWidth(480)
         self._web_dock.setFeatures(
             QDockWidget.DockWidgetClosable
             | QDockWidget.DockWidgetMovable
             | QDockWidget.DockWidgetFloatable
         )
         self.addDockWidget(Qt.RightDockWidgetArea, self._web_dock)
+
+        # Custom title bar with larger icons and Maximize support
+        title_bar = QWidget()
+        title_bar.setStyleSheet(f"background: {BRAND_PANEL}; border-bottom: 1px solid {BRAND_BORDER};")
+        tb_layout = QHBoxLayout(title_bar)
+        tb_layout.setContentsMargins(10, 6, 10, 6)
+        
+        lbl_title = QLabel("Web Browser")
+        lbl_title.setStyleSheet(f"color: {BRAND_MUTED_FG}; font-weight: bold; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;")
+        tb_layout.addWidget(lbl_title)
+        tb_layout.addStretch()
+
+        from icons import icon
+        icon_sz = 20
+        icon_qsize = QSize(icon_sz, icon_sz)
+
+        btn_max = QToolButton()
+        btn_max.setIcon(icon("maximize", size=icon_sz))
+        btn_max.setIconSize(icon_qsize)
+        btn_max.setToolTip("Maximize Web Panel")
+        btn_max.setStyleSheet(compact_toolbar_stylesheet())
+        
+        btn_float = QToolButton()
+        btn_float.setIcon(icon("external-link", size=icon_sz))
+        btn_float.setIconSize(icon_qsize)
+        btn_float.setToolTip("Pop Out Web Panel")
+        btn_float.setStyleSheet(compact_toolbar_stylesheet())
+        
+        btn_close = QToolButton()
+        btn_close.setIcon(icon("x", size=icon_sz))
+        btn_close.setIconSize(icon_qsize)
+        btn_close.setToolTip("Close Web Panel")
+        btn_close.setStyleSheet(compact_toolbar_stylesheet())
+
+        tb_layout.addWidget(btn_max)
+        tb_layout.addWidget(btn_float)
+        tb_layout.addWidget(btn_close)
+
+        self._web_dock.setTitleBarWidget(title_bar)
+
+        # Maximize logic: hide the editor splitter so the dock takes full width
+        def _toggle_maximize():
+            if self.editor_splitter.isVisible():
+                self.editor_splitter.hide()
+                btn_max.setIcon(icon("minimize", size=icon_sz))
+                btn_max.setToolTip("Restore Web Panel")
+            else:
+                self.editor_splitter.show()
+                btn_max.setIcon(icon("maximize", size=icon_sz))
+                btn_max.setToolTip("Maximize Web Panel")
+                
+        btn_max.clicked.connect(_toggle_maximize)
+        
+        def _toggle_float():
+            self._web_dock.setFloating(not self._web_dock.isFloating())
+            
+        btn_float.clicked.connect(_toggle_float)
+        btn_close.clicked.connect(self._web_dock.hide)
 
     @Slot(QUrl)
     @Slot(str)
@@ -1428,14 +1598,33 @@ class MainWindow(QMainWindow):
         current_widget = self.tabs.currentWidget()
         if current_widget:
             file_path = getattr(current_widget, "file_path", None)
+            
+            # Compute counts based on viewer type
+            count_text = ""
+            if type(current_widget).__name__ in ["EditorTab", "DocxViewer", "MarkdownViewer", "HtmlViewer"]:
+                if hasattr(current_widget, "toPlainText"):
+                    lines = current_widget.toPlainText().count('\\n') + 1
+                    count_text = f"{lines:,} lines · "
+            elif type(current_widget).__name__ in ["CsvViewer", "XlsxViewer"]:
+                if hasattr(current_widget, "model"):
+                    rows = current_widget.model.rowCount()
+                    count_text = f"{rows:,} rows · "
+            elif type(current_widget).__name__ == "PptxViewer":
+                if hasattr(current_widget, "total_slides"):
+                    count_text = f"{current_widget.total_slides} slides · "
+            elif type(current_widget).__name__ == "PdfViewer":
+                if hasattr(current_widget, "document"):
+                    pages = current_widget.document.pageCount() if current_widget.document else 0
+                    count_text = f"{pages} pages · "
+
             if file_path:
                 filename = os.path.basename(file_path)
                 self.setWindowTitle(f"EleViewer — {filename}")
                 ext = os.path.splitext(file_path)[1].lstrip(".").lower() or "txt"
-                self.status_right.setText(f"{ext} · UTF-8")
+                self.status_right.setText(f"{count_text}{ext} · UTF-8")
             else:
                 self.setWindowTitle(f"EleViewer — Untitled")
-                self.status_right.setText("txt · UTF-8")
+                self.status_right.setText(f"{count_text}txt · UTF-8")
         else:
             self.setWindowTitle(f"EleViewer v{APP_VERSION}")
             self.status_right.setText("UTF-8")
