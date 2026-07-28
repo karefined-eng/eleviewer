@@ -27,6 +27,7 @@ DEFAULT_SETTINGS = {
     "window_geometry": None,
     "draft_autosave_enabled": True,
     "draft_autosave_interval_seconds": 60,
+    "theme_mode": "dark",
     "theme_accent": "blue",
     "tts_voice_id": None,
     "tts_read_mode": "page",

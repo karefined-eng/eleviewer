@@ -52,6 +52,11 @@ class SettingsDialog(QDialog):
         self.launch_combo.setCurrentText(self.settings.get("launch_behavior", "remembered"))
         form.addRow("Launch window size:", self.launch_combo)
         
+        self.theme_mode_combo = QComboBox()
+        self.theme_mode_combo.addItems(["dark", "light", "system"])
+        self.theme_mode_combo.setCurrentText(self.settings.get("theme_mode", "dark"))
+        form.addRow("Theme mode:", self.theme_mode_combo)
+
         self.theme_combo = QComboBox()
         self.theme_combo.addItems(["blue", "grey"])
         self.theme_combo.setCurrentText(self.settings.get("theme_accent", "blue"))
@@ -186,6 +191,7 @@ class SettingsDialog(QDialog):
             
         self.settings.update({
             "launch_behavior": self.launch_combo.currentText(),
+            "theme_mode": self.theme_mode_combo.currentText(),
             "theme_accent": self.theme_combo.currentText(),
             "fresh_session_behavior": self.fresh_session_combo.currentText(),
             "autosave_enabled": self.autosave_check.isChecked(),

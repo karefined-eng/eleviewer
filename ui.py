@@ -1009,6 +1009,8 @@ class MainWindow(QMainWindow):
         self._settings_dialog.raise_()
 
     def _on_settings_saved(self):
+        from theme import main_window_stylesheet
+        self.setStyleSheet(main_window_stylesheet())
         if hasattr(self, 'autosaver') and self.autosaver:
             self.autosaver.apply_settings()
         from settings import load_settings

@@ -259,13 +259,17 @@ class PptxViewer(QWidget):
         raw_content = slide_data['content'] or ''
         content_html = raw_content.replace('\n', '<br>') if raw_content else '<i>(No text content on this slide)</i>'
 
+        import html as py_html
+        slide_title = py_html.escape(slide_data.get('title', ''))
+        notes_text = py_html.escape(slide_data.get('notes', ''))
+
         html = f"""
         <div style="max-width: 700px; margin: 0 auto;">
             <div style="color: {accent}; font-size: 11px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">
                 SLIDE {index + 1} OF {self.total_slides}
             </div>
             <h1 style="color: {BRAND_PRIMARY}; font-size: 22px; margin-top: 0; margin-bottom: 20px; border-bottom: 1px solid {BRAND_BORDER}; padding-bottom: 10px;">
-                {slide_data['title']}
+                {slide_title}
             </h1>
             <div style="font-size: 15px; line-height: 1.7; color: {BRAND_PRIMARY};">
                 {content_html}
@@ -276,7 +280,7 @@ class PptxViewer(QWidget):
             html += f"""
             <div style="margin-top: 30px; padding: 12px; background: {BRAND_PANEL}; border-left: 3px solid {accent}; border-radius: 4px;">
                 <div style="color: {BRAND_MUTED_FG}; font-size: 11px; font-weight: bold; margin-bottom: 4px;">SPEAKER NOTES</div>
-                <div style="font-size: 13px; color: {BRAND_MUTED_FG};">{slide_data['notes']}</div>
+                <div style="font-size: 13px; color: {BRAND_MUTED_FG};">{notes_text}</div>
             </div>
             """
 

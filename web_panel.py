@@ -10,8 +10,22 @@ _WebViewWrapperClass = None
 def get_persistent_profile():
     global _web_profile
     if _web_profile is None:
-        from PySide6.QtWebEngineCore import QWebEngineProfile, QWebEngineSettings
+        from PySide6.QtWebEngineCore import QWebEngineProfile, QWebEngineSettings, QWebEngineUrlRequestInterceptor
+        
+        class AdBlockInterceptor(QWebEngineUrlRequestInterceptor):
+            AD_KEYWORDS = (
+                "doubleclick.net", "googlesyndication.com", "adservice.google.com",
+                "youtube.com/pagead", "googleadservices.com", "/pagead/", "/adserver/",
+                "adnxs.com", "amazon-adsystem.com"
+            )
+            def interceptRequest(self, info):
+                url_str = info.requestUrl().toString()
+                if any(kw in url_str for kw in self.AD_KEYWORDS):
+                    info.block(True)
+
         _web_profile = QWebEngineProfile("eleviewer_web_profile")
+        _interceptor = AdBlockInterceptor(_web_profile)
+        _web_profile.setUrlRequestInterceptor(_interceptor)
         storage_path = str(APP_DATA_DIR / "web_data")
         _web_profile.setPersistentStoragePath(storage_path)
         _web_profile.setCachePath(storage_path)
@@ -42,9 +56,26 @@ def get_web_view_class():
                 page = QWebEnginePage(get_persistent_profile(), self)
                 self.setPage(page)
                 page.featurePermissionRequested.connect(self._auto_deny_permissions)
+                page.loadFinished.connect(self._inject_ad_blocker)
                 
             def _auto_deny_permissions(self, security_origin, feature):
                 self.page().setFeaturePermission(security_origin, feature, QWebEnginePage.PermissionPolicy.PermissionDeniedByUser)
+
+            def _inject_ad_blocker(self, ok):
+                if ok:
+                    js = """
+                    (function() {
+                        if (window._eleAdBlock) return;
+                        window._eleAdBlock = true;
+                        setInterval(function() {
+                            var btn = document.querySelector('.ytp-ad-skip-button, .ytp-skip-ad-button, .ytp-ad-skip-button-modern');
+                            if (btn) btn.click();
+                            var ads = document.querySelectorAll('.video-ads, .ytp-ad-module, .ytp-ad-overlay-container, #player-ads');
+                            ads.forEach(function(a) { a.style.display = 'none'; });
+                        }, 1000);
+                    })();
+                    """
+                    self.page().runJavaScript(js)
 
             def createWindow(self, type):
                 parent_w = self.parent()
