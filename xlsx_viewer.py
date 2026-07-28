@@ -13,6 +13,7 @@ from theme import (
     xlsx_sheet_tab_stylesheet, BRAND_PANEL, BRAND_PRIMARY, 
     BRAND_BORDER, get_brand_accent, BRAND_BACKGROUND
 )
+import re
 
 
 class XlsxTableModel(QAbstractTableModel):
@@ -93,6 +94,8 @@ class XlsxViewer(QWidget):
         self.current_sheet_name = None
         self.merged_cells_ranges = set()
         self._loading_sheet = False
+        self._bookmark_callback = None
+        self._last_found = None
 
         layout = QVBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
@@ -252,3 +255,110 @@ class XlsxViewer(QWidget):
 
     def setPlainText(self, text):
         pass
+
+    def set_bookmark_callback(self, callback):
+        self._bookmark_callback = callback
+
+    def _bookmark_payload(self):
+        return {
+            "page_number": self.sheet_tabs.currentIndex(),
+            "scroll_position_y": float(self.table.verticalScrollBar().value()),
+            "scroll_position_x": float(self.table.horizontalScrollBar().value()),
+            "label": f"Sheet '{self.current_sheet_name or 'Unknown'}'",
+        }
+
+    def go_to_bookmark(self, page_number=0, scroll_position_y=0.0, **kwargs):
+        if 0 <= page_number < self.sheet_tabs.count():
+            self.sheet_tabs.setCurrentIndex(int(page_number))
+        self.table.verticalScrollBar().setValue(int(scroll_position_y))
+        if "scroll_position_x" in kwargs:
+            self.table.horizontalScrollBar().setValue(int(kwargs["scroll_position_x"]))
+
+    def find_text(self, text, match_case, whole_word, forward):
+        if not text:
+            return False
+        
+        data = self.model.get_data()
+        rows = len(data)
+        cols = self.model.columnCount()
+        
+        start_r = 0
+        start_c = -1
+        
+        if self._last_found:
+            start_r, start_c = self._last_found
+        else:
+            sel = self.table.selectionModel().currentIndex()
+            if sel.isValid():
+                start_r, start_c = sel.row(), sel.column()
+        
+        flags = 0 if match_case else re.IGNORECASE
+        pattern = f"\\b{re.escape(text)}\\b" if whole_word else re.escape(text)
+        try:
+            regex = re.compile(pattern, flags)
+        except re.error:
+            return False
+
+        r, c = start_r, start_c
+        while True:
+            if forward:
+                c += 1
+                if c >= cols:
+                    c = 0
+                    r += 1
+                if r >= rows:
+                    r = 0
+            else:
+                c -= 1
+                if c < 0:
+                    c = cols - 1
+                    r -= 1
+                if r < 0:
+                    r = rows - 1
+
+            if (r, c) == (start_r, start_c) or (r >= rows) or (c >= len(data[r])):
+                return False
+
+            cell_val = str(data[r][c] if c < len(data[r]) else "")
+            if regex.search(cell_val):
+                idx = self.model.index(r, c)
+                self.table.setCurrentIndex(idx)
+                self.table.scrollTo(idx)
+                self._last_found = (r, c)
+                return True
+
+    def replace_text(self, find_str, replace_str, match_case, whole_word):
+        if self._last_found:
+            r, c = self._last_found
+            idx = self.model.index(r, c)
+            val = self.model.data(idx)
+            
+            flags = 0 if match_case else re.IGNORECASE
+            pattern = f"\\b{re.escape(find_str)}\\b" if whole_word else re.escape(find_str)
+            new_val = re.sub(pattern, replace_str, val, flags=flags)
+            
+            self.model.setData(idx, new_val)
+            self._flush_table_to_workbook()
+            self._last_found = None
+            self.find_text(find_str, match_case, whole_word, True)
+
+    def replace_all(self, find_str, replace_str, match_case, whole_word):
+        count = 0
+        flags = 0 if match_case else re.IGNORECASE
+        pattern = f"\\b{re.escape(find_str)}\\b" if whole_word else re.escape(find_str)
+        try:
+            regex = re.compile(pattern, flags)
+        except re.error:
+            return 0
+            
+        for r, row in enumerate(self.model.get_data()):
+            for c, val in enumerate(row):
+                str_val = str(val)
+                if regex.search(str_val):
+                    new_val = regex.sub(replace_str, str_val)
+                    self.model.setData(self.model.index(r, c), new_val)
+                    count += 1
+        if count > 0:
+            self._flush_table_to_workbook()
+            self._last_found = None
+        return count

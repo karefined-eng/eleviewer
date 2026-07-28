@@ -144,7 +144,7 @@ class WebPanel(QWidget):
 
         nav = QHBoxLayout()
         nav.setContentsMargins(4, 4, 4, 0)
-        icon_sz = ICON_SIZE_COMPACT
+        icon_sz = 24  # Larger icons for web panel
         icon_qsize = QSize(icon_sz, icon_sz)
 
         self.url_bar = QLineEdit()

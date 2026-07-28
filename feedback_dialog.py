@@ -1,16 +1,12 @@
 import json
 import os
 import sys
-from datetime import datetime
 from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel, QComboBox, QTextEdit, 
     QPushButton, QMessageBox
 )
-from PySide6.QtGui import QDesktopServices
-from PySide6.QtCore import Qt, QUrl, QThread, Signal
-import urllib.parse
+from PySide6.QtCore import QThread, Signal
 import urllib.request
-import json
 from theme import BRAND_BACKGROUND, BRAND_PRIMARY, BRAND_PANEL, BRAND_BORDER, get_brand_accent
 from paths import strip_pii
 
@@ -44,7 +40,16 @@ class FeedbackSubmitThread(QThread):
                 if self._is_cancelled:
                     return
                 if response.status == 200:
-                    msg = response.read().decode() or "Your feedback was sent successfully! Thank you."
+                    raw_msg = response.read().decode()
+                    msg = "Your feedback was sent successfully! Thank you."
+                    if raw_msg:
+                        try:
+                            data = json.loads(raw_msg)
+                            if data.get("success") and data.get("issue_number"):
+                                msg = f"Your feedback was sent successfully! (Issue #{data['issue_number']})"
+                        except json.JSONDecodeError:
+                            msg = raw_msg
+                            
                     self.finished_signal.emit(True, msg)
                     self.success.emit(msg)
                 else:
@@ -73,7 +78,9 @@ class FeedbackDialog(QDialog):
             QDialog {{ background: {BRAND_BACKGROUND}; color: {BRAND_PRIMARY}; }}
             QLabel {{ color: {BRAND_PRIMARY}; }}
             QComboBox, QTextEdit {{ background: {BRAND_PANEL}; color: {BRAND_PRIMARY}; border: 1px solid {BRAND_BORDER}; padding: 6px; selection-background-color: {accent}; }}
-            QComboBox QAbstractItemView {{ background: {BRAND_PANEL}; color: {BRAND_PRIMARY}; border: 1px solid {BRAND_BORDER}; selection-background-color: {accent}; selection-color: #000000; }}
+            QComboBox QAbstractItemView {{ background: {BRAND_PANEL}; color: {BRAND_PRIMARY}; border: 1px solid {BRAND_BORDER}; selection-background-color: {accent}; selection-color: {BRAND_BACKGROUND}; outline: none; }}
+            QComboBox::item {{ color: {BRAND_PRIMARY}; }}
+            QComboBox::item:selected {{ color: {BRAND_BACKGROUND}; background-color: {accent}; }}
             QPushButton {{ background: {BRAND_PANEL}; color: {BRAND_PRIMARY}; border: 1px solid {BRAND_BORDER}; padding: 6px 12px; border-radius: 4px; }}
             QPushButton:hover {{ background: {accent}; color: {BRAND_BACKGROUND}; }}
             QPushButton#submitBtn {{ background: {accent}; color: {BRAND_BACKGROUND}; font-weight: bold; }}

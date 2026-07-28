@@ -56,6 +56,11 @@ class SettingsDialog(QDialog):
         self.theme_combo.addItems(["blue", "grey"])
         self.theme_combo.setCurrentText(self.settings.get("theme_accent", "blue"))
         form.addRow("Theme accent color:", self.theme_combo)
+        
+        self.fresh_session_combo = QComboBox()
+        self.fresh_session_combo.addItems(["welcome", "blank_tab"])
+        self.fresh_session_combo.setCurrentText(self.settings.get("fresh_session_behavior", "welcome"))
+        form.addRow("On fresh session:", self.fresh_session_combo)
 
         self.autosave_check = QCheckBox("Enable background auto-save to file")
         self.autosave_check.setChecked(self.settings.get("autosave_enabled", True))
@@ -182,6 +187,7 @@ class SettingsDialog(QDialog):
         self.settings.update({
             "launch_behavior": self.launch_combo.currentText(),
             "theme_accent": self.theme_combo.currentText(),
+            "fresh_session_behavior": self.fresh_session_combo.currentText(),
             "autosave_enabled": self.autosave_check.isChecked(),
             "autosave_interval_seconds": self.interval_spin.value(),
             "draft_autosave_enabled": self.draft_autosave_check.isChecked(),
