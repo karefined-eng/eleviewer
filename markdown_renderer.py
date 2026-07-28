@@ -13,7 +13,7 @@ except ImportError:
     BLEACH_AVAILABLE = False
 
 from icons import icon
-from markdown_utils import markdown_to_simple, simple_to_markdown
+from markdown_utils import markdown_to_simple, simple_to_markdown, preprocess_markdown
 from settings import load_settings, save_settings
 from theme import (
     markdown_editor_stylesheet, markdown_preview_css, compact_toolbar_stylesheet,
@@ -383,29 +383,32 @@ class MarkdownViewer(QWidget):
     def _render_markdown(self, text):
         if self.is_html:
             return text
+        processed_text = preprocess_markdown(text)
         html_body = markdown.markdown(
-            text,
-            extensions=["tables", "fenced_code", "nl2br", "sane_lists"],
+            processed_text,
+            extensions=["tables", "fenced_code", "nl2br", "sane_lists", "footnotes", "def_list", "attr_list"],
         )
         if BLEACH_AVAILABLE:
             allowed_tags = bleach.sanitizer.ALLOWED_TAGS | {
                 'p', 'pre', 'code', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
                 'blockquote', 'ul', 'ol', 'li', 'strong', 'em', 'table',
                 'thead', 'tbody', 'tr', 'th', 'td', 'hr', 'br', 'img',
-                'span', 'div', 'b', 'i', 'u', 's'
+                'span', 'div', 'b', 'i', 'u', 's', 'del', 'ins', 'sup', 'sub',
+                'small', 'big', 'dl', 'dt', 'dd'
             }
             allowed_attrs = {
-                'a': ['href', 'title'],
+                'a': ['href', 'title', 'id', 'rel'],
                 'img': ['src', 'alt', 'title'],
                 'code': ['class'],
-                'span': ['class'],
-                'div': ['class'],
+                'span': ['class', 'style'],
+                'div': ['class', 'style'],
+                'del': ['style'],
+                'li': ['id'],
+                'sup': ['id'],
             }
             try:
                 from bleach.css_sanitizer import CSSSanitizer
                 css_san = CSSSanitizer()
-                allowed_attrs['span'].append('style')
-                allowed_attrs['div'].append('style')
                 html_body = bleach.clean(html_body, tags=allowed_tags, attributes=allowed_attrs, css_sanitizer=css_san)
             except Exception:
                 html_body = bleach.clean(html_body, tags=allowed_tags, attributes=allowed_attrs)
