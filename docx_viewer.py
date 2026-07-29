@@ -6,6 +6,8 @@ from PySide6.QtCore import Signal, QSize
 import base64
 import io
 import os
+import zipfile
+import xml.etree.ElementTree as ET
 
 try:
     import mammoth
@@ -13,7 +15,11 @@ try:
 except ImportError:
     MAMMOTH_AVAILABLE = False
 
-from docx import Document
+try:
+    from docx import Document
+    DOCX_AVAILABLE = True
+except ImportError:
+    DOCX_AVAILABLE = False
 
 from icons import icon
 from theme import (
@@ -75,16 +81,19 @@ class DocxViewer(QWidget):
         self._bookmark_callback = callback
 
     def load_from_path(self, file_path):
-        """Load DOCX file from disk."""
-        try:
-            self.docx_content = Document(file_path)
-            self._display_content()
-            self.is_modified = False
-        except Exception as e:
-            raise Exception(f"Failed to load DOCX: {str(e)}")
+        """Load DOCX file from disk with progressive fallbacks."""
+        self.file_path = file_path
+        if DOCX_AVAILABLE:
+            try:
+                self.docx_content = Document(file_path)
+            except Exception as e:
+                print(f"[DOCX Viewer] python-docx load failed: {e}")
+                self.docx_content = None
+        self._display_content()
+        self.is_modified = False
 
     def _display_content(self):
-        """Render DOCX to rich HTML with base64 images via mammoth, falling back to python-docx extraction."""
+        """Render DOCX to rich HTML with base64 images via mammoth, falling back to python-docx and stdlib zip parsing."""
         if not self.file_path and not self.docx_content:
             return
 
@@ -93,8 +102,6 @@ class DocxViewer(QWidget):
         if MAMMOTH_AVAILABLE and self.file_path and os.path.exists(self.file_path):
             try:
                 with open(self.file_path, "rb") as docx_file:
-                    # Custom image converter: embed images as Base64 data URIs
-                    # so they render inline in QTextBrowser without external files
                     result = mammoth.convert_to_html(
                         docx_file,
                         convert_image=mammoth.images.img_element(
@@ -102,7 +109,6 @@ class DocxViewer(QWidget):
                         ),
                     )
                     html_content = result.value
-                    # Wrap in styled container matching our dark theme
                     styled_html = self._wrap_html(html_content)
                     self.editor.setHtml(styled_html)
                     self.editor.blockSignals(False)
@@ -111,14 +117,74 @@ class DocxViewer(QWidget):
             except Exception as e:
                 print(f"[DOCX Viewer] Mammoth HTML conversion failed: {e}")
 
-        # Fallback: python-docx text + image extraction as HTML
+        # Fallback 1: python-docx text + image extraction as HTML
         if self.docx_content:
-            html = self._build_html_from_docx(self.docx_content)
+            try:
+                html = self._build_html_from_docx(self.docx_content)
+                styled_html = self._wrap_html(html)
+                self.editor.setHtml(styled_html)
+                self.editor.blockSignals(False)
+                self.is_modified = False
+                return
+            except Exception as e:
+                print(f"[DOCX Viewer] python-docx extraction failed: {e}")
+
+        # Fallback 2: Ponytail zero-dependency stdlib ZIP parser
+        if self.file_path and os.path.exists(self.file_path):
+            html = self._fallback_zip_parse(self.file_path)
             styled_html = self._wrap_html(html)
             self.editor.setHtml(styled_html)
 
         self.editor.blockSignals(False)
         self.is_modified = False
+
+    def _fallback_zip_parse(self, file_path):
+        """Zero-dependency stdlib fallback for DOCX files using zipfile & ElementTree."""
+        try:
+            with zipfile.ZipFile(file_path, "r") as z:
+                if "word/document.xml" not in z.namelist():
+                    return "<i>(Empty or invalid DOCX document)</i>"
+
+                doc_xml = z.read("word/document.xml")
+                tree = ET.fromstring(doc_xml)
+
+                # Extract media images
+                image_map = {}
+                if "word/_rels/document.xml.rels" in z.namelist():
+                    rels_tree = ET.fromstring(z.read("word/_rels/document.xml.rels"))
+                    for rel in rels_tree.iter():
+                        if rel.tag.endswith("}Relationship"):
+                            target = rel.attrib.get("Target", "")
+                            rel_id = rel.attrib.get("Id", "")
+                            if "media/" in target:
+                                media_filename = target.split("/")[-1]
+                                media_path = f"word/media/{media_filename}"
+                                if media_path in z.namelist():
+                                    img_bytes = z.read(media_path)
+                                    b64 = base64.b64encode(img_bytes).decode("utf-8")
+                                    ext = media_filename.split(".")[-1].lower()
+                                    mime = "image/jpeg" if ext == "jpg" else f"image/{ext}"
+                                    image_map[rel_id] = f'<img src="data:{mime};base64,{b64}" style="max-width:100%; border-radius:4px; margin:8px 0; display:block;" />'
+
+                # Extract text paragraphs and embedded blips
+                html_parts = []
+                for p in tree.iter():
+                    if p.tag.endswith("}p"):
+                        p_texts = []
+                        for elem in p.iter():
+                            if elem.tag.endswith("}t") and elem.text:
+                                p_texts.append(elem.text)
+                            elif elem.tag.endswith("}blip"):
+                                embed_id = elem.attrib.get("{http://schemas.openxmlformats.org/officeDocument/2006/relationships}embed")
+                                if embed_id and embed_id in image_map:
+                                    p_texts.append(image_map[embed_id])
+
+                        if p_texts:
+                            html_parts.append(f"<p>{''.join(p_texts)}</p>")
+
+                return "".join(html_parts) if html_parts else "<i>(No text content found)</i>"
+        except Exception as e:
+            return f"<i>(Failed to parse DOCX: {e})</i>"
 
     @staticmethod
     def _mammoth_image_converter(image):

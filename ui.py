@@ -15,10 +15,7 @@ from bookmark_manager import add_bookmark, load_bookmarks
 from bookmark_panel import BookmarkPanel
 from find_replace import FindReplaceWidget
 
-try:
-    from web_panel import WebPanel, WEB_AVAILABLE
-except ImportError:
-    WEB_AVAILABLE = False
+WEB_AVAILABLE = True
 
 from file_handler import (
     create_viewer_widget, get_file_content, get_file_extension, is_binary_format,
@@ -100,10 +97,12 @@ class MainWindow(QMainWindow):
 
         if self.tabs.count() == 0:
             from settings import load_settings
-            if load_settings().get("fresh_session_behavior", "welcome") == "welcome":
+            behavior = load_settings().get("fresh_session_behavior", "welcome")
+            if behavior == "welcome":
                 self.tabs.addTab(self._create_welcome_widget(), "Welcome")
-            else:
+            elif behavior == "blank_tab":
                 self.new_tab()
+            # if 'empty', do nothing
 
         self.tabs.currentChanged.connect(self.update_status_bar)
         self.update_status_bar()
@@ -309,6 +308,8 @@ class MainWindow(QMainWindow):
         self.tabs = QTabWidget()
         self.tabs.setTabsClosable(True)
         self.tabs.setDocumentMode(True)
+        self.tabs.setMovable(True)
+        self.tabs.tabBar().installEventFilter(self)
         self.tabs.tabBar().setMovable(True)
         self.tabs.tabCloseRequested.connect(self.close_tab)
         self.tabs.setContextMenuPolicy(Qt.CustomContextMenu)
@@ -350,6 +351,7 @@ class MainWindow(QMainWindow):
         editor_container = QWidget()
         editor_container.setLayout(editor_layout)
         
+        self.editor_splitter = QSplitter(Qt.Horizontal)
         self.editor_splitter.addWidget(editor_container)
 
         self.bookmarks_panel = BookmarkPanel()
@@ -659,6 +661,23 @@ class MainWindow(QMainWindow):
         ext_label = ext.upper() if ext else "TXT"
         
         parts = [f"{tab_count} tab{'s' if tab_count != 1 else ''}"]
+        
+        # Add Line/Col numbers if the editor has a textCursor (ponytail: zero-overhead line numbers)
+        cursor_info = ""
+        try:
+            if hasattr(editor, "editor") and hasattr(editor.editor, "textCursor"):
+                cursor = editor.editor.textCursor()
+                cursor_info = f"Ln {cursor.blockNumber() + 1}, Col {cursor.columnNumber() + 1}"
+            elif hasattr(editor, "get_text_cursor"):
+                cursor = editor.get_text_cursor()
+                if cursor:
+                    cursor_info = f"Ln {cursor.blockNumber() + 1}, Col {cursor.columnNumber() + 1}"
+        except Exception:
+            pass
+
+        if cursor_info:
+            parts.append(cursor_info)
+
         parts.append("Modified" if modified else "session saved")
         
         self.status_left.setText(" · ".join(parts))
@@ -667,6 +686,13 @@ class MainWindow(QMainWindow):
     def _connect_editor_signals(self, editor):
         if hasattr(editor, "textChanged"):
             editor.textChanged.connect(lambda ed=editor: self._on_editor_changed(ed))
+            
+        # Hook cursor movement to update line numbers in status bar
+        if hasattr(editor, "editor") and hasattr(editor.editor, "cursorPositionChanged"):
+            try:
+                editor.editor.cursorPositionChanged.connect(self.update_status_bar)
+            except TypeError:
+                pass
         if hasattr(editor, "pushToBrowserRequested"):
             editor.pushToBrowserRequested.connect(self._on_push_to_browser)
 
@@ -1101,11 +1127,27 @@ class MainWindow(QMainWindow):
             menu.addSeparator()
             
         if tw == self.tabs:
-            split_action = menu.addAction(icon("sidebar", size=ICON_SIZE_COMPACT), "Split Right")
+            split_action = menu.addAction(icon("sidebar", size=ICON_SIZE_COMPACT), "Split screen with this tab")
             split_action.triggered.connect(lambda: self._move_tab_between_widgets(self.tabs, self.tabs_right, index))
         else:
-            split_action = menu.addAction(icon("sidebar", size=ICON_SIZE_COMPACT), "Move Left")
+            split_action = menu.addAction(icon("sidebar", size=ICON_SIZE_COMPACT), "Unsplit (Return to main)")
             split_action.triggered.connect(lambda: self._move_tab_between_widgets(self.tabs_right, self.tabs, index))
+            
+        def _open_new_window():
+            if getattr(editor, "is_modified", False):
+                self.save_editor(editor)
+            new_win = self.__class__()
+            if hasattr(self, "autosaver"):
+                from autosave import AutoSaver
+                new_win.autosaver = AutoSaver(new_win)
+            new_win.setAttribute(Qt.WA_DeleteOnClose)
+            new_win.show()
+            if path:
+                new_win._open_vault_file(path)
+            self._close_tab_in_widget(tw, index)
+            
+        sep_action = menu.addAction(icon("external-link", size=ICON_SIZE_COMPACT), "Move to New Window")
+        sep_action.triggered.connect(_open_new_window)
             
         menu.addAction("Close Tab", lambda: self._close_tab_in_widget(tw, index))
         menu.exec(tw.mapToGlobal(pos))
@@ -1447,6 +1489,7 @@ class MainWindow(QMainWindow):
             self.open_web_tab()
 
     def open_web_tab(self):
+        global WEB_AVAILABLE
         if not WEB_AVAILABLE:
             QMessageBox.warning(self, "Missing Module", "QtWebEngine not installed.")
             return
@@ -1459,6 +1502,15 @@ class MainWindow(QMainWindow):
 
         # First time: create as a dockable side panel (matches site's
         # "side-by-side" promise — the web panel is NOT a tab)
+        # Lazy-load Chromium only when Ctrl+T is pressed!
+        try:
+            from web_panel import WebPanel, WEB_AVAILABLE as _WEB_AVAILABLE
+            WEB_AVAILABLE = _WEB_AVAILABLE
+        except ImportError:
+            WEB_AVAILABLE = False
+            QMessageBox.warning(self, "Missing Module", "QtWebEngine not installed.")
+            return
+
         web_panel = WebPanel()
         self._web_dock = QDockWidget("Web Browser", self)
         self._web_dock.setWidget(web_panel)
@@ -1469,6 +1521,10 @@ class MainWindow(QMainWindow):
             | QDockWidget.DockWidgetFloatable
         )
         self.addDockWidget(Qt.RightDockWidgetArea, self._web_dock)
+        
+        # Auto-maximize if no editor tabs are open (ponytail)
+        if self.tabs.count() == 0:
+            self.editor_splitter.hide()
 
         # Custom title bar with larger icons and Maximize support
         title_bar = QWidget()
@@ -1482,7 +1538,7 @@ class MainWindow(QMainWindow):
         tb_layout.addStretch()
 
         from icons import icon
-        icon_sz = 20
+        icon_sz = 26
         icon_qsize = QSize(icon_sz, icon_sz)
 
         btn_max = QToolButton()

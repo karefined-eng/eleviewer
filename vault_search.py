@@ -56,6 +56,7 @@ class VaultSearchWorker(QThread):
                     if f.startswith('.'):
                         continue
                     if self.query in f.lower():
+                        full_path = os.path.join(root, f)
                         abs_full_path = os.path.abspath(full_path)
                         if not abs_full_path.startswith(vault_str):
                             continue

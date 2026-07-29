@@ -35,18 +35,18 @@ EleViewer relies heavily on standard PySide6 widgets and custom components to ke
 
 ### The Viewers
 - `pdf_viewer.py`: Uses `QPdfView` (native Qt module, not PyMuPDF). Features Text-to-Speech integration via `tts_engine.py`.
-- `editor.py`: The text/Markdown editor. Includes live syntax highlighting and markdown preview generation.
+- `editor.py`: The text/Markdown editor. Now uses native C++ `QTextBrowser` to eliminate the Chromium RAM tax, providing live syntax highlighting and markdown preview.
 - `xlsx_viewer.py` & `csv_viewer.py`: Uses `openpyxl` and standard library `csv` to render spreadsheets natively into `QTableWidget` with cell/row/column insertion and F9 TTS table summaries.
 - `docx_viewer.py` & `pptx_viewer.py`: Converts Word docs (`python-docx`) and PowerPoint presentations (`win32com` silent PDF conversion) for rich visual rendering and F9 Universal TTS reading.
-- `html_viewer.py` & `web_panel.py`: Dedicated HTML/XML workstation with 300ms debounced split-screen preview alongside an integrated Chromium browser dock featuring Obsidian-inspired reload/bookmark controls and global hyperlink interception.
+- `html_viewer.py` & `web_panel.py`: Dedicated HTML/XML workstation with an integrated Chromium browser dock that is **strictly lazy-loaded** to preserve memory, featuring Obsidian-inspired reload/bookmark controls and global hyperlink interception.
 
 ### Sub-systems & Concurrency
 - `file_icons.py` & `icons.py`: Minimalist Lucide line-art SVG icon engine supporting two-tone state rendering (`#6cb6ff` active focus vs `#888888` inactive).
 - `instance_lock.py`: Local socket IPC server (`QLocalSocket`) enforcing single-instance execution, `--new`/`-n` CLI flag routing, and system-wide hotkey interception (`Alt+E` for Quick Note scratchpad).
-- `vault_explorer.py` & `vault_indexer.py`: The left sidebar for file navigation (filtering out system junk files like `desktop.ini`), paired with `vault_search.py` and `vault_indexer.py` (SQLite FTS5 full-text background search).
+- `vault_explorer.py` & `vault_indexer.py`: The left sidebar for file navigation (filtering out system junk files like `desktop.ini`). The **Vault Indexer** is powered by a native **Rust/Maturin extension** for zero-copy memory handoff and high-speed asynchronous I/O (SQLite FTS5 full-text background search).
 - `quick_switcher.py`: The `Ctrl+Q` fuzzy finder for fast file switching.
 - `draft_recovery.py`: Saves auto-snapshots of text using a background `DraftWorker(QThread)` to prevent UI stutter and data loss.
-- `save_utils.py`, `session_manager.py`, `settings.py`: Enforces atomic disk writes (`tempfile.mkstemp` + `os.replace`) to eliminate 0-byte corruption on crash, while persisting scroll position, zoom, and PDF page numbers across sessions.
+- `save_utils.py`, `session_manager.py`, `settings.py`: Enforces atomic disk writes (`tempfile.mkstemp` + `os.fsync` + `os.replace`) to strictly guarantee physical disk writes and eliminate 0-byte corruption on crash, while persisting scroll position, zoom, and PDF page numbers across sessions.
 - `release_hash.py`: Standalone script for computing executable SHA-256 release hashes for Winget and package manager distribution.
 
 ---

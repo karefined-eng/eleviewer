@@ -63,7 +63,7 @@ class SettingsDialog(QDialog):
         form.addRow("Theme accent color:", self.theme_combo)
         
         self.fresh_session_combo = QComboBox()
-        self.fresh_session_combo.addItems(["welcome", "blank_tab"])
+        self.fresh_session_combo.addItems(["welcome", "blank_tab", "empty"])
         self.fresh_session_combo.setCurrentText(self.settings.get("fresh_session_behavior", "welcome"))
         form.addRow("On fresh session:", self.fresh_session_combo)
 
