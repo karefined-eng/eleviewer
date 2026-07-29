@@ -37,7 +37,7 @@ def load_bookmarks(validate=True):
     bookmarks = _load_raw().get("bookmarks", [])
     if not validate:
         return bookmarks
-    valid = [b for b in bookmarks if os.path.exists(b.get("file_path", ""))]
+    valid = [b for b in bookmarks if b.get("file_path", "").startswith("http") or os.path.exists(b.get("file_path", ""))]
     if len(valid) != len(bookmarks):
         _save_raw({"bookmarks": valid})
     return valid

@@ -17,10 +17,10 @@ except ImportError:
 
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QToolButton, QLabel,
-    QTextBrowser, QLineEdit, QSplitter, QListWidget, QListWidgetItem
+    QTextBrowser, QLineEdit, QSplitter, QListWidget, QListWidgetItem, QFrame
 )
 from PySide6.QtCore import Qt, Signal, QSize
-from PySide6.QtGui import QIntValidator, QKeyEvent
+from PySide6.QtGui import QIntValidator, QKeyEvent, QShortcut, QKeySequence
 
 from icons import icon
 from theme import (
@@ -111,26 +111,58 @@ class PptxViewer(QWidget):
             QListWidget::item {{ padding: 6px; border-bottom: 1px solid {BRAND_BORDER}; }}
             QListWidget::item:selected {{ background: {get_brand_accent()}; color: {BRAND_BACKGROUND}; font-weight: bold; }}
         """)
-        self.slide_list.currentRowChanged.connect(self.go_to_slide)
+        self.slide_list.currentRowChanged.connect(self._on_sidebar_click)
+
+        # ── Search Bar ──────────────────────────────────────────────
+        self.search_container = QWidget()
+        self.search_container.setStyleSheet(f"background: {BRAND_PANEL_2}; border-bottom: 1px solid {BRAND_BORDER};")
+        search_layout = QHBoxLayout(self.search_container)
+        search_layout.setContentsMargins(10, 4, 10, 4)
+        self.search_input = QLineEdit()
+        self.search_input.setPlaceholderText("Find in presentation (Ctrl+F)...")
+        self.search_input.setStyleSheet(f"background: {BRAND_PANEL}; color: {BRAND_PRIMARY}; border: 1px solid {BRAND_BORDER}; border-radius: 4px; padding: 4px;")
+        self.search_input.returnPressed.connect(self._perform_search)
+        self.btn_search_next = QToolButton()
+        self.btn_search_next.setIcon(icon("chevron-down", size=14))
+        self.btn_search_next.clicked.connect(self._perform_search)
+        search_layout.addWidget(QLabel("Search:"))
+        search_layout.addWidget(self.search_input, stretch=1)
+        search_layout.addWidget(self.btn_search_next)
+        self.search_container.hide()
 
         self.viewer = QTextBrowser()
+        # Enable continuous elastic scaling (no fixed px sizes)
         self.viewer.setStyleSheet(f"""
             QTextBrowser {{
                 background: {BRAND_BACKGROUND};
                 color: {BRAND_PRIMARY};
                 border: none;
-                padding: 20px;
+                padding: 0px;
                 font-family: 'Segoe UI', sans-serif;
-                font-size: 14px;
             }}
         """)
         self.viewer.setOpenExternalLinks(True)
+        # Sync scrolling back to sidebar
+        self.viewer.verticalScrollBar().valueChanged.connect(self._on_scroll)
+        self._is_jumping = False # prevent circular sync
+
+        right_panel = QWidget()
+        right_layout = QVBoxLayout(right_panel)
+        right_layout.setContentsMargins(0, 0, 0, 0)
+        right_layout.setSpacing(0)
+        right_layout.addWidget(self.search_container)
+        right_layout.addWidget(self.viewer)
 
         self.splitter.addWidget(self.slide_list)
-        self.splitter.addWidget(self.viewer)
+        self.splitter.addWidget(right_panel)
 
         layout.addLayout(toolbar)
         layout.addWidget(self.splitter)
+        
+        QShortcut(QKeySequence("Ctrl+F"), self).activated.connect(self._show_search)
+        
+        QShortcut(QKeySequence(Qt.Key_Left), self, context=Qt.WidgetWithChildrenShortcut).activated.connect(self.prev_slide)
+        QShortcut(QKeySequence(Qt.Key_Right), self, context=Qt.WidgetWithChildrenShortcut).activated.connect(self.next_slide)
 
         if file_path:
             self.load_from_path(file_path)
@@ -192,15 +224,16 @@ class PptxViewer(QWidget):
             self.slide_list.addItem(item)
 
         if self.total_slides > 0:
+            self._render_continuous_html()
             self.go_to_slide(0)
 
     def _fallback_zip_parse(self, file_path):
         """Fallback parser extracting slide text XML from pptx zip container."""
         try:
             with zipfile.ZipFile(file_path, "r") as z:
-                slide_files = sorted(
-                    [name for name in z.namelist() if name.startswith("ppt/slides/slide") and name.endswith(".xml")]
-                )
+                slide_files = [name for name in z.namelist() if name.startswith("ppt/slides/slide") and name.endswith(".xml")]
+                # Sort numerically by extracting the integer from "ppt/slides/slideX.xml" to prevent slide10 from coming after slide1
+                slide_files.sort(key=lambda x: int(x.split("slide")[-1].split(".xml")[0]))
                 for idx, sfile in enumerate(slide_files, start=1):
                     xml_content = z.read(sfile)
                     tree = ET.fromstring(xml_content)
@@ -210,9 +243,31 @@ class PptxViewer(QWidget):
                             t = elem.text.strip()
                             if t:
                                 texts.append(t)
+                                
+                    # Ponytail native image extraction: grab from .rels mapping
+                    import base64
+                    parts = sfile.split("/")
+                    rels_path = "/".join(parts[:-1]) + "/_rels/" + parts[-1] + ".rels"
+                    if rels_path in z.namelist():
+                        rels_tree = ET.fromstring(z.read(rels_path))
+                        for rel in rels_tree.iter():
+                            if rel.tag.endswith("}Relationship"):
+                                target = rel.attrib.get("Target", "")
+                                if target.startswith("../media/"):
+                                    media_path = "ppt/media/" + target.split("/")[-1]
+                                    if media_path in z.namelist():
+                                        img_bytes = z.read(media_path)
+                                        b64_data = base64.b64encode(img_bytes).decode("utf-8")
+                                        ext = media_path.split(".")[-1].lower()
+                                        mime = "image/jpeg" if ext == "jpg" else f"image/{ext}"
+                                        texts.append(f'<img src="data:{mime};base64,{b64_data}" style="max-width:100%; border-radius:4px; margin-top:10px; margin-bottom:10px;" />')
                     title = f"Slide {idx}"
                     if texts:
-                        title = texts[0]
+                        # Find the first text element that isn't an img tag
+                        for t in texts:
+                            if not t.startswith("<img"):
+                                title = t
+                                break
                     self.slides.append({
                         "title": title,
                         "content": "\n\n".join(texts),
@@ -239,44 +294,99 @@ class PptxViewer(QWidget):
     def go_to_bookmark(self, page_number=0, scroll_position_y=0.0):
         self.go_to_slide(int(page_number))
 
+    def _show_search(self):
+        self.search_container.show()
+        self.search_input.setFocus()
+        self.search_input.selectAll()
+
+    def _perform_search(self):
+        query = self.search_input.text()
+        if query:
+            # find() natively scrolls to and highlights the next match
+            if not self.viewer.find(query):
+                # loop back to top
+                self.viewer.moveCursor(self.viewer.textCursor().Start)
+                self.viewer.find(query)
+
+    def _render_continuous_html(self):
+        accent = get_brand_accent()
+        html = f"<div style='background: {BRAND_BACKGROUND}; padding-bottom: 40px;'>"
+        
+        for index, slide_data in enumerate(self.slides):
+            raw_content = slide_data['content'] or ''
+            content_html = raw_content.replace('\n', '<br>') if raw_content else '<i>(No text content on this slide)</i>'
+            
+            # Use anchor for scrolling
+            html += f"<a name='slide_{index}'></a>"
+            html += f"""
+            <div style="max-width: 800px; margin: 30px auto; padding: 40px; background: {BRAND_PANEL}; border: 1px solid {BRAND_BORDER}; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">
+                <div style="color: {accent}; font-size: 0.8em; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">
+                    SLIDE {index + 1} OF {self.total_slides}
+                </div>
+                <h1 style="color: {BRAND_PRIMARY}; font-size: 1.5em; margin-top: 0; margin-bottom: 20px; border-bottom: 1px solid {BRAND_BORDER}; padding-bottom: 10px;">
+                    {slide_data['title']}
+                </h1>
+                <div style="font-size: 1.1em; line-height: 1.7; color: {BRAND_PRIMARY};">
+                    {content_html}
+                </div>
+            """
+            
+            if slide_data.get("notes"):
+                html += f"""
+                <div style="margin-top: 30px; padding: 12px; background: {BRAND_PANEL_2}; border-left: 3px solid {accent}; border-radius: 4px;">
+                    <div style="color: {BRAND_MUTED_FG}; font-size: 0.8em; font-weight: bold; margin-bottom: 4px;">SPEAKER NOTES</div>
+                    <div style="font-size: 0.9em; color: {BRAND_MUTED_FG};">{slide_data['notes']}</div>
+                </div>
+                """
+            html += "</div>"
+            
+        html += "</div>"
+        self.viewer.setHtml(html)
+
+    def _on_sidebar_click(self, index):
+        if not self._is_jumping:
+            self.go_to_slide(index)
+
+    def _on_scroll(self, value):
+        if self._is_jumping or self.total_slides == 0:
+            return
+            
+        # Estimate which slide is currently in view based on scroll bar percentage
+        scrollbar = self.viewer.verticalScrollBar()
+        max_val = scrollbar.maximum()
+        if max_val <= 0:
+            return
+            
+        percentage = value / max_val
+        # Add slight offset so it switches earlier
+        estimated_index = min(self.total_slides - 1, int(percentage * self.total_slides + 0.1))
+        
+        if estimated_index != self.current_slide:
+            self.current_slide = estimated_index
+            self.slide_input.setText(str(estimated_index + 1))
+            
+            # Update list without triggering currentRowChanged
+            self.slide_list.blockSignals(True)
+            self.slide_list.setCurrentRow(estimated_index)
+            self.slide_list.blockSignals(False)
+
     def go_to_slide(self, index):
         if index < 0 or index >= self.total_slides:
             return
+            
+        self._is_jumping = True
         self.current_slide = index
         self.slide_input.setText(str(index + 1))
+        
+        self.slide_list.blockSignals(True)
         self.slide_list.setCurrentRow(index)
+        self.slide_list.blockSignals(False)
 
-        slide_data = self.slides[index]
-        accent = get_brand_accent()
-
-        # Split content into text lines and HTML (images) so text gets
-        # newline formatting while <img> tags render as actual images.
-        raw_content = slide_data['content'] or ''
-        content_html = raw_content.replace('\n', '<br>') if raw_content else '<i>(No text content on this slide)</i>'
-
-        html = f"""
-        <div style="max-width: 700px; margin: 0 auto;">
-            <div style="color: {accent}; font-size: 11px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">
-                SLIDE {index + 1} OF {self.total_slides}
-            </div>
-            <h1 style="color: {BRAND_PRIMARY}; font-size: 22px; margin-top: 0; margin-bottom: 20px; border-bottom: 1px solid {BRAND_BORDER}; padding-bottom: 10px;">
-                {slide_data['title']}
-            </h1>
-            <div style="font-size: 15px; line-height: 1.7; color: {BRAND_PRIMARY};">
-                {content_html}
-            </div>
-        """
-
-        if slide_data.get("notes"):
-            html += f"""
-            <div style="margin-top: 30px; padding: 12px; background: {BRAND_PANEL}; border-left: 3px solid {accent}; border-radius: 4px;">
-                <div style="color: {BRAND_MUTED_FG}; font-size: 11px; font-weight: bold; margin-bottom: 4px;">SPEAKER NOTES</div>
-                <div style="font-size: 13px; color: {BRAND_MUTED_FG};">{slide_data['notes']}</div>
-            </div>
-            """
-
-        html += "</div>"
-        self.viewer.setHtml(html)
+        self.viewer.scrollToAnchor(f"slide_{index}")
+        
+        # Debounce the jump lock
+        import PySide6.QtCore
+        PySide6.QtCore.QTimer.singleShot(100, lambda: setattr(self, '_is_jumping', False))
 
     def prev_slide(self):
         if self.current_slide > 0:

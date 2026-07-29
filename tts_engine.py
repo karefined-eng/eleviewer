@@ -87,7 +87,7 @@ class TtsEngine:
                     if EDGE_AVAILABLE and not self._edge_voices:
                         try:
                             all_voices = self._run_async(self._fetch_edge_voices())
-                            voices = sorted(all_voices.voices, key=lambda x: x["FriendlyName"])
+                            voices = sorted(all_voices, key=lambda x: x["FriendlyName"])
                             self._edge_voices = [(v["ShortName"], f"[Online] {v['FriendlyName']} ({v['Locale']})") for v in voices]
                             self._edge_available = True
                         except Exception as e:

@@ -20,7 +20,7 @@ from PySide6.QtWidgets import (
     QMessageBox, QComboBox, QMenu, QLineEdit, QTreeView,
     QSplitter,
 )
-from PySide6.QtGui import QIntValidator, QKeyEvent, QWheelEvent
+from PySide6.QtGui import QIntValidator, QKeyEvent, QWheelEvent, QShortcut, QKeySequence
 from PySide6.QtCore import Qt, Signal, QTimer, QSize, QPointF, QThread
 
 class PdfTextWorker(QThread):
@@ -248,6 +248,9 @@ class PdfViewer(QWidget):
 
         self.content_splitter.addWidget(self.toc_widget)
         self.content_splitter.addWidget(self.pdf_view)
+
+        QShortcut(QKeySequence(Qt.Key_Left), self, context=Qt.WidgetWithChildrenShortcut).activated.connect(self.prev_page)
+        QShortcut(QKeySequence(Qt.Key_Right), self, context=Qt.WidgetWithChildrenShortcut).activated.connect(self.next_page)
 
         outer.addLayout(toolbar)
         outer.addWidget(self.content_splitter)
