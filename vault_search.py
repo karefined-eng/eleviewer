@@ -135,7 +135,11 @@ class VaultSearchDialog(QDialog):
         query = self.search_input.text().lower()
         if self._search_worker and self._search_worker.isRunning():
             self._search_worker.cancel()
-            self._search_worker.wait()
+            try:
+                self._search_worker.result_found.disconnect()
+            except Exception:
+                pass
+            self._search_worker.wait(50)
             
         self.results_list.clear()
         if not query:

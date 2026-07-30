@@ -173,6 +173,8 @@ class XlsxViewer(QWidget):
                 raise Exception(
                     "XLSX file compatibility issue. Try opening in Excel and re-saving."
                 )
+            elif "not a zip file" in error_msg.lower() or "badzipfile" in error_msg.lower():
+                raise Exception("The selected file is not a valid Excel (.xlsx) archive or is corrupted.")
             raise Exception(f"Failed to load XLSX: {error_msg}")
 
     def _on_tab_index_changed(self, index):
