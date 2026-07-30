@@ -17,18 +17,18 @@ THEME_PALETTES = {
         "TAB_SELECTED_FG": "#ffffff",
     },
     "light": {
-        "BRAND_PRIMARY": "#212529",
+        "BRAND_PRIMARY": "#1c1c1c",
         "BRAND_PRIMARY_FG": "#ffffff",
-        "BRAND_BACKGROUND": "#f8f9fa",
+        "BRAND_BACKGROUND": "#f3f3f3",
         "BRAND_PANEL": "#ffffff",
-        "BRAND_PANEL_2": "#e9ecef",
-        "BRAND_BORDER": "#dee2e6",
-        "BRAND_MUTED": "#f1f3f5",
-        "BRAND_MUTED_FG": "#6c757d",
-        "TAB_BAR_BG": "#e9ecef",
-        "TAB_BG": "#f1f3f5",
-        "TAB_HOVER": "#dee2e6",
-        "TAB_SELECTED_FG": "#131313",
+        "BRAND_PANEL_2": "#e5e5e5",
+        "BRAND_BORDER": "#e5e5e5",
+        "BRAND_MUTED": "#f9f9f9",
+        "BRAND_MUTED_FG": "#616161",
+        "TAB_BAR_BG": "#f3f3f3",
+        "TAB_BG": "#e5e5e5",
+        "TAB_HOVER": "#d1d1d1",
+        "TAB_SELECTED_FG": "#1c1c1c",
     }
 }
 
@@ -139,10 +139,11 @@ def main_window_stylesheet():
 
 
 def editor_stylesheet():
+    p = get_active_palette()
     return f"""
         QTextEdit, QPlainTextEdit {{
-            background: {BRAND_BACKGROUND};
-            color: {BRAND_PRIMARY};
+            background: {p['BRAND_BACKGROUND']};
+            color: {p['BRAND_PRIMARY']};
             font-size: 15px;
             padding: 10px;
             border: none;
@@ -151,21 +152,23 @@ def editor_stylesheet():
 
 
 def viewer_header_stylesheet():
+    p = get_active_palette()
     return f"""
         QLabel {{
-            color: {BRAND_MUTED_FG};
+            color: {p['BRAND_MUTED_FG']};
             font-size: 12px;
             padding: 5px;
-            background: {BRAND_MUTED};
+            background: {p['BRAND_MUTED']};
         }}
     """
 
 
 def markdown_editor_stylesheet():
+    p = get_active_palette()
     return f"""
         QPlainTextEdit {{
-            background: {BRAND_BACKGROUND};
-            color: {BRAND_PRIMARY};
+            background: {p['BRAND_BACKGROUND']};
+            color: {p['BRAND_PRIMARY']};
             font-size: 14px;
             padding: 10px;
             border: none;
@@ -175,10 +178,11 @@ def markdown_editor_stylesheet():
 
 
 def markdown_preview_stylesheet():
+    p = get_active_palette()
     return f"""
         QTextBrowser {{
-            background: {BRAND_PANEL};
-            color: {BRAND_PRIMARY};
+            background: {p['BRAND_PANEL']};
+            color: {p['BRAND_PRIMARY']};
             font-size: 15px;
             padding: 10px;
             border: none;
@@ -188,50 +192,52 @@ def markdown_preview_stylesheet():
 
 
 def markdown_preview_css():
+    p = get_active_palette()
     accent = get_active_accent()
     return f"""
 body {{
-    background: {BRAND_PANEL};
-    color: {BRAND_PRIMARY};
+    background: {p['BRAND_PANEL']};
+    color: {p['BRAND_PRIMARY']};
     font-family: 'Segoe UI', sans-serif;
     font-size: 15px;
     line-height: 1.6;
     margin: 0;
     padding: 8px;
 }}
-h1, h2, h3, h4 {{ color: {BRAND_PRIMARY}; margin-top: 1.2em; }}
+h1, h2, h3, h4 {{ color: {p['BRAND_PRIMARY']}; margin-top: 1.2em; }}
 a {{ color: {accent['accent']}; }}
 code {{
-    background: {BRAND_BACKGROUND};
+    background: {p['BRAND_BACKGROUND']};
     padding: 2px 6px;
     border-radius: 3px;
     font-family: Consolas, monospace;
     font-size: 13px;
 }}
 pre {{
-    background: {BRAND_BACKGROUND};
+    background: {p['BRAND_BACKGROUND']};
     padding: 12px;
     border-radius: 6px;
     overflow-x: auto;
-    border: 1px solid {BRAND_BORDER};
+    border: 1px solid {p['BRAND_BORDER']};
 }}
 pre code {{ background: none; padding: 0; }}
 blockquote {{
     border-left: 4px solid {accent['accent']};
     margin: 0;
     padding: 4px 16px;
-    color: {BRAND_MUTED_FG};
+    color: {p['BRAND_MUTED_FG']};
 }}
 table {{ border-collapse: collapse; width: 100%; margin: 12px 0; }}
-th, td {{ border: 1px solid {BRAND_BORDER}; padding: 8px 12px; text-align: left; }}
-th {{ background: {BRAND_PANEL_2}; }}
-tr:nth-child(even) {{ background: {BRAND_MUTED}; }}
-hr {{ border: none; border-top: 1px solid {BRAND_BORDER}; margin: 16px 0; }}
+th, td {{ border: 1px solid {p['BRAND_BORDER']}; padding: 8px 12px; text-align: left; }}
+th {{ background: {p['BRAND_PANEL_2']}; }}
+tr:nth-child(even) {{ background: {p['BRAND_MUTED']}; }}
+hr {{ border: none; border-top: 1px solid {p['BRAND_BORDER']}; margin: 16px 0; }}
 ul, ol {{ padding-left: 24px; }}
 """
 
 
 def compact_toolbar_stylesheet():
+    p = get_active_palette()
     return f"""
         QToolButton {{
             background: transparent;
@@ -241,9 +247,9 @@ def compact_toolbar_stylesheet():
             min-width: 28px;
             min-height: 28px;
         }}
-        QToolButton:hover {{ background: {BRAND_PANEL_2}; }}
-        QToolButton:pressed {{ background: {get_active_accent()['pressed']}; color: {BRAND_BACKGROUND}; }}
-        QToolButton:checked {{ background: {get_active_accent()['accent']}; color: {BRAND_BACKGROUND}; }}
+        QToolButton:hover {{ background: {p['BRAND_PANEL_2']}; }}
+        QToolButton:pressed {{ background: {get_active_accent()['pressed']}; color: {p['BRAND_BACKGROUND']}; }}
+        QToolButton:checked {{ background: {get_active_accent()['accent']}; color: {p['BRAND_BACKGROUND']}; }}
     """
 
 

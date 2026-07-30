@@ -44,7 +44,7 @@ from icons import icon
 from tts_engine import TtsEngine as PdfTts, TTS_AVAILABLE
 from settings import load_settings
 from theme import (
-    BRAND_BACKGROUND, BRAND_PANEL, BRAND_PANEL_2, BRAND_BORDER, BRAND_PRIMARY, BRAND_MUTED_FG,
+    get_active_palette,
     compact_toolbar_stylesheet, ICON_SIZE_COMPACT
 )
 from paths import APP_DATA_DIR
@@ -113,7 +113,7 @@ class PdfViewer(QWidget):
         self.current_page = 0
         self.total_pages = 0
         self._toc_visible = False
-        self._multi_page = False
+        self._multi_page = True
         self.tts = PdfTts(on_error=self._on_tts_error)
 
         self.setFocusPolicy(Qt.StrongFocus)
@@ -150,17 +150,18 @@ class PdfViewer(QWidget):
         self.btn_next     = _tb("chevron-right", "Next page",               self.next_page)
 
         # Page input  ─ editable box + "/ N" label
+        p = get_active_palette()
         self.page_input = QLineEdit()
         self.page_input.setFixedWidth(44)
         self.page_input.setAlignment(Qt.AlignCenter)
         self.page_input.setValidator(QIntValidator(1, 99999))
         self.page_input.setStyleSheet(
-            f"QLineEdit {{ background:{BRAND_PANEL_2}; color:{BRAND_PRIMARY}; border:1px solid {BRAND_BORDER};"
+            f"QLineEdit {{ background:{p['BRAND_PANEL_2']}; color:{p['BRAND_PRIMARY']}; border:1px solid {p['BRAND_BORDER']};"
             " border-radius:4px; padding:2px 4px; font-weight:bold; font-size:12px; }"
         )
         self.page_input.returnPressed.connect(self._jump_to_page)
         self.lbl_total = QLabel(" / 0")
-        self.lbl_total.setStyleSheet(f"color:{BRAND_MUTED_FG}; font-weight:bold; padding:0 6px 0 2px; font-size:12px;")
+        self.lbl_total.setStyleSheet(f"color:{p['BRAND_MUTED_FG']}; font-weight:bold; padding:0 6px 0 2px; font-size:12px;")
 
         self.btn_zoom_out  = _tb("zoom-out",   "Zoom out",                lambda: self._apply_zoom(1 / 1.2))
         self.btn_fit_page  = _tb("minimize-2",   "Fit to page",             self.fit_page)
@@ -194,17 +195,17 @@ class PdfViewer(QWidget):
         toc_layout.setSpacing(0)
         toc_lbl = QLabel("Table of Contents")
         toc_lbl.setStyleSheet(
-            f"background:{BRAND_BACKGROUND}; color:{BRAND_MUTED_FG}; font-size:11px; font-weight:bold;"
-            f" padding:6px 8px; border-bottom:1px solid {BRAND_BORDER};"
+            f"background:{p['BRAND_BACKGROUND']}; color:{p['BRAND_MUTED_FG']}; font-size:11px; font-weight:bold;"
+            f" padding:6px 8px; border-bottom:1px solid {p['BRAND_BORDER']};"
         )
         self.toc_tree = QTreeView()
         self.toc_tree.setHeaderHidden(True)
         self.bookmark_model = None
         self.toc_tree.setStyleSheet(
-            f"QTreeView {{ background:{BRAND_PANEL}; border:none; color:{BRAND_PRIMARY}; font-size:12px; }}"
+            f"QTreeView {{ background:{p['BRAND_PANEL']}; border:none; color:{p['BRAND_PRIMARY']}; font-size:12px; }}"
             "QTreeView::item { padding:4px 6px; }"
-            f"QTreeView::item:selected {{ background:{BRAND_PANEL_2}; }}"
-            f"QTreeView::item:hover {{ background:{BRAND_BORDER}; }}"
+            f"QTreeView::item:selected {{ background:{p['BRAND_PANEL_2']}; }}"
+            f"QTreeView::item:hover {{ background:{p['BRAND_BORDER']}; }}"
         )
         self.toc_tree.clicked.connect(self._on_toc_item_clicked)
         toc_layout.addWidget(toc_lbl)
@@ -222,9 +223,9 @@ class PdfViewer(QWidget):
             
             self.pdf_view = EleViewerPdfView(self)
             self.pdf_view.setDocument(self.pdf_doc_qt)
-            self.pdf_view.setPageMode(QPdfView.PageMode.SinglePage)
+            self.pdf_view.setPageMode(QPdfView.PageMode.MultiPage)
             self.pdf_view.setZoomMode(QPdfView.ZoomMode.FitToWidth)
-            self.pdf_view.setStyleSheet("background: #1e1e1e; border: none;")
+            self.pdf_view.setStyleSheet(f"background: {p['BRAND_BACKGROUND']}; border: none;")
             self.pdf_view.setContextMenuPolicy(Qt.CustomContextMenu)
             self.pdf_view.customContextMenuRequested.connect(self._show_context_menu)
             # Create overlay label
@@ -433,22 +434,26 @@ class PdfViewer(QWidget):
     # ── Navigation ───────────────────────────────────────────────────
 
     def prev_page(self):
-        if not QTPDF_AVAILABLE:
+        if not QTPDF_AVAILABLE or self.total_pages <= 0:
             return
         nav = self.pdf_view.pageNavigator()
         cur = nav.currentPage()
+        self.tts.stop()
         if cur > 0:
-            self.tts.stop()
             nav.jump(cur - 1, QPointF(), 0)
+        else:
+            nav.jump(self.total_pages - 1, QPointF(), 0)
 
     def next_page(self):
-        if not QTPDF_AVAILABLE:
+        if not QTPDF_AVAILABLE or self.total_pages <= 0:
             return
         nav = self.pdf_view.pageNavigator()
         cur = nav.currentPage()
+        self.tts.stop()
         if cur < self.total_pages - 1:
-            self.tts.stop()
             nav.jump(cur + 1, QPointF(), 0)
+        else:
+            nav.jump(0, QPointF(), 0)
 
     def go_to_bookmark(self, page_number=0, scroll_position_y=0.0):
         if not QTPDF_AVAILABLE or not self.pdf_doc_qt:

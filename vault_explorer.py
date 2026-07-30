@@ -16,7 +16,7 @@ from settings import (
 )
 from theme import (
     compact_toolbar_stylesheet, ICON_SIZE_COMPACT, ICON_SIZE_VAULT_TREE,
-    BRAND_PANEL, BRAND_PANEL_2, BRAND_PRIMARY, BRAND_BORDER, get_brand_accent, BRAND_BACKGROUND
+    get_active_palette, get_brand_accent
 )
 
 SUPPORTED_EXTENSIONS = {".md", ".txt", ".pdf", ".docx", ".xlsx", ".csv"}
@@ -44,8 +44,9 @@ class VaultExplorer(QWidget):
         icon_qsize = QSize(icon_sz, icon_sz)
 
         self.vault_selector = QComboBox()
+        p = get_active_palette()
         self.vault_selector.setStyleSheet(
-            f"QComboBox {{ background: {BRAND_PANEL_2}; color: {BRAND_PRIMARY}; border: 1px solid {BRAND_BORDER}; padding: 4px; }} QComboBox QAbstractItemView {{ background: {BRAND_PANEL}; color: {BRAND_PRIMARY}; border: 1px solid {BRAND_BORDER}; selection-background-color: {get_brand_accent()}; selection-color: {BRAND_BACKGROUND}; }}"
+            f"QComboBox {{ background: {p['BRAND_PANEL_2']}; color: {p['BRAND_PRIMARY']}; border: 1px solid {p['BRAND_BORDER']}; padding: 4px; }} QComboBox QAbstractItemView {{ background: {p['BRAND_PANEL']}; color: {p['BRAND_PRIMARY']}; border: 1px solid {p['BRAND_BORDER']}; selection-background-color: {get_brand_accent()}; selection-color: {p['BRAND_BACKGROUND']}; }}"
         )
         self.vault_selector.currentIndexChanged.connect(self._on_vault_selected)
 
@@ -82,16 +83,18 @@ class VaultExplorer(QWidget):
         self.tree.setHeaderHidden(True)
         self.tree.setAnimated(True)
         self.tree.setIndentation(16)
+        p = get_active_palette()
         self.tree.setStyleSheet(f"""
             QTreeWidget {{
-                background: {BRAND_PANEL};
-                color: {BRAND_PRIMARY};
+                background: {p['BRAND_PANEL']};
+                color: {p['BRAND_PRIMARY']};
                 border: none;
-                font-size: 12px;
+                font-size: 13px;
+                outline: none;
             }}
             QTreeWidget::item {{ padding: 5px 6px; border-left: 2px solid transparent; }}
-            QTreeWidget::item:selected {{ background: {BRAND_PANEL_2}; border-left: 2px solid {get_brand_accent()}; color: #ffffff; font-weight: bold; }}
-            QTreeWidget::item:hover:!selected {{ background: {BRAND_PANEL_2}; }}
+            QTreeWidget::item:selected {{ background: {p['BRAND_PANEL_2']}; border-left: 2px solid {get_brand_accent()}; color: #ffffff; font-weight: bold; }}
+            QTreeWidget::item:hover:!selected {{ background: {p['BRAND_PANEL_2']}; }}
         """)
         self.tree.itemExpanded.connect(self._on_item_expanded)
         self.tree.itemDoubleClicked.connect(self._on_item_double_clicked)

@@ -254,17 +254,18 @@ class MainWindow(QMainWindow):
         status_bar = self.statusBar()
         status_bar.setSizeGripEnabled(False)
         
-        from theme import BRAND_MUTED_FG
+        from theme import get_active_palette
+        p = get_active_palette()
 
         self.status_left = QLabel("0 tabs · session saved")
-        self.status_left.setStyleSheet(f"color: {BRAND_MUTED_FG}; font-family: monospace; font-size: 11px; padding-left: 8px;")
+        self.status_left.setStyleSheet(f"color: {p['BRAND_MUTED_FG']}; font-family: monospace; font-size: 11px; padding-left: 8px;")
 
         self.status_center = QLabel("Ctrl+Q quick switch · Alt+V vault")
-        self.status_center.setStyleSheet(f"color: {BRAND_MUTED_FG}; font-family: monospace; font-size: 11px;")
+        self.status_center.setStyleSheet(f"color: {p['BRAND_MUTED_FG']}; font-family: monospace; font-size: 11px;")
         self.status_center.setAlignment(Qt.AlignCenter)
 
         self.status_right = QLabel("md · UTF-8")
-        self.status_right.setStyleSheet(f"color: {BRAND_MUTED_FG}; font-family: monospace; font-size: 11px; padding-right: 12px;")
+        self.status_right.setStyleSheet(f"color: {p['BRAND_MUTED_FG']}; font-family: monospace; font-size: 11px; padding-right: 12px;")
 
         status_bar.addWidget(self.status_left)
         status_bar.addWidget(self.status_center, 1)
@@ -289,7 +290,7 @@ class MainWindow(QMainWindow):
         next_idx = (self.shortcut_index + 1) % len(self.shortcut_hints)
         full_text = f"{self.shortcut_hints[self.shortcut_index]}  ·  {self.shortcut_hints[next_idx]}"
         # Elide center text so it never overlaps the right-side indicators on narrow windows
-        fm = QFontMetrics(self.status_center.font())
+        fm = self.status_center.fontMetrics()
         available_w = max(200, self.width() - 320)  # 320px reserved for left + right labels
         elided = fm.elidedText(full_text, Qt.ElideRight, available_w)
         self.status_center.setText(elided)
@@ -395,6 +396,13 @@ class MainWindow(QMainWindow):
         vault_btn.setShortcutContext(Qt.WidgetShortcut)
         vault_btn.triggered.connect(self.toggle_vault_panel)
         self.toolbar.addAction(vault_btn)
+
+        bookmark_btn = QAction(icon("bookmark", size=ICON_SIZE_TOOLBAR), "Bookmarks", self)
+        bookmark_btn.setToolTip("Toggle Bookmarks Panel (Ctrl+Alt+B)")
+        bookmark_btn.setShortcut("Ctrl+Alt+B")
+        bookmark_btn.setShortcutContext(Qt.WidgetShortcut)
+        bookmark_btn.triggered.connect(self.toggle_bookmarks_panel)
+        self.toolbar.addAction(bookmark_btn)
 
         open_btn = QAction(icon("folder-open", size=ICON_SIZE_TOOLBAR), "Open", self)
         open_btn.setToolTip("Open File (Ctrl+O)")
@@ -736,7 +744,8 @@ class MainWindow(QMainWindow):
         from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QGridLayout, QToolButton, QFrame, QLineEdit, QListWidget, QListWidgetItem, QSizePolicy
         from PySide6.QtCore import Qt, QSize
         from PySide6.QtGui import QPixmap, QIcon
-        from theme import BRAND_PRIMARY, BRAND_MUTED_FG, BRAND_PANEL_2, BRAND_PANEL, BRAND_BORDER, get_brand_accent
+        from theme import get_active_palette, get_brand_accent
+        p = get_active_palette()
         from branding_logo import create_eleviewer_pixmap
         from icons import icon
         from recent_files import load_recent_files
@@ -760,7 +769,7 @@ class MainWindow(QMainWindow):
         logo_lbl.setAlignment(Qt.AlignCenter)
         
         title = QLabel("EleViewer")
-        title.setStyleSheet(f"font-size: 32px; font-weight: bold; color: {BRAND_PRIMARY};")
+        title.setStyleSheet(f"font-size: 32px; font-weight: bold; color: {p['BRAND_PRIMARY']};")
         title.setAlignment(Qt.AlignCenter)
         
         hero_layout.addWidget(logo_lbl)
@@ -775,9 +784,9 @@ class MainWindow(QMainWindow):
         search_btn.setCursor(Qt.PointingHandCursor)
         search_btn.setStyleSheet(f"""
             QToolButton {{
-                background: {BRAND_PANEL_2};
-                color: {BRAND_MUTED_FG};
-                border: 1px solid {BRAND_BORDER};
+                background: {p['BRAND_PANEL_2']};
+                color: {p['BRAND_MUTED_FG']};
+                border: 1px solid {p['BRAND_BORDER']};
                 border-radius: 8px;
                 padding: 12px 20px;
                 font-size: 15px;
@@ -785,7 +794,7 @@ class MainWindow(QMainWindow):
             }}
             QToolButton:hover {{
                 border: 1px solid {get_brand_accent()};
-                color: {BRAND_PRIMARY};
+                color: {p['BRAND_PRIMARY']};
             }}
         """)
         search_btn.setMinimumWidth(600)
@@ -811,11 +820,11 @@ class MainWindow(QMainWindow):
         left_col.setMinimumWidth(300)
         
         recent_lbl = QLabel("RECENT FILES")
-        recent_lbl.setStyleSheet(f"color: {BRAND_MUTED_FG}; font-size: 11px; font-weight: bold; letter-spacing: 1px;")
+        recent_lbl.setStyleSheet(f"color: {p['BRAND_MUTED_FG']}; font-size: 11px; font-weight: bold; letter-spacing: 1px;")
         left_layout.addWidget(recent_lbl)
         
         recent_list = QListWidget()
-        recent_list.setStyleSheet(f"background: transparent; border: none; color: {BRAND_PRIMARY}; outline: none; font-size: 13px;")
+        recent_list.setStyleSheet(f"background: transparent; border: none; color: {p['BRAND_PRIMARY']}; outline: none; font-size: 13px;")
         recent_list.setSelectionMode(QListWidget.NoSelection)
         recent_list.setCursor(Qt.PointingHandCursor)
         recent_list.setMaximumHeight(150)
@@ -831,11 +840,11 @@ class MainWindow(QMainWindow):
         left_layout.addWidget(recent_list)
         
         bm_lbl = QLabel("BOOKMARKS")
-        bm_lbl.setStyleSheet(f"color: {BRAND_MUTED_FG}; font-size: 11px; font-weight: bold; letter-spacing: 1px; margin-top: 10px;")
+        bm_lbl.setStyleSheet(f"color: {p['BRAND_MUTED_FG']}; font-size: 11px; font-weight: bold; letter-spacing: 1px; margin-top: 10px;")
         left_layout.addWidget(bm_lbl)
         
         bm_list = QListWidget()
-        bm_list.setStyleSheet(f"background: transparent; border: none; color: {BRAND_PRIMARY}; outline: none; font-size: 13px;")
+        bm_list.setStyleSheet(f"background: transparent; border: none; color: {p['BRAND_PRIMARY']}; outline: none; font-size: 13px;")
         bm_list.setSelectionMode(QListWidget.NoSelection)
         bm_list.setCursor(Qt.PointingHandCursor)
         bm_list.setMaximumHeight(150)
@@ -868,7 +877,7 @@ class MainWindow(QMainWindow):
         btn_note.setText(" New Text Note")
         btn_note.setIcon(icon("file-plus", size=16))
         btn_note.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
-        btn_note.setStyleSheet(f"background: {BRAND_PANEL}; color: {BRAND_PRIMARY}; border: 1px solid {BRAND_BORDER}; border-radius: 4px; padding: 10px;")
+        btn_note.setStyleSheet(f"background: {p['BRAND_PANEL']}; color: {p['BRAND_PRIMARY']}; border: 1px solid {p['BRAND_BORDER']}; border-radius: 4px; padding: 10px;")
         btn_note.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         btn_note.clicked.connect(self.new_tab)
         
@@ -876,7 +885,7 @@ class MainWindow(QMainWindow):
         btn_web.setText(" Open Web Browser")
         btn_web.setIcon(icon("globe", size=16))
         btn_web.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
-        btn_web.setStyleSheet(f"background: {BRAND_PANEL}; color: {BRAND_PRIMARY}; border: 1px solid {BRAND_BORDER}; border-radius: 4px; padding: 10px;")
+        btn_web.setStyleSheet(f"background: {p['BRAND_PANEL']}; color: {p['BRAND_PRIMARY']}; border: 1px solid {p['BRAND_BORDER']}; border-radius: 4px; padding: 10px;")
         btn_web.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         btn_web.clicked.connect(self.new_tab)
         
@@ -898,9 +907,9 @@ class MainWindow(QMainWindow):
         grid_layout.setContentsMargins(0, 20, 0, 0)
         for i, (key, desc) in enumerate(shortcuts):
             k_lbl = QLabel(key)
-            k_lbl.setStyleSheet(f"background: {BRAND_PANEL_2}; padding: 4px 6px; border-radius: 4px; font-family: monospace; color: {get_brand_accent()}; font-size: 11px;")
+            k_lbl.setStyleSheet(f"background: {p['BRAND_PANEL_2']}; padding: 4px 6px; border-radius: 4px; font-family: monospace; color: {get_brand_accent()}; font-size: 11px;")
             d_lbl = QLabel(desc)
-            d_lbl.setStyleSheet(f"color: {BRAND_MUTED_FG}; font-size: 12px;")
+            d_lbl.setStyleSheet(f"color: {p['BRAND_MUTED_FG']}; font-size: 12px;")
             grid_layout.addWidget(k_lbl, i // 2, (i % 2) * 2)
             grid_layout.addWidget(d_lbl, i // 2, (i % 2) * 2 + 1)
             
@@ -1704,13 +1713,15 @@ class MainWindow(QMainWindow):
             self.editor_splitter.hide()
 
         # Custom title bar with larger icons and Maximize support
+        from theme import get_active_palette
+        p = get_active_palette()
         title_bar = QWidget()
-        title_bar.setStyleSheet(f"background: {BRAND_PANEL}; border-bottom: 1px solid {BRAND_BORDER};")
+        title_bar.setStyleSheet(f"background: {p['BRAND_PANEL']}; border-bottom: 1px solid {p['BRAND_BORDER']};")
         tb_layout = QHBoxLayout(title_bar)
         tb_layout.setContentsMargins(10, 6, 10, 6)
         
         lbl_title = QLabel("Web Browser")
-        lbl_title.setStyleSheet(f"color: {BRAND_MUTED_FG}; font-weight: bold; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;")
+        lbl_title.setStyleSheet(f"color: {p['BRAND_MUTED_FG']}; font-weight: bold; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;")
         tb_layout.addWidget(lbl_title)
         tb_layout.addStretch()
 

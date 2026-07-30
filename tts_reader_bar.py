@@ -12,7 +12,7 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt, Signal, QSize
 from icons import icon
-from theme import get_active_accent, BRAND_PANEL, BRAND_BORDER, BRAND_PRIMARY, BRAND_MUTED_FG, ICON_SIZE_COMPACT
+from theme import get_active_palette, get_active_accent, ICON_SIZE_COMPACT
 
 class TtsReaderBar(QFrame):
     """Floating / Docked TTS Reader Bar matching the website mockup style."""
@@ -27,42 +27,42 @@ class TtsReaderBar(QFrame):
         self.setObjectName("TtsReaderBar")
         self.setFixedHeight(42)
 
+        p = get_active_palette()
         accent = get_active_accent()["accent"]
         self.setStyleSheet(f"""
             QFrame#TtsReaderBar {{
-                background-color: {BRAND_PANEL};
-                border: 1px solid {BRAND_BORDER};
+                background-color: {p['BRAND_PANEL']};
+                border: 1px solid {p['BRAND_BORDER']};
                 border-radius: 8px;
                 padding: 2px 8px;
             }}
             QLabel {{
-                color: {BRAND_PRIMARY};
+                color: {p['BRAND_PRIMARY']};
                 font-size: 12px;
             }}
             QComboBox {{
-                background-color: #262626;
-                color: {BRAND_PRIMARY};
-                border: 1px solid {BRAND_BORDER};
+                background: {p['BRAND_PANEL']};
+                color: {p['BRAND_PRIMARY']};
+                border: 1px solid {p['BRAND_BORDER']};
+                padding: 2px 4px;
                 border-radius: 4px;
-                padding: 2px 6px;
-                font-size: 11px;
-                min-width: 130px;
             }}
             QComboBox QAbstractItemView {{
-                background-color: #1c1c1c;
-                color: {BRAND_PRIMARY};
-                border: 1px solid {BRAND_BORDER};
-                selection-background-color: #6cb6ff;
-                selection-color: #0c1826;
+                background: {p['BRAND_PANEL']};
+                color: {p['BRAND_PRIMARY']};
+                border: 1px solid {p['BRAND_BORDER']};
+                selection-background-color: {accent};
+                selection-color: {p['BRAND_BACKGROUND']};
             }}
             QToolButton {{
                 background: transparent;
                 border: none;
                 border-radius: 4px;
                 padding: 3px;
+                color: {p['BRAND_PRIMARY']};
             }}
             QToolButton:hover {{
-                background-color: #2a2a2a;
+                background-color: {p['BRAND_PANEL_2']};
             }}
             QToolButton#TtsStopBtn:hover {{
                 background-color: rgba(239, 68, 68, 0.25);
