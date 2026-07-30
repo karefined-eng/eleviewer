@@ -1,6 +1,6 @@
 from PySide6.QtWidgets import (
     QMainWindow, QTabWidget, QFileDialog, QMessageBox,
-    QSplitter, QMenu, QToolBar, QToolButton, QVBoxLayout, QWidget,
+    QSplitter, QMenu, QToolBar, QToolButton, QVBoxLayout, QHBoxLayout, QWidget,
     QDockWidget, QLabel, QSystemTrayIcon, QApplication, QScrollBar,
 )
 from PySide6.QtGui import QAction, QKeySequence, QShortcut, QIcon, QFontMetrics
