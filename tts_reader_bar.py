@@ -108,15 +108,17 @@ class TtsReaderBar(QFrame):
 
         # Close button
         self.btn_close = QToolButton()
-        self.btn_close.setIcon(icon("x", size=14, color=BRAND_MUTED_FG))
+        p = get_active_palette()
+        self.btn_close.setIcon(icon("x", size=14, color=p['BRAND_MUTED_FG']))
         self.btn_close.setToolTip("Hide reader bar")
         self.btn_close.clicked.connect(self._on_close)
         layout.addWidget(self.btn_close)
 
     def apply_style(self, active=False):
+        p = get_active_palette()
         accent = get_active_accent()["accent"]
-        bg = "#121e2b" if active else BRAND_PANEL
-        border = f"1.5px solid {accent}" if active else f"1px solid {BRAND_BORDER}"
+        bg = "#121e2b" if active else p['BRAND_PANEL']
+        border = f"1.5px solid {accent}" if active else f"1px solid {p['BRAND_BORDER']}"
         self.setStyleSheet(f"""
             QFrame#TtsReaderBar {{
                 background-color: {bg};
@@ -125,24 +127,24 @@ class TtsReaderBar(QFrame):
                 padding: 2px 8px;
             }}
             QLabel {{
-                color: {BRAND_PRIMARY};
+                color: {p['BRAND_PRIMARY']};
                 font-size: 12px;
             }}
             QComboBox {{
-                background-color: #262626;
-                color: {BRAND_PRIMARY};
-                border: 1px solid {BRAND_BORDER};
+                background-color: {p['BRAND_PANEL_2']};
+                color: {p['BRAND_PRIMARY']};
+                border: 1px solid {p['BRAND_BORDER']};
                 border-radius: 4px;
                 padding: 2px 6px;
                 font-size: 11px;
                 min-width: 130px;
             }}
             QComboBox QAbstractItemView {{
-                background-color: #1c1c1c;
-                color: {BRAND_PRIMARY};
-                border: 1px solid {BRAND_BORDER};
-                selection-background-color: #6cb6ff;
-                selection-color: #0c1826;
+                background-color: {p['BRAND_PANEL']};
+                color: {p['BRAND_PRIMARY']};
+                border: 1px solid {p['BRAND_BORDER']};
+                selection-background-color: {accent};
+                selection-color: {p['BRAND_BACKGROUND']};
             }}
             QToolButton {{
                 background: transparent;
