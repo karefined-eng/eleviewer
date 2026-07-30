@@ -33,7 +33,7 @@ from theme import (
 from save_utils import atomic_write
 from icons import icon
 from vault_explorer import VaultExplorer
-from branding_logo import create_eleviewer_icon
+from branding_logo import create_eleviewer_icon, create_eleviewer_pixmap
 from file_handler import get_file_extension
 from tts_reader_bar import TtsReaderBar
 from tts_engine import TtsEngine
@@ -712,43 +712,185 @@ class MainWindow(QMainWindow):
         self.update_status_bar()
 
     def _create_welcome_widget(self):
+        from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QGridLayout, QToolButton, QFrame, QLineEdit, QListWidget, QListWidgetItem, QSizePolicy
+        from PySide6.QtCore import Qt, QSize
+        from PySide6.QtGui import QPixmap, QIcon
+        from theme import BRAND_PRIMARY, BRAND_MUTED_FG, BRAND_PANEL_2, BRAND_PANEL, BRAND_BORDER, get_brand_accent
+        from branding_logo import create_eleviewer_pixmap
+        from icons import icon
+        from recent_files import load_recent_files
+        from bookmark_manager import load_bookmarks
+        
         w = QWidget()
         w.is_welcome_tab = True
-        layout = QVBoxLayout(w)
-        layout.setAlignment(Qt.AlignCenter)
+        main_layout = QVBoxLayout(w)
+        main_layout.setAlignment(Qt.AlignTop | Qt.AlignHCenter)
+        main_layout.setContentsMargins(40, 80, 40, 40)
+        main_layout.setSpacing(30)
+        
+        # 1. Hero Section (Logo + Title)
+        hero = QWidget()
+        hero_layout = QVBoxLayout(hero)
+        hero_layout.setAlignment(Qt.AlignCenter)
+        hero_layout.setSpacing(15)
+        
+        logo_lbl = QLabel()
+        logo_lbl.setPixmap(create_eleviewer_pixmap(72))
+        logo_lbl.setAlignment(Qt.AlignCenter)
         
         title = QLabel("EleViewer")
         title.setStyleSheet(f"font-size: 32px; font-weight: bold; color: {BRAND_PRIMARY};")
         title.setAlignment(Qt.AlignCenter)
-        layout.addWidget(title)
         
-        subtitle = QLabel("Lightweight Document Viewer & Study Workspace")
-        subtitle.setStyleSheet(f"font-size: 14px; color: {BRAND_MUTED_FG}; margin-bottom: 30px;")
-        subtitle.setAlignment(Qt.AlignCenter)
-        layout.addWidget(subtitle)
+        hero_layout.addWidget(logo_lbl)
+        hero_layout.addWidget(title)
+        main_layout.addWidget(hero)
         
+        # 2. Omnibar (Search)
+        search_btn = QToolButton()
+        search_btn.setText("   Search vault, type a URL, or press 'Ctrl+Q'...")
+        search_btn.setIcon(icon("search", size=18))
+        search_btn.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+        search_btn.setCursor(Qt.PointingHandCursor)
+        search_btn.setStyleSheet(f"""
+            QToolButton {{
+                background: {BRAND_PANEL_2};
+                color: {BRAND_MUTED_FG};
+                border: 1px solid {BRAND_BORDER};
+                border-radius: 8px;
+                padding: 12px 20px;
+                font-size: 15px;
+                text-align: left;
+            }}
+            QToolButton:hover {{
+                border: 1px solid {get_brand_accent()};
+                color: {BRAND_PRIMARY};
+            }}
+        """)
+        search_btn.setMinimumWidth(600)
+        search_btn.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        search_btn.clicked.connect(self.show_search_dialog)
+        
+        search_container = QWidget()
+        sc_layout = QHBoxLayout(search_container)
+        sc_layout.setAlignment(Qt.AlignCenter)
+        sc_layout.addWidget(search_btn)
+        main_layout.addWidget(search_container)
+        
+        # 3. Two Columns: Activity & Actions
+        columns = QWidget()
+        cols_layout = QHBoxLayout(columns)
+        cols_layout.setSpacing(40)
+        cols_layout.setAlignment(Qt.AlignTop | Qt.AlignHCenter)
+        
+        # LEFT: Activity (Recent & Bookmarks)
+        left_col = QWidget()
+        left_layout = QVBoxLayout(left_col)
+        left_layout.setSpacing(15)
+        left_col.setMinimumWidth(300)
+        
+        recent_lbl = QLabel("RECENT FILES")
+        recent_lbl.setStyleSheet(f"color: {BRAND_MUTED_FG}; font-size: 11px; font-weight: bold; letter-spacing: 1px;")
+        left_layout.addWidget(recent_lbl)
+        
+        recent_list = QListWidget()
+        recent_list.setStyleSheet(f"background: transparent; border: none; color: {BRAND_PRIMARY}; outline: none; font-size: 13px;")
+        recent_list.setSelectionMode(QListWidget.NoSelection)
+        recent_list.setCursor(Qt.PointingHandCursor)
+        recent_list.setMaximumHeight(150)
+        recent_files = load_recent_files(validate=True)[:3]
+        if not recent_files:
+            recent_list.addItem(QListWidgetItem("No recent files"))
+        else:
+            for path in recent_files:
+                item = QListWidgetItem(icon("file", size=14), os.path.basename(path))
+                item.setData(Qt.UserRole, path)
+                recent_list.addItem(item)
+        recent_list.itemClicked.connect(lambda it: self._open_vault_file(it.data(Qt.UserRole)) if it.data(Qt.UserRole) else None)
+        left_layout.addWidget(recent_list)
+        
+        bm_lbl = QLabel("BOOKMARKS")
+        bm_lbl.setStyleSheet(f"color: {BRAND_MUTED_FG}; font-size: 11px; font-weight: bold; letter-spacing: 1px; margin-top: 10px;")
+        left_layout.addWidget(bm_lbl)
+        
+        bm_list = QListWidget()
+        bm_list.setStyleSheet(f"background: transparent; border: none; color: {BRAND_PRIMARY}; outline: none; font-size: 13px;")
+        bm_list.setSelectionMode(QListWidget.NoSelection)
+        bm_list.setCursor(Qt.PointingHandCursor)
+        bm_list.setMaximumHeight(150)
+        bms = load_bookmarks().get("bookmarks", [])[:3]
+        if not bms:
+            bm_list.addItem(QListWidgetItem("No bookmarks"))
+        else:
+            for b in bms:
+                item = QListWidgetItem(icon("bookmark", size=14), b.get("label", "Bookmark"))
+                item.setData(Qt.UserRole, b)
+                bm_list.addItem(item)
+        
+        def _handle_bm(it):
+            b = it.data(Qt.UserRole)
+            if b:
+                self._open_vault_file(b["file_path"])
+                w = self.tabs.currentWidget()
+                if hasattr(w, "go_to_bookmark"): w.go_to_bookmark(b.get("page_number", 0), b.get("scroll_position_y", 0.0))
+        bm_list.itemClicked.connect(_handle_bm)
+        left_layout.addWidget(bm_list)
+        left_layout.addStretch()
+        
+        # RIGHT: Actions & Shortcuts
+        right_col = QWidget()
+        right_layout = QVBoxLayout(right_col)
+        right_layout.setSpacing(15)
+        right_col.setMinimumWidth(300)
+        
+        btn_note = QToolButton()
+        btn_note.setText(" New Text Note")
+        btn_note.setIcon(icon("file-plus", size=16))
+        btn_note.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+        btn_note.setStyleSheet(f"background: {BRAND_PANEL}; color: {BRAND_PRIMARY}; border: 1px solid {BRAND_BORDER}; border-radius: 4px; padding: 10px;")
+        btn_note.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        btn_note.clicked.connect(self._create_new_note)
+        
+        btn_web = QToolButton()
+        btn_web.setText(" Open Web Browser")
+        btn_web.setIcon(icon("globe", size=16))
+        btn_web.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+        btn_web.setStyleSheet(f"background: {BRAND_PANEL}; color: {BRAND_PRIMARY}; border: 1px solid {BRAND_BORDER}; border-radius: 4px; padding: 10px;")
+        btn_web.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        btn_web.clicked.connect(self.new_tab)
+        
+        right_layout.addWidget(btn_note)
+        right_layout.addWidget(btn_web)
+        
+        # Shortcuts Grid
         shortcuts = [
             ("Ctrl+O", "Open file"),
-            ("Ctrl+N", "New text note"),
-            ("Ctrl+T", "Web browser"),
-            ("Alt+V", "Open vault sidebar"),
-            ("Ctrl+Q", "Quick switcher"),
-            ("F9", "Read aloud (TTS)")
+            ("Ctrl+N", "New note"),
+            ("Ctrl+T", "Browser"),
+            ("Alt+V", "Vault"),
+            ("Ctrl+Q", "Search"),
+            ("F9", "TTS Reader")
         ]
-        
         grid = QWidget()
         grid_layout = QGridLayout(grid)
-        grid_layout.setSpacing(15)
+        grid_layout.setSpacing(10)
+        grid_layout.setContentsMargins(0, 20, 0, 0)
         for i, (key, desc) in enumerate(shortcuts):
             k_lbl = QLabel(key)
-            k_lbl.setStyleSheet(f"background: {BRAND_PANEL_2}; padding: 4px 8px; border-radius: 4px; font-family: monospace; color: {get_brand_accent()}; font-weight: bold;")
-            k_lbl.setAlignment(Qt.AlignCenter)
+            k_lbl.setStyleSheet(f"background: {BRAND_PANEL_2}; padding: 4px 6px; border-radius: 4px; font-family: monospace; color: {get_brand_accent()}; font-size: 11px;")
             d_lbl = QLabel(desc)
-            d_lbl.setStyleSheet(f"color: {BRAND_PRIMARY};")
+            d_lbl.setStyleSheet(f"color: {BRAND_MUTED_FG}; font-size: 12px;")
             grid_layout.addWidget(k_lbl, i // 2, (i % 2) * 2)
             grid_layout.addWidget(d_lbl, i // 2, (i % 2) * 2 + 1)
             
-        layout.addWidget(grid)
+        right_layout.addWidget(grid)
+        right_layout.addStretch()
+        
+        cols_layout.addWidget(left_col)
+        cols_layout.addWidget(right_col)
+        main_layout.addWidget(columns)
+        main_layout.addStretch()
+        
         return w
 
     def _replace_welcome_if_present(self):

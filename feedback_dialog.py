@@ -45,10 +45,10 @@ class FeedbackSubmitThread(QThread):
                     if raw_msg:
                         try:
                             data = json.loads(raw_msg)
-                            if data.get("success") and data.get("issue_number"):
+                            if isinstance(data, dict) and data.get("issue_number"):
                                 msg = f"Your feedback was sent successfully! (Issue #{data['issue_number']})"
-                        except json.JSONDecodeError:
-                            msg = raw_msg
+                        except Exception:
+                            pass
                             
                     self.finished_signal.emit(True, msg)
                     self.success.emit(msg)
