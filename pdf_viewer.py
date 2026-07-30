@@ -351,10 +351,21 @@ class PdfViewer(QWidget):
     def _prefetch_page_text(self, page):
         if not hasattr(self, "_page_text_cache"):
             self._page_text_cache = {}
+        if not hasattr(self, "_active_workers"):
+            self._active_workers = set()
         for p in (page, page + 1, page - 1):
             if 0 <= p < self.total_pages and p not in self._page_text_cache:
+                if any(getattr(w, "page_idx", None) == p for w in self._active_workers):
+                    continue
                 worker = PdfTextWorker(self.pdf_doc_qt, p)
-                worker.extracted.connect(lambda idx, txt: self._page_text_cache.update({idx: txt}))
+                self._active_workers.add(worker)
+
+                def _on_extracted(idx, txt, w=worker):
+                    self._page_text_cache[idx] = txt
+                    self._active_workers.discard(w)
+
+                worker.extracted.connect(_on_extracted)
+                worker.finished.connect(worker.deleteLater)
                 worker.start()
 
     def _on_page_change_key(self, delta):

@@ -22,7 +22,7 @@ from file_handler import (
 )
 from recent_files import load_recent_files, save_recent_file
 from pinned_files import load_pinned_files, save_pinned_file, remove_pinned_file, is_pinned
-from session_manager import load_session, save_session
+from session_manager import load_session, save_session, clear_session
 from quick_switcher import QuickSwitcher
 from settings import load_settings, save_settings
 from settings_dialog import SettingsDialog
@@ -644,17 +644,17 @@ class MainWindow(QMainWindow):
         self.statusBar().showMessage(message, timeout_ms)
 
     def update_status_bar(self):
+        self._refresh_tab_icons()
         editor = self.current_editor()
         if not editor:
             self.setWindowTitle(f"EleViewer v{APP_VERSION}")
             self.status_left.setText("Ready")
-            self.status_right.setText("")
+            self.status_right.setText("UTF-8")
             return
         path = getattr(editor, "file_path", None)
         name = os.path.basename(path) if path else "Untitled"
-        modified = " • Modified" if getattr(editor, "is_modified", False) else ""
 
-        self.setWindowTitle(f"EleViewer v{APP_VERSION} — {name}")
+        self.setWindowTitle(f"EleViewer — {name}")
 
         tab_count = self.tabs.count()
         ext = get_file_extension(path) if path else ""
@@ -662,7 +662,7 @@ class MainWindow(QMainWindow):
         
         parts = [f"{tab_count} tab{'s' if tab_count != 1 else ''}"]
         
-        # Add Line/Col numbers if the editor has a textCursor (ponytail: zero-overhead line numbers)
+        # Add Line/Col numbers if the editor has a textCursor
         cursor_info = ""
         try:
             if hasattr(editor, "editor") and hasattr(editor.editor, "textCursor"):
@@ -678,10 +678,31 @@ class MainWindow(QMainWindow):
         if cursor_info:
             parts.append(cursor_info)
 
-        parts.append("Modified" if modified else "session saved")
+        parts.append("Modified" if getattr(editor, "is_modified", False) else "session saved")
         
         self.status_left.setText(" · ".join(parts))
-        self.status_right.setText(f"{ext_label} · UTF-8")
+
+        # Compute document metric text based on viewer type
+        count_text = ""
+        widget_type = type(editor).__name__
+        if widget_type in ["EditorTab", "DocxViewer", "MarkdownViewer", "HtmlViewer"]:
+            if hasattr(editor, "toPlainText"):
+                text_content = editor.toPlainText()
+                lines = text_content.count('\n') + 1 if text_content else 0
+                count_text = f"{lines:,} lines · "
+        elif widget_type in ["CsvViewer", "XlsxViewer"]:
+            if hasattr(editor, "model"):
+                rows = editor.model.rowCount()
+                count_text = f"{rows:,} rows · "
+        elif widget_type == "PptxViewer":
+            if hasattr(editor, "total_slides"):
+                count_text = f"{editor.total_slides} slides · "
+        elif widget_type == "PdfViewer":
+            if hasattr(editor, "document"):
+                pages = editor.document.pageCount() if editor.document else 0
+                count_text = f"{pages} pages · "
+
+        self.status_right.setText(f"{count_text}{ext_label} · UTF-8")
 
     def _connect_editor_signals(self, editor):
         if hasattr(editor, "textChanged"):
@@ -769,7 +790,7 @@ class MainWindow(QMainWindow):
         """)
         search_btn.setMinimumWidth(600)
         search_btn.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
-        search_btn.clicked.connect(self.show_search_dialog)
+        search_btn.clicked.connect(self.open_vault_search)
         
         search_container = QWidget()
         sc_layout = QHBoxLayout(search_container)
@@ -818,7 +839,7 @@ class MainWindow(QMainWindow):
         bm_list.setSelectionMode(QListWidget.NoSelection)
         bm_list.setCursor(Qt.PointingHandCursor)
         bm_list.setMaximumHeight(150)
-        bms = load_bookmarks().get("bookmarks", [])[:3]
+        bms = load_bookmarks()[:3]
         if not bms:
             bm_list.addItem(QListWidgetItem("No bookmarks"))
         else:
@@ -849,7 +870,7 @@ class MainWindow(QMainWindow):
         btn_note.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
         btn_note.setStyleSheet(f"background: {BRAND_PANEL}; color: {BRAND_PRIMARY}; border: 1px solid {BRAND_BORDER}; border-radius: 4px; padding: 10px;")
         btn_note.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-        btn_note.clicked.connect(self._create_new_note)
+        btn_note.clicked.connect(self.new_tab)
         
         btn_web = QToolButton()
         btn_web.setText(" Open Web Browser")
@@ -1141,6 +1162,7 @@ class MainWindow(QMainWindow):
         self._add_menu_action(vault_menu, "Toggle Panel", self.toggle_vault_panel, "Alt+V")
 
         session_menu = menu.addMenu("Session")
+        self._add_menu_action(session_menu, "New Session (Clear)", self._new_session)
         self._add_menu_action(session_menu, "Restore Tab", self.reopen_closed_tab, "Ctrl+Shift+T")
         self._add_menu_action(session_menu, "Quick Switcher", self.open_quick_switcher, "Ctrl+Q")
         session_menu.addSeparator()
@@ -1415,6 +1437,17 @@ class MainWindow(QMainWindow):
         switcher.file_selected.connect(self.open_recent_file)
         switcher.exec()
 
+    def _new_session(self):
+        """Clear session state and close all tabs."""
+        while self.tabs.count() > 0:
+            w = self.tabs.widget(0)
+            self.tabs.removeTab(0)
+            if w:
+                w.deleteLater()
+        clear_session()
+        self.tabs.addTab(self._create_welcome_widget(), "Welcome")
+        self.show_status_message("Started new fresh session", 3000)
+
     def open_vault_search(self, active_vault=None):
         if not active_vault or not isinstance(active_vault, str):
             if hasattr(self, 'vault_panel') and self.vault_panel.vault_selector.currentData():
@@ -1422,7 +1455,7 @@ class MainWindow(QMainWindow):
             else:
                 active_vault = None
                 
-        all_vaults = load_settings().get("vaults", [])
+        all_vaults = load_settings().get("vault_paths", [])
         if not all_vaults and not active_vault:
             QMessageBox.information(self, "No Vaults", "You don't have any vaults opened.")
             return
@@ -1450,8 +1483,10 @@ class MainWindow(QMainWindow):
                 return True
         return False
 
-    def open_file(self):
-        path, _ = QFileDialog.getOpenFileName(self, "Open File", "", self.FILE_FILTER)
+    def open_file(self, file_path=None):
+        path = file_path
+        if not path:
+            path, _ = QFileDialog.getOpenFileName(self, "Open File", "", self.FILE_FILTER)
         if not path:
             return
         if self.switch_to_tab_if_open(path):
@@ -1790,44 +1825,7 @@ class MainWindow(QMainWindow):
             path = getattr(editor, "file_path", None) or self.tabs.tabText(i)
             self.tabs.setTabIcon(i, _tab_icon_for(path, active=(i == current_idx)))
 
-    def update_status_bar(self):
-        self._refresh_tab_icons()
-        count = self.tabs.count()
-        self.status_left.setText(f"{count} tab{'s' if count != 1 else ''} · session saved")
-        
-        current_widget = self.tabs.currentWidget()
-        if current_widget:
-            file_path = getattr(current_widget, "file_path", None)
-            
-            # Compute counts based on viewer type
-            count_text = ""
-            if type(current_widget).__name__ in ["EditorTab", "DocxViewer", "MarkdownViewer", "HtmlViewer"]:
-                if hasattr(current_widget, "toPlainText"):
-                    lines = current_widget.toPlainText().count('\\n') + 1
-                    count_text = f"{lines:,} lines · "
-            elif type(current_widget).__name__ in ["CsvViewer", "XlsxViewer"]:
-                if hasattr(current_widget, "model"):
-                    rows = current_widget.model.rowCount()
-                    count_text = f"{rows:,} rows · "
-            elif type(current_widget).__name__ == "PptxViewer":
-                if hasattr(current_widget, "total_slides"):
-                    count_text = f"{current_widget.total_slides} slides · "
-            elif type(current_widget).__name__ == "PdfViewer":
-                if hasattr(current_widget, "document"):
-                    pages = current_widget.document.pageCount() if current_widget.document else 0
-                    count_text = f"{pages} pages · "
 
-            if file_path:
-                filename = os.path.basename(file_path)
-                self.setWindowTitle(f"EleViewer — {filename}")
-                ext = os.path.splitext(file_path)[1].lstrip(".").lower() or "txt"
-                self.status_right.setText(f"{count_text}{ext} · UTF-8")
-            else:
-                self.setWindowTitle(f"EleViewer — Untitled")
-                self.status_right.setText(f"{count_text}txt · UTF-8")
-        else:
-            self.setWindowTitle(f"EleViewer v{APP_VERSION}")
-            self.status_right.setText("UTF-8")
 
     def toggle_tts_bar(self):
         if self.tts_bar.isVisible():

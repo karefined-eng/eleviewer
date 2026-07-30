@@ -141,7 +141,7 @@ class TtsEngine:
 
     async def _fetch_edge_voices(self):
         # 5-second timeout so we don't stall init forever if network is a blackhole
-        return await asyncio.wait_for(edge_tts.VoicesManager.create(), timeout=5.0)
+        return await asyncio.wait_for(edge_tts.list_voices(), timeout=5.0)
 
     async def _speak_edge(self, text, voice_id):
         """Generate online audio and play via native Windows API synchronously."""
