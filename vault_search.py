@@ -5,7 +5,7 @@ from PySide6.QtWidgets import (
     QLabel, QComboBox
 )
 from PySide6.QtCore import Qt, Signal, QTimer, QThread, QEvent
-from theme import BRAND_BACKGROUND, BRAND_PANEL, BRAND_BORDER, BRAND_PRIMARY, BRAND_MUTED, BRAND_MUTED_FG, get_brand_accent
+from theme import get_active_palette, get_brand_accent
 from file_icons import file_type_icon
 from settings import load_settings
 from paths import scandir_walk
@@ -80,14 +80,15 @@ class VaultSearchDialog(QDialog):
         self.resize(600, 450)
         
         accent = get_brand_accent()
+        p = get_active_palette()
         self.setStyleSheet(f"""
-            QDialog {{ background: {BRAND_BACKGROUND}; color: {BRAND_PRIMARY}; }}
-            QLineEdit {{ background: {BRAND_PANEL}; color: {BRAND_PRIMARY}; border: 1px solid {BRAND_BORDER}; padding: 8px; font-size: 14px; selection-background-color: {accent}; }}
-            QListWidget {{ background: {BRAND_PANEL}; color: {BRAND_PRIMARY}; border: 1px solid {BRAND_BORDER}; outline: none; }}
-            QListWidget::item {{ padding: 4px; }}
-            QListWidget::item:selected {{ background: {accent}; color: {BRAND_BACKGROUND}; }}
-            QComboBox {{ background: {BRAND_PANEL}; color: {BRAND_PRIMARY}; border: 1px solid {BRAND_BORDER}; padding: 4px; }}
-            QComboBox QAbstractItemView {{ background: {BRAND_PANEL}; color: {BRAND_PRIMARY}; border: 1px solid {BRAND_BORDER}; selection-background-color: {accent}; selection-color: {BRAND_BACKGROUND}; }}
+            QDialog {{ background: {p['BRAND_BACKGROUND']}; color: {p['BRAND_PRIMARY']}; }}
+            QLineEdit {{ background: {p['BRAND_PANEL']}; color: {p['BRAND_PRIMARY']}; border: 1px solid {p['BRAND_BORDER']}; padding: 8px; font-size: 14px; selection-background-color: {accent}; }}
+            QListWidget {{ background: {p['BRAND_PANEL']}; color: {p['BRAND_PRIMARY']}; border: 1px solid {p['BRAND_BORDER']}; outline: none; }}
+            QListWidget::item {{ padding: 6px; border-bottom: 1px solid {p['BRAND_BORDER']}; }}
+            QListWidget::item:selected {{ background: {accent}; color: {p['BRAND_BACKGROUND']}; }}
+            QComboBox {{ background: {p['BRAND_PANEL']}; color: {p['BRAND_PRIMARY']}; border: 1px solid {p['BRAND_BORDER']}; padding: 4px; }}
+            QComboBox QAbstractItemView {{ background: {p['BRAND_PANEL']}; color: {p['BRAND_PRIMARY']}; border: 1px solid {p['BRAND_BORDER']}; selection-background-color: {accent}; selection-color: {p['BRAND_BACKGROUND']}; }}
         """)
         
         layout = QVBoxLayout()
@@ -117,7 +118,7 @@ class VaultSearchDialog(QDialog):
         layout.addWidget(self.results_list)
         
         help_label = QLabel("↑↓ Navigate  Enter Select  Esc Cancel")
-        help_label.setStyleSheet(f"color: {BRAND_MUTED_FG}; font-size: 11px;")
+        help_label.setStyleSheet(f"color: {p['BRAND_MUTED_FG']}; font-size: 11px;")
         layout.addWidget(help_label)
         
         self.setLayout(layout)

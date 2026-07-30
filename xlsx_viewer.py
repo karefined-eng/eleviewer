@@ -5,13 +5,14 @@ from PySide6.QtWidgets import (
     QAbstractItemView, QLabel,
 )
 from PySide6.QtCore import Signal, Qt, QAbstractTableModel, QModelIndex
+import warnings
+warnings.filterwarnings('ignore', category=UserWarning, module='openpyxl')
 from openpyxl import load_workbook
 from openpyxl.cell.cell import MergedCell
 import io
 
 from theme import (
-    xlsx_sheet_tab_stylesheet, BRAND_PANEL, BRAND_PRIMARY, 
-    BRAND_BORDER, get_brand_accent, BRAND_BACKGROUND
+    xlsx_sheet_tab_stylesheet, get_active_palette, get_brand_accent
 )
 import re
 
@@ -105,8 +106,9 @@ class XlsxViewer(QWidget):
         banner_row = QHBoxLayout()
         banner_row.setContentsMargins(6, 3, 6, 3)
         self._readonly_label = QLabel("\U0001f512 View-only — formula values shown. Editing disabled to protect formulas.")
+        p = get_active_palette()
         self._readonly_label.setStyleSheet(
-            f"color: {BRAND_PRIMARY}; font-size: 11px; opacity: 0.7;"
+            f"color: {p['BRAND_PRIMARY']}; font-size: 11px; opacity: 0.7;"
         )
         banner_row.addWidget(self._readonly_label)
         banner_row.addStretch()
@@ -118,14 +120,15 @@ class XlsxViewer(QWidget):
         self.table.setModel(self.model)
         # Option C: strictly view-only — no editing allowed so formulas are never overwritten
         self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        p = get_active_palette()
         self.table.setStyleSheet(f"""
             QTableView {{
-                background: {BRAND_PANEL};
-                color: {BRAND_PRIMARY};
-                gridline-color: {BRAND_BORDER};
+                background: {p['BRAND_PANEL']};
+                color: {p['BRAND_PRIMARY']};
+                gridline-color: {p['BRAND_BORDER']};
+                border: none;
             }}
-            QTableView::item {{ padding: 5px; }}
-            QTableView::item:selected {{ background: {get_brand_accent()}; color: {BRAND_BACKGROUND}; }}
+            QTableView::item:selected {{ background: {get_brand_accent()}; color: {p['BRAND_BACKGROUND']}; }}
         """)
 
         self.sheet_tabs = QTabBar()

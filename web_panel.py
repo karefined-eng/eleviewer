@@ -23,7 +23,8 @@ def get_persistent_profile():
                 if any(kw in url_str for kw in self.AD_KEYWORDS):
                     info.block(True)
 
-        _web_profile = QWebEngineProfile("eleviewer_web_profile")
+        from PySide6.QtCore import QCoreApplication
+        _web_profile = QWebEngineProfile("eleviewer_web_profile", QCoreApplication.instance())
         _interceptor = AdBlockInterceptor(_web_profile)
         _web_profile.setUrlRequestInterceptor(_interceptor)
         storage_path = str(APP_DATA_DIR / "web_data")

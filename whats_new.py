@@ -2,7 +2,7 @@ from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QTextBrowser, QFrame
 )
 from PySide6.QtCore import Qt
-from theme import BRAND_BACKGROUND, BRAND_PRIMARY, BRAND_BORDER, BRAND_MUTED_FG, get_brand_accent
+from theme import get_active_palette, get_brand_accent
 
 
 class WhatsNewDialog(QDialog):
@@ -12,14 +12,16 @@ class WhatsNewDialog(QDialog):
         self.resize(550, 450)
         
         accent = get_brand_accent()
+        p = get_active_palette()
         self.setStyleSheet(f"""
-            QDialog {{ background: {BRAND_BACKGROUND}; color: {BRAND_PRIMARY}; }}
-            QLabel {{ color: {BRAND_PRIMARY}; font-family: 'Segoe UI', sans-serif; }}
+            QDialog {{ background: {p['BRAND_BACKGROUND']}; color: {p['BRAND_PRIMARY']}; }}
+            QLabel {{ color: {p['BRAND_PRIMARY']}; font-family: 'Segoe UI', sans-serif; }}
             QTextBrowser {{ 
-                background: #1a1a1a; 
+                background: transparent; 
+                border: none; 
+                border-top: 1px solid {p['BRAND_BORDER']}; 
+                border-bottom: 1px solid {p['BRAND_BORDER']}; 
                 color: #e0e0e0; 
-                border: 1px solid {BRAND_BORDER}; 
-                border-radius: 6px; 
                 padding: 15px; 
                 font-family: 'Segoe UI', sans-serif; 
                 font-size: 14px; 
