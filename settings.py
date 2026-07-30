@@ -34,6 +34,7 @@ DEFAULT_SETTINGS = {
     "onboarding_completed": False,
     "last_run_version": "0.0.0",
     "file_search_scope": "active_vault",
+    "toolbar_order": ["new", "vault", "bookmarks", "open", "save", "tts", "web", "settings"],
 }
 
 
