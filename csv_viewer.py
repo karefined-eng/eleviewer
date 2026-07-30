@@ -18,8 +18,7 @@ from PySide6.QtWidgets import (
 
 from editor import EditorTab
 from theme import (
-    BRAND_PANEL, BRAND_PANEL_2, BRAND_PRIMARY, BRAND_BORDER,
-    BRAND_BACKGROUND, BRAND_MUTED_FG, get_brand_accent,
+    get_active_palette, get_brand_accent,
     compact_toolbar_stylesheet
 )
 
@@ -213,41 +212,42 @@ class CsvViewer(QWidget):
         layout.setSpacing(0)
 
         # ── Toolbar ────────────────────────────────────────────────────────
+        p = get_active_palette()
         self.toolbar = QFrame()
         self.toolbar.setStyleSheet(f"""
             QFrame {{
-                background-color: {BRAND_PANEL};
-                border-bottom: 1px solid {BRAND_BORDER};
+                background-color: {p['BRAND_PANEL']};
+                border-bottom: 1px solid {p['BRAND_BORDER']};
                 padding: 4px 8px;
             }}
-            QLabel {{ color: {BRAND_MUTED_FG}; font-size: 11px; font-weight: bold; }}
+            QLabel {{ color: {p['BRAND_MUTED_FG']}; font-size: 11px; font-weight: bold; }}
             QComboBox {{
-                background-color: {BRAND_PANEL_2};
-                color: {BRAND_PRIMARY};
-                border: 1px solid {BRAND_BORDER};
+                background-color: {p['BRAND_PANEL_2']};
+                color: {p['BRAND_PRIMARY']};
+                border: 1px solid {p['BRAND_BORDER']};
                 border-radius: 4px;
                 padding: 3px 8px;
                 font-size: 12px;
                 min-width: 90px;
             }}
             QComboBox QAbstractItemView {{
-                background-color: {BRAND_PANEL};
-                color: {BRAND_PRIMARY};
-                border: 1px solid {BRAND_BORDER};
+                background-color: {p['BRAND_PANEL']};
+                color: {p['BRAND_PRIMARY']};
+                border: 1px solid {p['BRAND_BORDER']};
                 selection-background-color: #6cb6ff;
                 selection-color: #0c1826;
             }}
             QComboBox::drop-down {{ border: none; }}
             QPushButton {{
-                background-color: {BRAND_PANEL_2};
-                color: {BRAND_PRIMARY};
-                border: 1px solid {BRAND_BORDER};
+                background-color: {p['BRAND_PANEL_2']};
+                color: {p['BRAND_PRIMARY']};
+                border: 1px solid {p['BRAND_BORDER']};
                 border-radius: 4px;
                 padding: 4px 10px;
                 font-size: 12px;
                 font-weight: 500;
             }}
-            QPushButton:hover {{ background-color: {BRAND_BORDER}; }}
+            QPushButton:hover {{ background-color: {p['BRAND_BORDER']}; }}
         """)
         tb_layout = QHBoxLayout(self.toolbar)
         tb_layout.setContentsMargins(4, 4, 4, 4)

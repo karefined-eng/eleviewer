@@ -25,8 +25,7 @@ from PySide6.QtGui import QIntValidator, QKeyEvent, QShortcut, QKeySequence
 from icons import icon
 from theme import (
     compact_toolbar_stylesheet, ICON_SIZE_COMPACT,
-    BRAND_PANEL, BRAND_PANEL_2, BRAND_BORDER, BRAND_PRIMARY,
-    BRAND_MUTED_FG, BRAND_BACKGROUND, get_brand_accent,
+    get_active_palette, get_brand_accent,
 )
 
 
@@ -81,13 +80,14 @@ class PptxViewer(QWidget):
         self.slide_input.setFixedWidth(44)
         self.slide_input.setAlignment(Qt.AlignCenter)
         self.slide_input.setValidator(QIntValidator(1, 9999))
+        p = get_active_palette()
         self.slide_input.setStyleSheet(
-            f"QLineEdit {{ background:{BRAND_PANEL_2}; color:{BRAND_PRIMARY}; border:1px solid {BRAND_BORDER};"
+            f"QLineEdit {{ background:{p['BRAND_PANEL_2']}; color:{p['BRAND_PRIMARY']}; border:1px solid {p['BRAND_BORDER']};"
             f" border-radius:4px; padding:2px 4px; font-weight:bold; font-size:12px; }}"
         )
         self.slide_input.returnPressed.connect(self._jump_to_slide)
         self.lbl_total = QLabel(" / 0")
-        self.lbl_total.setStyleSheet(f"color:{BRAND_MUTED_FG}; font-weight:bold; padding:0 6px 0 2px; font-size:12px;")
+        self.lbl_total.setStyleSheet(f"color:{p['BRAND_MUTED_FG']}; font-weight:bold; padding:0 6px 0 2px; font-size:12px;")
 
         toolbar.addWidget(self.btn_prev)
         toolbar.addWidget(self.slide_input)
@@ -103,24 +103,24 @@ class PptxViewer(QWidget):
         self.slide_list.setMaximumWidth(220)
         self.slide_list.setStyleSheet(f"""
             QListWidget {{
-                background: {BRAND_PANEL};
-                color: {BRAND_PRIMARY};
-                border-right: 1px solid {BRAND_BORDER};
+                background: {p['BRAND_PANEL']};
+                color: {p['BRAND_PRIMARY']};
+                border-right: 1px solid {p['BRAND_BORDER']};
                 font-size: 12px;
             }}
-            QListWidget::item {{ padding: 6px; border-bottom: 1px solid {BRAND_BORDER}; }}
-            QListWidget::item:selected {{ background: {get_brand_accent()}; color: {BRAND_BACKGROUND}; font-weight: bold; }}
+            QListWidget::item {{ padding: 6px; border-bottom: 1px solid {p['BRAND_BORDER']}; }}
+            QListWidget::item:selected {{ background: {get_brand_accent()}; color: {p['BRAND_BACKGROUND']}; font-weight: bold; }}
         """)
         self.slide_list.currentRowChanged.connect(self._on_sidebar_click)
 
         # ── Search Bar ──────────────────────────────────────────────
         self.search_container = QWidget()
-        self.search_container.setStyleSheet(f"background: {BRAND_PANEL_2}; border-bottom: 1px solid {BRAND_BORDER};")
+        self.search_container.setStyleSheet(f"background: {p['BRAND_PANEL_2']}; border-bottom: 1px solid {p['BRAND_BORDER']};")
         search_layout = QHBoxLayout(self.search_container)
         search_layout.setContentsMargins(10, 4, 10, 4)
         self.search_input = QLineEdit()
         self.search_input.setPlaceholderText("Find in presentation (Ctrl+F)...")
-        self.search_input.setStyleSheet(f"background: {BRAND_PANEL}; color: {BRAND_PRIMARY}; border: 1px solid {BRAND_BORDER}; border-radius: 4px; padding: 4px;")
+        self.search_input.setStyleSheet(f"background: {p['BRAND_PANEL']}; color: {p['BRAND_PRIMARY']}; border: 1px solid {p['BRAND_BORDER']}; border-radius: 4px; padding: 4px;")
         self.search_input.returnPressed.connect(self._perform_search)
         self.btn_search_next = QToolButton()
         self.btn_search_next.setIcon(icon("chevron-down", size=14))
@@ -134,8 +134,8 @@ class PptxViewer(QWidget):
         # Enable continuous elastic scaling (no fixed px sizes)
         self.viewer.setStyleSheet(f"""
             QTextBrowser {{
-                background: {BRAND_BACKGROUND};
-                color: {BRAND_PRIMARY};
+                background: {p['BRAND_BACKGROUND']};
+                color: {p['BRAND_PRIMARY']};
                 border: none;
                 padding: 0px;
                 font-family: 'Segoe UI', sans-serif;
