@@ -4,7 +4,7 @@ from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLineEdit, QListWidget, QListWidgetItem, 
     QLabel, QComboBox
 )
-from PySide6.QtCore import Qt, Signal, QTimer, QThread
+from PySide6.QtCore import Qt, Signal, QTimer, QThread, QEvent
 from theme import BRAND_BACKGROUND, BRAND_PANEL, BRAND_BORDER, BRAND_PRIMARY, BRAND_MUTED, BRAND_MUTED_FG, get_brand_accent
 from file_icons import file_type_icon
 from settings import load_settings
@@ -194,4 +194,10 @@ class VaultSearchDialog(QDialog):
                     self.results_list.keyPressEvent(event)
         else:
             super().keyPressEvent(event)
+
+    def event(self, ev):
+        if ev.type() == QEvent.WindowDeactivate:
+            self.reject()
+            return True
+        return super().event(ev)
 

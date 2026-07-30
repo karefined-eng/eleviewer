@@ -1,7 +1,7 @@
 from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QLineEdit, QListWidget, QListWidgetItem, QLabel
 )
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import Qt, Signal, QEvent
 from PySide6.QtGui import QIcon, QColor
 from pathlib import Path
 from theme import BRAND_BACKGROUND, BRAND_PANEL, BRAND_BORDER, BRAND_PRIMARY, BRAND_MUTED, BRAND_MUTED_FG, get_brand_accent
@@ -188,3 +188,9 @@ class QuickSwitcher(QDialog):
             self.reject()
         else:
             super().keyPressEvent(event)
+
+    def event(self, ev):
+        if ev.type() == QEvent.WindowDeactivate:
+            self.reject()
+            return True
+        return super().event(ev)

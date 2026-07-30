@@ -106,16 +106,18 @@ When invoked to work on the Python PySide6 desktop application, adhere to these 
 - **High-Speed Ingestion (`os.scandir`):** Always use `os.scandir()` instead of `os.walk()` for vault indexing and file system traversal to retrieve OS stat metadata without redundant kernel syscalls.
 
 ## 14. Session Closing Ritual (Mandatory)
-After completing any task session in `eleviewer`, you MUST execute these three steps in order:
+After completing any task session in `eleviewer`, you MUST execute these four steps in order:
 
 1. **Run the regression suite first.** Execute `test_csv_viewer.py`, `test_html_viewer.py`, and `test_link_interception.py` and confirm all tests pass before committing anything. Do not commit broken code.
 
-2. **Commit with a structured message.** Use `type(scope): short summary` on the first line (e.g., `perf(vault): replace Path.resolve() with os.path.abspath()`), followed by a blank line and a bulleted body enumerating every file changed and the precise reason. Use semicolons to chain git commands per PowerShell Rule 11:
+2. **Check for Telemetry Bugs (CRITICAL).** Run `gh issue list` (e.g., `gh issue list --limit 10`) to check for newly opened `[Bug] Feedback from App` issues. Because EleViewer suppresses terminal stack traces and auto-submits crashes, you cannot rely on exit codes alone to verify stability. Resolve any bugs found before proceeding.
+
+3. **Commit with a structured message.** Use `type(scope): short summary` on the first line (e.g., `perf(vault): replace Path.resolve() with os.path.abspath()`), followed by a blank line and a bulleted body enumerating every file changed and the precise reason. Use semicolons to chain git commands per PowerShell Rule 11:
    ```powershell
    git add file1.py file2.py; git commit -m "type(scope): summary`n`nbody"
    ```
 
-3. **Update `PROJECT_LOG.md` Historical Ledger.** Prepend a new `### [DATE] Task Title` entry to the ledger with:
+4. **Update `PROJECT_LOG.md` Historical Ledger.** Prepend a new `### [DATE] Task Title` entry to the ledger with:
    - What changed and why, including the audit result (real bugs found vs. phantom assumptions).
    - An **Agent Notes for Future Sessions** sub-section listing specific non-obvious gotchas discovered during the session (e.g., Win32 API subtleties, Inno Setup registry traps, Nuitka flag requirements). This ledger is written *for future AI agents*, not for the human user — future agents will read it to inherit session context.
 
