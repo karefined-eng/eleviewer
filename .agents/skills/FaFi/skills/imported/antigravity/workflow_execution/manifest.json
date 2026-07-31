@@ -1,0 +1,60 @@
+{
+  "name": "antigravity_execute_workflow",
+  "version": "1.0.0",
+  "type": "skill",
+  "description": "Führt einen Antigravity-Workflow aus und gibt das Ergebnis zurück.",
+  "author": "Skill-Agent-Hub",
+  "tags": ["antigravity", "workflow", "automation", "imported"],
+  "capabilities": ["workflow_execution", "automation"],
+  "implementation": {
+    "type": "remote",
+    "language": "antigravity_api",
+    "entrypoint": "main.py"
+  },
+  "interface": {
+    "inputs": [
+      {
+        "name": "workflow_id",
+        "type": "string",
+        "description": "ID des auszuführenden Workflows",
+        "required": true
+      },
+      {
+        "name": "inputs",
+        "type": "object",
+        "description": "Eingabeparameter für den Workflow",
+        "required": true
+      },
+      {
+        "name": "async_mode",
+        "type": "boolean",
+        "description": "Asynchrone Ausführung",
+        "required": false,
+        "default": false
+      }
+    ],
+    "outputs": [
+      {
+        "name": "result",
+        "type": "object",
+        "description": "Workflow-Ergebnis"
+      },
+      {
+        "name": "execution_id",
+        "type": "string",
+        "description": "Ausführungs-ID"
+      },
+      {
+        "name": "status",
+        "type": "string",
+        "description": "Ausführungsstatus"
+      }
+    ]
+  },
+  "dependencies": [],
+  "metadata": {
+    "source_platform": "antigravity",
+    "bidirectional": true,
+    "import_date": "2026-01-23"
+  }
+}

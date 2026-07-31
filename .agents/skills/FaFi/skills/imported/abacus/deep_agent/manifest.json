@@ -1,0 +1,70 @@
+{
+  "manifest_version": "1.0",
+  "type": "skill",
+  "name": "abacus_deep_agent",
+  "version": "1.0.0",
+  "description": "Nutzt Abacus AI Deep Agent für autonome, mehrstufige Aufgabenausführung.",
+  "author": "Skill Hub (Imported)",
+  "tags": ["abacus", "deep_agent", "autonomous", "ai", "task_execution", "imported"],
+  "capabilities": ["autonomous_execution", "complex_tasks", "research", "analysis"],
+  "implementation": {
+    "type": "remote",
+    "language": "python",
+    "entrypoint": "main.py",
+    "remote_config": {
+      "service": "abacus_ai",
+      "api_key_env": "ABACUS_API_KEY"
+    }
+  },
+  "interface": {
+    "inputs": [
+      {
+        "name": "task",
+        "type": "string",
+        "description": "Aufgabenbeschreibung für den Deep Agent",
+        "required": true
+      },
+      {
+        "name": "context",
+        "type": "object",
+        "description": "Zusätzlicher Kontext für die Aufgabe",
+        "required": false
+      },
+      {
+        "name": "max_steps",
+        "type": "number",
+        "description": "Maximale Anzahl von Schritten",
+        "required": false,
+        "default": 10
+      },
+      {
+        "name": "tools",
+        "type": "array",
+        "description": "Liste der erlaubten Tools",
+        "required": false
+      }
+    ],
+    "outputs": [
+      {
+        "name": "result",
+        "type": "object",
+        "description": "Ergebnis der Aufgabenausführung"
+      },
+      {
+        "name": "steps",
+        "type": "array",
+        "description": "Liste der ausgeführten Schritte"
+      },
+      {
+        "name": "status",
+        "type": "string",
+        "description": "Ausführungsstatus (completed, failed, timeout)"
+      }
+    ]
+  },
+  "metadata": {
+    "source_platform": "Abacus AI",
+    "imported": true,
+    "created_at": "2026-01-23T12:00:00Z"
+  }
+}

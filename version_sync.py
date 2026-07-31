@@ -4,10 +4,7 @@ from typing import Iterable
 
 
 def normalize_version(version: str) -> str:
-    version = version.strip()
-    if version.startswith("v") or version.startswith("V"):
-        version = version[1:]
-    return version
+    return version.strip().lstrip("vV")
 
 
 def sync_package_versions(root: str | Path, version: str) -> str:
@@ -33,7 +30,7 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser(description="Synchronize package versions")
-    parser.add_argument("version", nargs="?", default="1.0.0")
+    parser.add_argument("version", nargs="?", default="1.3.0")
     parser.add_argument("--root", default=".")
     args = parser.parse_args()
 

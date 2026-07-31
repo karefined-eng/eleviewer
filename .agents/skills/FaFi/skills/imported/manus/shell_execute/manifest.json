@@ -1,0 +1,67 @@
+{
+  "name": "manus_shell_execute",
+  "version": "1.0.0",
+  "type": "skill",
+  "description": "Führt Shell-Befehle in der Manus-Sandbox aus und gibt die Ausgabe zurück.",
+  "author": "Skill-Agent-Hub",
+  "tags": ["manus", "shell", "command", "sandbox", "imported"],
+  "capabilities": ["shell_execution", "command_line", "system_operations"],
+  "implementation": {
+    "type": "remote",
+    "language": "manus_api",
+    "entrypoint": "main.py"
+  },
+  "interface": {
+    "inputs": [
+      {
+        "name": "command",
+        "type": "string",
+        "description": "Shell-Befehl zur Ausführung",
+        "required": true
+      },
+      {
+        "name": "session",
+        "type": "string",
+        "description": "Session-ID für die Shell",
+        "required": false,
+        "default": "default"
+      },
+      {
+        "name": "timeout",
+        "type": "number",
+        "description": "Timeout in Sekunden",
+        "required": false,
+        "default": 30
+      },
+      {
+        "name": "working_dir",
+        "type": "string",
+        "description": "Arbeitsverzeichnis",
+        "required": false
+      }
+    ],
+    "outputs": [
+      {
+        "name": "output",
+        "type": "string",
+        "description": "Befehlsausgabe (stdout + stderr)"
+      },
+      {
+        "name": "exit_code",
+        "type": "number",
+        "description": "Exit-Code des Befehls"
+      },
+      {
+        "name": "success",
+        "type": "boolean",
+        "description": "War die Ausführung erfolgreich?"
+      }
+    ]
+  },
+  "dependencies": [],
+  "metadata": {
+    "source_platform": "manus",
+    "bidirectional": true,
+    "import_date": "2026-01-23"
+  }
+}

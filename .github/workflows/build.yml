@@ -1,0 +1,90 @@
+name: EleViewer Release Pipeline
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+
+jobs:
+  build-and-sign:
+    runs-on: windows-latest
+    permissions:
+      id-token: write # Required for Azure Trusted Signing
+      contents: write
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install nuitka ordered-set zstandard
+
+      - name: Extract Version from Tag
+        id: version
+        run: |
+          $tag = "${{ github.ref_name }}"
+          $ver = $tag -replace '^v', ''
+          echo "VERSION=$ver" >> $env:GITHUB_OUTPUT
+          echo "TAG=$tag" >> $env:GITHUB_OUTPUT
+
+      - name: Compile with Nuitka (Native C++ with LTO)
+        run: |
+          python -m nuitka `
+            --standalone `
+            --lto=yes `
+            --enable-plugin=pyside6 `
+            --include-qt-plugins=sensible,styles `
+            --windows-icon-from-ico=icons/eleviewer.ico `
+            --windows-company-name="karefined-eng" `
+            --windows-product-name="EleViewer" `
+            --windows-file-version="${{ steps.version.outputs.VERSION }}.0" `
+            --windows-product-version="${{ steps.version.outputs.VERSION }}.0" `
+            --windows-file-description="Lightweight Document Viewer & Study Workspace" `
+            --include-data-dir=icons=icons `
+            --include-data-dir=getting_started=getting_started `
+            --disable-console `
+            --output-filename=EleViewer.exe `
+            main.py
+
+      - name: Install Inno Setup
+        run: |
+          choco install innosetup
+
+      - name: Compile Inno Setup Installer
+        run: |
+          # Copy Nuitka standalone distribution to dist/
+          mkdir dist
+          cp main.dist/EleViewer.exe dist/
+          
+          # Compile setup.iss with dynamic version from git tag
+          iscc /DAppVersion=${{ steps.version.outputs.VERSION }} setup.iss
+
+      - name: Azure Trusted Signing (SmartScreen Bypass)
+        uses: azure/trusted-signing-action@v0.5.0
+        with:
+          azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          azure-client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          azure-client-secret: ${{ secrets.AZURE_CLIENT_SECRET }}
+          endpoint: https://eus.codesigning.azure.net/
+          code-signing-account-name: karefined_signing
+          certificate-profile-name: EleViewerProfile
+          files-folder: dist
+          files-folder-filter: "exe"
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/EleViewer_Setup_*.exe
+          name: EleViewer ${{ steps.version.outputs.TAG }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true

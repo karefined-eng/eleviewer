@@ -1,21 +1,39 @@
 from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QPlainTextEdit, QToolButton,
+    QWidget, QVBoxLayout, QHBoxLayout, QTextBrowser, QToolButton,
 )
 from PySide6.QtCore import Signal, QSize
 
-from docx import Document
+import base64
 import io
 import os
+import zipfile
+import xml.etree.ElementTree as ET
+
+try:
+    import mammoth
+    MAMMOTH_AVAILABLE = True
+except ImportError:
+    MAMMOTH_AVAILABLE = False
+
+try:
+    from docx import Document
+    DOCX_AVAILABLE = True
+except ImportError:
+    DOCX_AVAILABLE = False
 
 from icons import icon
-from theme import editor_stylesheet, compact_toolbar_stylesheet, ICON_SIZE_COMPACT
+from theme import (
+    editor_stylesheet, compact_toolbar_stylesheet, ICON_SIZE_COMPACT,
+    BRAND_BACKGROUND, BRAND_PRIMARY, BRAND_BORDER, BRAND_PANEL,
+    BRAND_MUTED_FG, get_brand_accent,
+)
 
 
 class DocxViewer(QWidget):
     """
     DOCX viewer and editor.
-    Displays document paragraphs in an editable text area.
-    Supports save/load while preserving basic structure.
+    Renders rich HTML with embedded Base64 images via mammoth (in QTextBrowser)
+    or fallback to python-docx text+image extraction.
     """
 
     textChanged = Signal()
@@ -47,7 +65,8 @@ class DocxViewer(QWidget):
         self.btn_bookmark.clicked.connect(self._add_bookmark_here)
         toolbar.addWidget(self.btn_bookmark)
 
-        self.editor = QPlainTextEdit()
+        self.editor = QTextBrowser()
+        self.editor.setOpenExternalLinks(True)
         self.editor.setStyleSheet(editor_stylesheet())
         self.editor.textChanged.connect(self._on_text_changed)
 
@@ -62,38 +81,237 @@ class DocxViewer(QWidget):
         self._bookmark_callback = callback
 
     def load_from_path(self, file_path):
-        """Load DOCX file from disk."""
-        try:
-            self.docx_content = Document(file_path)
-            self._display_content()
-            self.is_modified = False
-        except Exception as e:
-            raise Exception(f"Failed to load DOCX: {str(e)}")
+        """Load DOCX file from disk with progressive fallbacks."""
+        self.file_path = file_path
+        if DOCX_AVAILABLE:
+            try:
+                self.docx_content = Document(file_path)
+            except Exception as e:
+                print(f"[DOCX Viewer] python-docx load failed: {e}")
+                self.docx_content = None
+        self._display_content()
+        self.is_modified = False
 
     def _display_content(self):
-        """Extract and display all paragraphs from DOCX."""
-        if not self.docx_content:
+        """Render DOCX to rich HTML with base64 images via mammoth, falling back to python-docx and stdlib zip parsing."""
+        if not self.file_path and not self.docx_content:
             return
 
-        text_parts = []
-
-        for para in self.docx_content.paragraphs:
-            if para.text.strip():
-                text_parts.append(para.text)
-
-        for table in self.docx_content.tables:
-            for row in table.rows:
-                row_text = " | ".join(cell.text for cell in row.cells)
-                if row_text.strip():
-                    text_parts.append(row_text)
-
-        combined_text = "\n\n".join(text_parts)
-
         self.editor.blockSignals(True)
-        self.editor.setPlainText(combined_text)
-        self.editor.blockSignals(False)
 
+        if MAMMOTH_AVAILABLE and self.file_path and os.path.exists(self.file_path):
+            try:
+                with open(self.file_path, "rb") as docx_file:
+                    result = mammoth.convert_to_html(
+                        docx_file,
+                        convert_image=mammoth.images.img_element(
+                            self._mammoth_image_converter
+                        ),
+                    )
+                    html_content = result.value
+                    styled_html = self._wrap_html(html_content)
+                    self.editor.setHtml(styled_html)
+                    self.editor.blockSignals(False)
+                    self.is_modified = False
+                    return
+            except Exception as e:
+                print(f"[DOCX Viewer] Mammoth HTML conversion failed: {e}")
+
+        # Fallback 1: python-docx text + image extraction as HTML
+        if self.docx_content:
+            try:
+                html = self._build_html_from_docx(self.docx_content)
+                styled_html = self._wrap_html(html)
+                self.editor.setHtml(styled_html)
+                self.editor.blockSignals(False)
+                self.is_modified = False
+                return
+            except Exception as e:
+                print(f"[DOCX Viewer] python-docx extraction failed: {e}")
+
+        # Fallback 2: Ponytail zero-dependency stdlib ZIP parser
+        if self.file_path and os.path.exists(self.file_path):
+            html = self._fallback_zip_parse(self.file_path)
+            styled_html = self._wrap_html(html)
+            self.editor.setHtml(styled_html)
+
+        self.editor.blockSignals(False)
         self.is_modified = False
+
+    def _fallback_zip_parse(self, file_path):
+        """Zero-dependency stdlib fallback for DOCX files using zipfile & ElementTree."""
+        try:
+            with zipfile.ZipFile(file_path, "r") as z:
+                if "word/document.xml" not in z.namelist():
+                    return "<i>(Empty or invalid DOCX document)</i>"
+
+                doc_xml = z.read("word/document.xml")
+                tree = ET.fromstring(doc_xml)
+
+                # Extract media images
+                image_map = {}
+                if "word/_rels/document.xml.rels" in z.namelist():
+                    rels_tree = ET.fromstring(z.read("word/_rels/document.xml.rels"))
+                    for rel in rels_tree.iter():
+                        if rel.tag.endswith("}Relationship"):
+                            target = rel.attrib.get("Target", "")
+                            rel_id = rel.attrib.get("Id", "")
+                            if "media/" in target:
+                                media_filename = target.split("/")[-1]
+                                media_path = f"word/media/{media_filename}"
+                                if media_path in z.namelist():
+                                    img_bytes = z.read(media_path)
+                                    b64 = base64.b64encode(img_bytes).decode("utf-8")
+                                    ext = media_filename.split(".")[-1].lower()
+                                    mime = "image/jpeg" if ext == "jpg" else f"image/{ext}"
+                                    image_map[rel_id] = f'<img src="data:{mime};base64,{b64}" style="max-width:100%; border-radius:4px; margin:8px 0; display:block;" />'
+
+                # Extract text paragraphs and embedded blips
+                html_parts = []
+                for p in tree.iter():
+                    if p.tag.endswith("}p"):
+                        p_texts = []
+                        for elem in p.iter():
+                            if elem.tag.endswith("}t") and elem.text:
+                                p_texts.append(elem.text)
+                            elif elem.tag.endswith("}blip"):
+                                embed_id = elem.attrib.get("{http://schemas.openxmlformats.org/officeDocument/2006/relationships}embed")
+                                if embed_id and embed_id in image_map:
+                                    p_texts.append(image_map[embed_id])
+
+                        if p_texts:
+                            html_parts.append(f"<p>{''.join(p_texts)}</p>")
+
+                return "".join(html_parts) if html_parts else "<i>(No text content found)</i>"
+        except Exception as e:
+            return f"<i>(Failed to parse DOCX: {e})</i>"
+
+    @staticmethod
+    def _mammoth_image_converter(image):
+        """Convert mammoth image to Base64 data URI for inline rendering."""
+        with image.open() as image_bytes:
+            raw = image_bytes.read()
+        content_type = image.content_type or "image/png"
+        b64 = base64.b64encode(raw).decode("utf-8")
+        return {
+            "src": f"data:{content_type};base64,{b64}",
+        }
+
+    def _build_html_from_docx(self, doc):
+        """Build HTML from python-docx Document with embedded Base64 images."""
+        html_parts = []
+
+        # Build a map of relationship IDs to image data for quick lookup
+        image_map = {}
+        try:
+            for rel_id, rel in doc.part.rels.items():
+                if "image" in rel.reltype:
+                    try:
+                        img_bytes = rel.target_part.blob
+                        content_type = rel.target_part.content_type or "image/png"
+                        b64 = base64.b64encode(img_bytes).decode("utf-8")
+                        image_map[rel_id] = (content_type, b64)
+                    except Exception:
+                        pass
+        except Exception:
+            pass
+
+        # Namespace shortcuts for XML element search
+        ns_drawing = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}drawing"
+        ns_blip = "{http://schemas.openxmlformats.org/drawingml/2006/main}blip"
+        ns_embed = "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}embed"
+
+        for para in doc.paragraphs:
+            # Check paragraph style for heading detection
+            style_name = (para.style.name or "").lower() if para.style else ""
+            tag = "p"
+            if "heading 1" in style_name:
+                tag = "h1"
+            elif "heading 2" in style_name:
+                tag = "h2"
+            elif "heading 3" in style_name:
+                tag = "h3"
+            elif "heading 4" in style_name:
+                tag = "h4"
+
+            # Collect text and inline images from runs
+            run_html = []
+            for run in para.runs:
+                # Check if this run contains an embedded image (drawing element)
+                drawings = run._element.findall(f".//{ns_drawing}")
+                if drawings:
+                    for drawing in drawings:
+                        blips = drawing.findall(f".//{ns_blip}")
+                        for blip in blips:
+                            embed_id = blip.get(ns_embed)
+                            if embed_id and embed_id in image_map:
+                                ct, b64 = image_map[embed_id]
+                                run_html.append(
+                                    f'<img src="data:{ct};base64,{b64}" '
+                                    f'style="max-width:100%; border-radius:4px; '
+                                    f'margin:8px 0; display:block;" />'
+                                )
+
+                # Add text content
+                text = run.text
+                if text:
+                    # Apply basic formatting
+                    if run.bold:
+                        text = f"<b>{text}</b>"
+                    if run.italic:
+                        text = f"<i>{text}</i>"
+                    if run.underline:
+                        text = f"<u>{text}</u>"
+                    run_html.append(text)
+
+            content = "".join(run_html)
+            if content.strip():
+                html_parts.append(f"<{tag}>{content}</{tag}>")
+
+        # Extract tables
+        for table in doc.tables:
+            table_html = ['<table style="border-collapse:collapse; width:100%; margin:12px 0;">']
+            for row_idx, row in enumerate(table.rows):
+                table_html.append("<tr>")
+                cell_tag = "th" if row_idx == 0 else "td"
+                for cell in row.cells:
+                    cell_text = cell.text.strip()
+                    table_html.append(
+                        f'<{cell_tag} style="border:1px solid {BRAND_BORDER}; '
+                        f'padding:6px 10px;">{cell_text}</{cell_tag}>'
+                    )
+                table_html.append("</tr>")
+            table_html.append("</table>")
+            html_parts.append("".join(table_html))
+
+        return "\n".join(html_parts)
+
+    def _wrap_html(self, body_html):
+        """Wrap raw HTML content in a styled document shell matching our dark theme."""
+        accent = get_brand_accent()
+        return f"""
+        <html><head><style>
+            body {{
+                background: {BRAND_BACKGROUND};
+                color: {BRAND_PRIMARY};
+                font-family: 'Segoe UI', sans-serif;
+                font-size: 15px;
+                line-height: 1.7;
+                padding: 16px;
+                margin: 0;
+            }}
+            h1, h2, h3, h4 {{ color: {BRAND_PRIMARY}; margin-top: 1.2em; }}
+            h1 {{ font-size: 22px; border-bottom: 1px solid {BRAND_BORDER}; padding-bottom: 8px; }}
+            h2 {{ font-size: 18px; }}
+            h3 {{ font-size: 16px; }}
+            a {{ color: {accent}; }}
+            table {{ border-collapse: collapse; width: 100%; margin: 12px 0; }}
+            th {{ background: {BRAND_PANEL}; font-weight: bold; }}
+            td, th {{ border: 1px solid {BRAND_BORDER}; padding: 6px 10px; }}
+            img {{ max-width: 100%; border-radius: 4px; margin: 8px 0; }}
+            p {{ margin: 0.5em 0; }}
+        </style></head><body>{body_html}</body></html>
+        """
 
     def _on_text_changed(self):
         """Mark as modified when user edits."""
@@ -141,6 +359,14 @@ class DocxViewer(QWidget):
     def toPlainText(self):
         """Compatibility method - returns text content."""
         return self.editor.toPlainText()
+
+    def read_current_page(self, voice_id=None):
+        """Duck-typed method for TTS engine. Reads selection or full text."""
+        cursor = self.editor.textCursor()
+        text = cursor.selectedText()
+        if not text:
+            text = self.editor.toPlainText()
+        return text
 
     def setPlainText(self, text):
         """Compatibility method - set text content (for reopening tabs)."""

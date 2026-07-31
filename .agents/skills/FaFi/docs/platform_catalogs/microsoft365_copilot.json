@@ -1,0 +1,25 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/copilot/plugin/v2.1/schema.json",
+  "api": {
+    "type": "openapi",
+    "url": "https://skill-hub.example.com/api/v1/openapi.json"
+  },
+  "auth": {
+    "type": "none"
+  },
+  "capabilities": {
+    "conversation_starters": [
+      "Fasse diesen Text zusammen",
+      "Analysiere diese Daten",
+      "Recherchiere zu diesem Thema"
+    ]
+  },
+  "contact_email": "support@skill-hub.example.com",
+  "description_for_human": "Zugriff auf eine zentrale Bibliothek von KI-Skills und Agents f\u00fcr erweiterte Automatisierung.",
+  "description_for_model": "Ein Hub f\u00fcr wiederverwendbare Skills und orchestrierende Agents. Nutze dieses Plugin, um Aufgaben wie Textzusammenfassung, Web-Scraping, Datenanalyse und mehr auszuf\u00fchren.",
+  "legal_info_url": "https://skill-hub.example.com/legal",
+  "logo_url": "https://skill-hub.example.com/logo.png",
+  "name_for_human": "Skill & Agent Hub",
+  "name_for_model": "skill_agent_hub",
+  "schema_version": "v2.1"
+}

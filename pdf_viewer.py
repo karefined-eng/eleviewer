@@ -20,13 +20,33 @@ from PySide6.QtWidgets import (
     QMessageBox, QComboBox, QMenu, QLineEdit, QTreeView,
     QSplitter,
 )
-from PySide6.QtGui import QIntValidator, QKeyEvent, QWheelEvent
-from PySide6.QtCore import Qt, Signal, QTimer, QSize, QPointF
+from PySide6.QtGui import QIntValidator, QKeyEvent, QWheelEvent, QShortcut, QKeySequence
+from PySide6.QtCore import Qt, Signal, QTimer, QSize, QPointF, QThread
+
+class PdfTextWorker(QThread):
+    """Off-thread PDF text extraction worker to prevent GUI freezes during TTS and page scans."""
+    extracted = Signal(int, str)
+
+    def __init__(self, pdf_doc, page_idx):
+        super().__init__()
+        self.pdf_doc = pdf_doc
+        self.page_idx = page_idx
+
+    def run(self):
+        try:
+            selection = self.pdf_doc.getAllText(self.page_idx)
+            text = selection.text().strip() if hasattr(selection, "text") else ""
+            self.extracted.emit(self.page_idx, text)
+        except Exception:
+            self.extracted.emit(self.page_idx, "")
 
 from icons import icon
-from pdf_tts import PdfTts, TTS_AVAILABLE
+from tts_engine import TtsEngine as PdfTts, TTS_AVAILABLE
 from settings import load_settings
-from theme import compact_toolbar_stylesheet, ICON_SIZE_COMPACT
+from theme import (
+    get_active_palette,
+    compact_toolbar_stylesheet, ICON_SIZE_COMPACT
+)
 from paths import APP_DATA_DIR
 
 # ── Custom QPdfView with Ctrl+Wheel zoom and key navigation ─────────
@@ -93,7 +113,7 @@ class PdfViewer(QWidget):
         self.current_page = 0
         self.total_pages = 0
         self._toc_visible = False
-        self._multi_page = False
+        self._multi_page = True
         self.tts = PdfTts(on_error=self._on_tts_error)
 
         self.setFocusPolicy(Qt.StrongFocus)
@@ -105,52 +125,53 @@ class PdfViewer(QWidget):
 
         # ── Toolbar ─────────────────────────────────────────────────
         toolbar = QHBoxLayout()
-        toolbar.setContentsMargins(4, 4, 4, 4)
+        toolbar.setContentsMargins(6, 4, 6, 4)
+        toolbar.setSpacing(4)
         icon_sz = ICON_SIZE_COMPACT
         icon_qsize = QSize(icon_sz, icon_sz)
 
-        def _tb(icon_name, tooltip, slot):
+        def _tb(icon_name, tooltip, slot, text=None):
             btn = QToolButton()
             btn.setIconSize(icon_qsize)
             btn.setIcon(icon(icon_name, size=icon_sz))
+            if text:
+                btn.setText(f" {text}")
+                btn.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+                btn.setStyleSheet(compact_toolbar_stylesheet() + " QToolButton { font-size: 11px; padding: 2px 6px; }")
+            else:
+                btn.setStyleSheet(compact_toolbar_stylesheet())
             btn.setToolTip(tooltip)
-            btn.setStyleSheet(compact_toolbar_stylesheet())
             btn.setAutoRaise(True)
             btn.clicked.connect(slot)
             return btn
 
-        self.btn_toc      = _tb("list",         "Toggle Table of Contents", self._toggle_toc)
+        self.btn_toc      = _tb("list",         "Table of Contents", self._toggle_toc, "Contents")
         self.btn_prev     = _tb("chevron-left",  "Previous page",           self.prev_page)
         self.btn_next     = _tb("chevron-right", "Next page",               self.next_page)
 
         # Page input  ─ editable box + "/ N" label
+        p = get_active_palette()
         self.page_input = QLineEdit()
-        self.page_input.setFixedWidth(48)
+        self.page_input.setFixedWidth(44)
         self.page_input.setAlignment(Qt.AlignCenter)
         self.page_input.setValidator(QIntValidator(1, 99999))
         self.page_input.setStyleSheet(
-            "QLineEdit { background:#2d2d2d; color:#e0e0e0; border:1px solid #444;"
-            " border-radius:3px; padding:1px 4px; font-weight:bold; }"
+            f"QLineEdit {{ background:{p['BRAND_PANEL_2']}; color:{p['BRAND_PRIMARY']}; border:1px solid {p['BRAND_BORDER']};"
+            " border-radius:4px; padding:2px 4px; font-weight:bold; font-size:12px; }"
         )
         self.page_input.returnPressed.connect(self._jump_to_page)
         self.lbl_total = QLabel(" / 0")
-        self.lbl_total.setStyleSheet("color:#aaa; font-weight:bold; padding:0 6px 0 0;")
+        self.lbl_total.setStyleSheet(f"color:{p['BRAND_MUTED_FG']}; font-weight:bold; padding:0 6px 0 2px; font-size:12px;")
 
         self.btn_zoom_out  = _tb("zoom-out",   "Zoom out",                lambda: self._apply_zoom(1 / 1.2))
-        self.btn_fit_page  = _tb("minimize-2", "Fit page",                self.fit_page)
-        self.btn_fit_width = _tb("maximize-2", "Fit width",               self.fit_to_width)
+        self.btn_fit_page  = _tb("minimize-2",   "Fit to page",             self.fit_page)
+        self.btn_fit_width = _tb("maximize-2",    "Fit to width",            self.fit_to_width)
         self.btn_zoom_in   = _tb("zoom-in",    "Zoom in",                 lambda: self._apply_zoom(1.2))
-        self.btn_multi     = _tb("columns-2",  "Toggle continuous scroll", self._toggle_multi_page)
-        self.btn_bookmark  = _tb("book-open",  "Bookmark this page",      self._add_bookmark_here)
-
-        self.voice_combo = QComboBox()
-        self.voice_combo.setMinimumWidth(140)
-        self._populate_voices()
-
-        self.btn_speak = _tb("volume-2", "Read current page aloud", self.read_current_page)
-        self.btn_stop  = _tb("square",   "Stop reading",            self.tts.stop)
+        self.btn_multi     = _tb("columns-2",    "Two-page view",           self._toggle_multi_page)
+        self.btn_bookmark  = _tb("bookmark",   "Bookmark this page",      self._add_bookmark_here, "Bookmark")
 
         toolbar.addWidget(self.btn_toc)
+        toolbar.addSpacing(8)
         toolbar.addWidget(self.btn_prev)
         toolbar.addWidget(self.page_input)
         toolbar.addWidget(self.lbl_total)
@@ -160,11 +181,9 @@ class PdfViewer(QWidget):
         toolbar.addWidget(self.btn_fit_page)
         toolbar.addWidget(self.btn_fit_width)
         toolbar.addWidget(self.btn_zoom_in)
+        toolbar.addSpacing(8)
         toolbar.addWidget(self.btn_multi)
         toolbar.addWidget(self.btn_bookmark)
-        toolbar.addWidget(self.voice_combo)
-        toolbar.addWidget(self.btn_speak)
-        toolbar.addWidget(self.btn_stop)
 
         # ── Content area: TOC splitter + QPdfView ───────────────────
         self.content_splitter = QSplitter(Qt.Horizontal)
@@ -176,17 +195,17 @@ class PdfViewer(QWidget):
         toc_layout.setSpacing(0)
         toc_lbl = QLabel("Table of Contents")
         toc_lbl.setStyleSheet(
-            "background:#1a1a1a; color:#888; font-size:11px; font-weight:bold;"
-            " padding:6px 8px; border-bottom:1px solid #333;"
+            f"background:{p['BRAND_BACKGROUND']}; color:{p['BRAND_MUTED_FG']}; font-size:11px; font-weight:bold;"
+            f" padding:6px 8px; border-bottom:1px solid {p['BRAND_BORDER']};"
         )
         self.toc_tree = QTreeView()
         self.toc_tree.setHeaderHidden(True)
         self.bookmark_model = None
         self.toc_tree.setStyleSheet(
-            "QTreeView { background:#1e1e1e; border:none; color:#d0d0d0; font-size:12px; }"
+            f"QTreeView {{ background:{p['BRAND_PANEL']}; border:none; color:{p['BRAND_PRIMARY']}; font-size:12px; }}"
             "QTreeView::item { padding:4px 6px; }"
-            "QTreeView::item:selected { background:#37373d; }"
-            "QTreeView::item:hover { background:#2a2a2a; }"
+            f"QTreeView::item:selected {{ background:{p['BRAND_PANEL_2']}; }}"
+            f"QTreeView::item:hover {{ background:{p['BRAND_BORDER']}; }}"
         )
         self.toc_tree.clicked.connect(self._on_toc_item_clicked)
         toc_layout.addWidget(toc_lbl)
@@ -204,9 +223,9 @@ class PdfViewer(QWidget):
             
             self.pdf_view = EleViewerPdfView(self)
             self.pdf_view.setDocument(self.pdf_doc_qt)
-            self.pdf_view.setPageMode(QPdfView.PageMode.SinglePage)
+            self.pdf_view.setPageMode(QPdfView.PageMode.MultiPage)
             self.pdf_view.setZoomMode(QPdfView.ZoomMode.FitToWidth)
-            self.pdf_view.setStyleSheet("background: #1e1e1e; border: none;")
+            self.pdf_view.setStyleSheet(f"background: {p['BRAND_BACKGROUND']}; border: none;")
             self.pdf_view.setContextMenuPolicy(Qt.CustomContextMenu)
             self.pdf_view.customContextMenuRequested.connect(self._show_context_menu)
             # Create overlay label
@@ -230,6 +249,9 @@ class PdfViewer(QWidget):
 
         self.content_splitter.addWidget(self.toc_widget)
         self.content_splitter.addWidget(self.pdf_view)
+
+        QShortcut(QKeySequence(Qt.Key_Left), self, context=Qt.WidgetWithChildrenShortcut).activated.connect(self.prev_page)
+        QShortcut(QKeySequence(Qt.Key_Right), self, context=Qt.WidgetWithChildrenShortcut).activated.connect(self.next_page)
 
         outer.addLayout(toolbar)
         outer.addWidget(self.content_splitter)
@@ -325,6 +347,27 @@ class PdfViewer(QWidget):
                 self.pdf_view.width() - lbl_w - padding,
                 self.pdf_view.height() - lbl_h - padding
             )
+        self._prefetch_page_text(page)
+
+    def _prefetch_page_text(self, page):
+        if not hasattr(self, "_page_text_cache"):
+            self._page_text_cache = {}
+        if not hasattr(self, "_active_workers"):
+            self._active_workers = set()
+        for p in (page, page + 1, page - 1):
+            if 0 <= p < self.total_pages and p not in self._page_text_cache:
+                if any(getattr(w, "page_idx", None) == p for w in self._active_workers):
+                    continue
+                worker = PdfTextWorker(self.pdf_doc_qt, p)
+                self._active_workers.add(worker)
+
+                def _on_extracted(idx, txt, w=worker):
+                    self._page_text_cache[idx] = txt
+                    self._active_workers.discard(w)
+
+                worker.extracted.connect(_on_extracted)
+                worker.finished.connect(worker.deleteLater)
+                worker.start()
 
     def _on_page_change_key(self, delta):
         """Called by EleViewerPdfView arrow key signals (-1 or +1)."""
@@ -385,28 +428,32 @@ class PdfViewer(QWidget):
             self.pdf_view.setPageMode(QPdfView.PageMode.MultiPage)
         else:
             self.pdf_view.setPageMode(QPdfView.PageMode.SinglePage)
-        style = "background:#3c3c3c;" if self._multi_page else ""
+        style = " QToolButton { background:#3c3c3c; font-size: 11px; padding: 2px 6px; }" if self._multi_page else " QToolButton { font-size: 11px; padding: 2px 6px; }"
         self.btn_multi.setStyleSheet(compact_toolbar_stylesheet() + style)
 
     # ── Navigation ───────────────────────────────────────────────────
 
     def prev_page(self):
-        if not QTPDF_AVAILABLE:
+        if not QTPDF_AVAILABLE or self.total_pages <= 0:
             return
         nav = self.pdf_view.pageNavigator()
         cur = nav.currentPage()
+        self.tts.stop()
         if cur > 0:
-            self.tts.stop()
             nav.jump(cur - 1, QPointF(), 0)
+        else:
+            nav.jump(self.total_pages - 1, QPointF(), 0)
 
     def next_page(self):
-        if not QTPDF_AVAILABLE:
+        if not QTPDF_AVAILABLE or self.total_pages <= 0:
             return
         nav = self.pdf_view.pageNavigator()
         cur = nav.currentPage()
+        self.tts.stop()
         if cur < self.total_pages - 1:
-            self.tts.stop()
             nav.jump(cur + 1, QPointF(), 0)
+        else:
+            nav.jump(0, QPointF(), 0)
 
     def go_to_bookmark(self, page_number=0, scroll_position_y=0.0):
         if not QTPDF_AVAILABLE or not self.pdf_doc_qt:
@@ -451,20 +498,27 @@ class PdfViewer(QWidget):
 
     # ── TTS ──────────────────────────────────────────────────────────
 
-    def read_current_page(self):
+    def read_current_page(self, voice_id=None):
         if not self.pdf_doc_qt or not TTS_AVAILABLE:
             if self._status_callback:
                 self._status_callback("TTS unavailable or document not loaded", 4000)
-            return
-        text = self.pdf_doc_qt.getAllText(self.current_page).text().strip()
+            return ""
+        try:
+            selection = self.pdf_doc_qt.getAllText(self.current_page)
+            text = selection.text().strip() if hasattr(selection, "text") else ""
+        except Exception as e:
+            print(f"[PDF] Text extraction error: {e}")
+            text = ""
+
         if not text:
             if self._status_callback:
                 self._status_callback("No readable text on this page", 3000)
-            return
-        voice_id = self.voice_combo.currentData()
-        self.tts.speak(text, voice_id=voice_id or None)
+            return ""
+
+        self.tts.speak(text, voice_id=voice_id)
         if self._status_callback:
-            self._status_callback("Reading page aloud...", 2000)
+            self._status_callback(f"Reading page {self.current_page + 1} aloud...", 2000)
+        return text
 
     # ── Compatibility stubs ──────────────────────────────────────────
 

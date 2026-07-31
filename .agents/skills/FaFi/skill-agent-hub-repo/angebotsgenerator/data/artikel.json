@@ -1,0 +1,381 @@
+{
+    "meta": {
+        "version": "2.0",
+        "stand": "2026-01-21",
+        "quelle": "Google Sheets Artikelkatalog + FassadenFix Katalog 2025",
+        "hinweis": "24 Artikel aus Produktliste, ergänzt mit Preisstaffelung aus Katalog"
+    },
+    "artikelgruppen": {
+        "reinigung": {
+            "label": "Fassadenreinigung",
+            "positionsPrefix": "01-09",
+            "farbe": "#7AB800",
+            "artikel": [
+                {
+                    "artikelId": "FR-001",
+                    "bezeichnung": "Fassadenreinigung Standard",
+                    "einheit": "m²",
+                    "preis": 8.50,
+                    "beschreibung": "Standardreinigung mineralischer Fassaden mit umweltverträglichen Reinigungsmitteln. Entfernung von Schmutz, Staub und leichten Ablagerungen.",
+                    "preisAusStaffel": false,
+                    "aktiv": true
+                },
+                {
+                    "artikelId": "FR-002",
+                    "bezeichnung": "Fassadenreinigung Intensiv",
+                    "einheit": "m²",
+                    "preis": 12.50,
+                    "beschreibung": "Intensivreinigung bei starker Verschmutzung. Mehrfachbehandlung mit Spezialreinigern für hartnäckige Ablagerungen und Verfärbungen.",
+                    "preisAusStaffel": false,
+                    "aktiv": true
+                },
+                {
+                    "artikelId": "FR-003",
+                    "bezeichnung": "Algen- und Moosentfernung",
+                    "einheit": "m²",
+                    "preis": 9.50,
+                    "beschreibung": "Professionelle Behandlung gegen Algen, Moos und mikrobiellen Bewuchs. Inkl. Vorbehandlung und Nachspülung.",
+                    "preisAusStaffel": false,
+                    "aktiv": true
+                },
+                {
+                    "artikelId": "FR-004",
+                    "bezeichnung": "Hydrophobe Imprägnierung",
+                    "einheit": "m²",
+                    "preis": 6.50,
+                    "beschreibung": "Wasserabweisende Imprägnierung nach Reinigung. Schützt die Fassade langfristig vor Feuchtigkeit und erneuter Verschmutzung.",
+                    "preisAusStaffel": false,
+                    "aktiv": true
+                },
+                {
+                    "artikelId": "R001",
+                    "bezeichnung": "FassadenFix Systemreinigung bis 499 m²",
+                    "einheit": "m²",
+                    "preis": 11.50,
+                    "beschreibung": "1. Schritt - Kostenfreie Musterfläche\n2. Schritt - Aufbau des gesetzlich vorgeschriebenen Abwasserauffangsystems\n3. Schritt - Auftragen der FassadenFix - Spezialreinigungslösung (FFCplus)\n4. Schritt - Sanftes Abspülen\n5. Schritt - Rückgewinnung & Vor-Ort-Wiederaufbereitung des anfallenden Schmutz- und Abwassers\n6. Schritt - Auftragen des FassadenFix Permanentschutzes (FFP) - 5 Jahre Algenfreiheit garantiert",
+                    "preisAusStaffel": true,
+                    "aktiv": true
+                },
+                {
+                    "artikelId": "R002",
+                    "bezeichnung": "FassadenFix Systemreinigung 500 - 999 m²",
+                    "einheit": "m²",
+                    "preis": 10.50,
+                    "beschreibung": "Schritte analog zur Standardreinigung",
+                    "preisAusStaffel": true,
+                    "aktiv": true
+                },
+                {
+                    "artikelId": "R003",
+                    "bezeichnung": "FassadenFix Systemreinigung 1.000 - 2.499 m²",
+                    "einheit": "m²",
+                    "preis": 9.75,
+                    "beschreibung": "Schritte analog zur Standardreinigung",
+                    "preisAusStaffel": true,
+                    "aktiv": true
+                },
+                {
+                    "artikelId": "R004",
+                    "bezeichnung": "FassadenFix Systemreinigung 2.500 - 4.999 m²",
+                    "einheit": "m²",
+                    "preis": 9.25,
+                    "beschreibung": "Schritte analog zur Standardreinigung",
+                    "preisAusStaffel": true,
+                    "aktiv": true
+                },
+                {
+                    "artikelId": "R005",
+                    "bezeichnung": "FassadenFix Systemreinigung ab 5.000 m²",
+                    "einheit": "m²",
+                    "preis": 8.75,
+                    "beschreibung": "Bestpreis - Schritte analog zur Standardreinigung",
+                    "preisAusStaffel": true,
+                    "aktiv": true
+                }
+            ]
+        },
+        "graffiti": {
+            "label": "Graffiti",
+            "positionsPrefix": "10-14",
+            "farbe": "#E91E63",
+            "artikel": [
+                {
+                    "artikelId": "GR-001",
+                    "bezeichnung": "Graffitientfernung Standard",
+                    "einheit": "m²",
+                    "preis": 35.00,
+                    "beschreibung": "Entfernung von Graffiti auf glatten Untergründen (Glas, Metall, lackierte Flächen) mit schonenden Lösemitteln.",
+                    "aktiv": true
+                },
+                {
+                    "artikelId": "GR-002",
+                    "bezeichnung": "Graffitientfernung Porös",
+                    "einheit": "m²",
+                    "preis": 55.00,
+                    "beschreibung": "Entfernung von Graffiti auf porösen Untergründen (Klinker, Naturstein, Beton) mit Spezialverfahren.",
+                    "aktiv": true
+                },
+                {
+                    "artikelId": "GR-003",
+                    "bezeichnung": "Graffitischutz Permanent",
+                    "einheit": "m²",
+                    "preis": 18.00,
+                    "beschreibung": "Permanenter Graffitischutz-Anstrich. Ermöglicht einfache Reinigung bei erneutem Graffiti ohne Erneuerung des Schutzes.",
+                    "aktiv": true
+                },
+                {
+                    "artikelId": "GR-004",
+                    "bezeichnung": "Graffitischutz Semipermanent",
+                    "einheit": "m²",
+                    "preis": 12.00,
+                    "beschreibung": "Semipermanenter Graffitischutz. Opferschicht, die bei Reinigung mit entfernt und erneuert wird.",
+                    "aktiv": true
+                }
+            ]
+        },
+        "rabatte": {
+            "label": "Rabatte",
+            "positionsPrefix": "15-19",
+            "farbe": "#2196F3",
+            "artikel": [
+                {
+                    "artikelId": "RAB01",
+                    "bezeichnung": "Frühbucherrabatt 6%",
+                    "einheit": "m²",
+                    "beschreibung": "Gilt nur bei Beauftragung bis 31.12.2025",
+                    "rabattProzent": 6,
+                    "aktiv": true
+                },
+                {
+                    "artikelId": "RAB02",
+                    "bezeichnung": "Frühbucherrabatt 4,5%",
+                    "einheit": "m²",
+                    "beschreibung": "Beauftragung bis 31.01.2026",
+                    "rabattProzent": 4.5,
+                    "aktiv": true
+                },
+                {
+                    "artikelId": "RAB03",
+                    "bezeichnung": "Frühbucherrabatt 3%",
+                    "einheit": "m²",
+                    "beschreibung": "Beauftragung bis 28.02.2026",
+                    "rabattProzent": 3,
+                    "aktiv": true
+                },
+                {
+                    "artikelId": "RAB04",
+                    "bezeichnung": "Frühbucherrabatt 1,5%",
+                    "einheit": "m²",
+                    "beschreibung": "Beauftragung bis 31.03.2026",
+                    "rabattProzent": 1.5,
+                    "aktiv": true
+                }
+            ]
+        },
+        "technik": {
+            "label": "Technik & Gerüste",
+            "positionsPrefix": "20-29",
+            "farbe": "#FF9800",
+            "artikel": [
+                {
+                    "artikelId": "ZL-001",
+                    "bezeichnung": "Gerüststellung Standardgerüst",
+                    "einheit": "lfd.M",
+                    "preis": 12.00,
+                    "beschreibung": "Fassadengerüst inkl. Auf- und Abbau, Standzeit bis 4 Wochen. Jede weitere Woche +2,50 €/lfd.m.",
+                    "aktiv": true
+                },
+                {
+                    "artikelId": "ZL-002",
+                    "bezeichnung": "Hubarbeitsbühne",
+                    "einheit": "Tag(e)",
+                    "preis": 280.00,
+                    "beschreibung": "Hubarbeitsbühne (Steiger) pro Einsatztag, inkl. Bediener und Anlieferung im Umkreis von 50 km.",
+                    "aktiv": true
+                },
+                {
+                    "artikelId": "ZL-003",
+                    "bezeichnung": "Hängegerüst",
+                    "einheit": "lfd.M",
+                    "preis": 35.00,
+                    "beschreibung": "Hängegerüst für schwer zugängliche Fassadenbereiche. Inkl. Installation und Sicherheitsprüfung.",
+                    "aktiv": true
+                },
+                {
+                    "artikelId": "T001",
+                    "bezeichnung": "Einsatz Hubarbeitsbühne - Tagespauschale für 1 Gerät",
+                    "einheit": "Tag(e)",
+                    "preis": 390.00,
+                    "beschreibung": "Standard-Bühne bis 30m Arbeitshöhe (Katalogpreis)",
+                    "aktiv": true
+                },
+                {
+                    "artikelId": "T002",
+                    "bezeichnung": "Einsatz Hubarbeitsbühne - Sonderbühne",
+                    "einheit": "Tag(e)",
+                    "preis": 790.00,
+                    "beschreibung": "Spezial-Bühne über 30m Arbeitshöhe",
+                    "aktiv": true
+                },
+                {
+                    "artikelId": "T003",
+                    "bezeichnung": "Spechtloch (klein) ausbessern in gedämmter Fassade",
+                    "einheit": "Stk",
+                    "preis": 75.00,
+                    "beschreibung": "Ausbesserung kleiner Beschädigungen in WDVS-Fassaden",
+                    "aktiv": true
+                },
+                {
+                    "artikelId": "T004",
+                    "bezeichnung": "Spechtloch (groß) ausbessern in gedämmter Fassade",
+                    "einheit": "Stk",
+                    "preis": 150.00,
+                    "beschreibung": "Ausbesserung größerer Beschädigungen in WDVS-Fassaden",
+                    "aktiv": true
+                }
+            ]
+        },
+        "sanierung": {
+            "label": "Sanierung & Anstrich",
+            "positionsPrefix": "30-39",
+            "farbe": "#795548",
+            "artikel": [
+                {
+                    "artikelId": "FS-001",
+                    "bezeichnung": "Fassadenreparatur Kleinschäden",
+                    "einheit": "Stk",
+                    "preis": 85.00,
+                    "beschreibung": "Kleinflächige Ausbesserung von Rissen, Absplitterungen und Putzschäden bis 0,5 m².",
+                    "aktiv": true
+                },
+                {
+                    "artikelId": "FS-002",
+                    "bezeichnung": "Fassadenreparatur Großfläche",
+                    "einheit": "m²",
+                    "preis": 45.00,
+                    "beschreibung": "Großflächige Putzsanierung inkl. Grundierung, Armierungsgewebe und Oberputz.",
+                    "aktiv": true
+                },
+                {
+                    "artikelId": "FS-003",
+                    "bezeichnung": "Fassadenanstrich Dispersionsfarbe",
+                    "einheit": "m²",
+                    "preis": 14.00,
+                    "beschreibung": "Fassadenanstrich mit hochwertiger Dispersionsfarbe. Inkl. Grundierung und 2x Deckanstrich.",
+                    "aktiv": true
+                },
+                {
+                    "artikelId": "FS-004",
+                    "bezeichnung": "Fassadenanstrich Silikatfarbe",
+                    "einheit": "m²",
+                    "preis": 18.00,
+                    "beschreibung": "Mineralischer Fassadenanstrich mit Silikatfarbe. Besonders langlebig und diffusionsoffen.",
+                    "aktiv": true
+                },
+                {
+                    "artikelId": "FS-005",
+                    "bezeichnung": "Fassadenanstrich Silikonharzfarbe",
+                    "einheit": "m²",
+                    "preis": 22.00,
+                    "beschreibung": "Premium-Fassadenanstrich mit Silikonharzfarbe. Höchste Witterungsbeständigkeit und Selbstreinigungseffekt.",
+                    "aktiv": true
+                }
+            ]
+        },
+        "nebenkosten": {
+            "label": "Nebenkosten & Logistik",
+            "positionsPrefix": "40-49",
+            "farbe": "#9C27B0",
+            "artikel": [
+                {
+                    "artikelId": "ZL-004",
+                    "bezeichnung": "An-/Abfahrt Regional",
+                    "einheit": "Pausch.",
+                    "preis": 45.00,
+                    "beschreibung": "Anfahrtskosten im Umkreis bis 30 km ab Halle (Saale).",
+                    "aktiv": true
+                },
+                {
+                    "artikelId": "ZL-005",
+                    "bezeichnung": "An-/Abfahrt Überregional",
+                    "einheit": "km",
+                    "preis": 0.85,
+                    "beschreibung": "Kilometerpauschale für Anfahrten über 30 km ab Halle (Saale).",
+                    "aktiv": true
+                },
+                {
+                    "artikelId": "ZL-006",
+                    "bezeichnung": "Aufmaß und Bestandsaufnahme",
+                    "einheit": "Pausch.",
+                    "preis": 150.00,
+                    "beschreibung": "Detailliertes Aufmaß vor Ort mit Fotodokumentation und Schadensbericht.",
+                    "aktiv": true
+                },
+                {
+                    "artikelId": "ZL-007",
+                    "bezeichnung": "Objektdokumentation",
+                    "einheit": "Pausch.",
+                    "preis": 95.00,
+                    "beschreibung": "Umfassende Fotodokumentation vor, während und nach der Maßnahme inkl. Dokumentationsmappe.",
+                    "aktiv": true
+                },
+                {
+                    "artikelId": "N001",
+                    "bezeichnung": "Baustelleneinrichtung",
+                    "einheit": "Stk",
+                    "preis": 100.00,
+                    "beschreibung": "Einrichtung und Absicherung der Baustelle",
+                    "aktiv": true
+                },
+                {
+                    "artikelId": "N002",
+                    "bezeichnung": "Übernachtungspauschale für 4 Mitarbeiter pro Tag",
+                    "einheit": "Tag(e)",
+                    "preis": 300.00,
+                    "beschreibung": "75,- Euro (netto) pro Tag & Mitarbeiter - KANN ENTFALLEN bei lokalen Objekten",
+                    "bedarfsposition": true,
+                    "aktiv": true
+                }
+            ]
+        },
+        "spezial": {
+            "label": "Spezialreinigung",
+            "positionsPrefix": "50-59",
+            "farbe": "#00BCD4",
+            "artikel": [
+                {
+                    "artikelId": "SP-001",
+                    "bezeichnung": "Denkmalreinigung schonend",
+                    "einheit": "m²",
+                    "preis": 25.00,
+                    "beschreibung": "Schonende Reinigung denkmalgeschützter Fassaden mit speziellen Niedrigdruck-Verfahren.",
+                    "aktiv": true
+                },
+                {
+                    "artikelId": "SP-002",
+                    "bezeichnung": "Klinkerfassade Reinigung",
+                    "einheit": "m²",
+                    "preis": 11.00,
+                    "beschreibung": "Spezialreinigung von Klinkerfassaden inkl. Fugensäuberung und optionaler Neuverfugung.",
+                    "aktiv": true
+                },
+                {
+                    "artikelId": "SP-003",
+                    "bezeichnung": "Natursteinfassade Reinigung",
+                    "einheit": "m²",
+                    "preis": 18.00,
+                    "beschreibung": "Professionelle Reinigung von Natursteinfassaden (Sandstein, Kalkstein, Granit) mit angepassten Reinigungsmitteln.",
+                    "aktiv": true
+                },
+                {
+                    "artikelId": "SP-004",
+                    "bezeichnung": "Glasfassade Reinigung",
+                    "einheit": "m²",
+                    "preis": 4.50,
+                    "beschreibung": "Reinigung von Glasfassaden und Fensterflächen inkl. Rahmen.",
+                    "aktiv": true
+                }
+            ]
+        }
+    }
+}
