@@ -1310,6 +1310,18 @@ class MainWindow(QMainWindow):
                 QSystemTrayIcon.Information, 2000
             )
         else:
+            try:
+                from vault_indexer import _active_worker as vault_worker
+                if vault_worker and vault_worker.isRunning():
+                    vault_worker.cancel()
+                    vault_worker.wait(500)
+            except Exception:
+                pass
+            if hasattr(self, "tts_bar") and self.tts_bar:
+                try:
+                    self.tts_bar.stop()
+                except Exception:
+                    pass
             event.accept()
 
     def save_all_modified(self):
