@@ -76,7 +76,8 @@ class DraggableToolBar(QToolBar):
         self._drag_action = None
         self._action_ids = {} # action -> id string
         self._id_actions = {} # id string -> action
-
+        self._drop_indicator_x = -1
+        
     def register_action(self, action_id, action):
         self._action_ids[action] = action_id
         self._id_actions[action_id] = action
@@ -94,6 +95,36 @@ class DraggableToolBar(QToolBar):
 
     def registered_action_ids(self):
         return list(self._id_actions.keys())
+
+    def _insertion_index_at(self, x):
+        """Return (index, insert-before-action) for the drop position x.
+        
+        Walks visible action widgets left-to-right. If x is left of a
+        widget's horizontal midpoint we insert *before* that action;
+        otherwise we continue. If x is past all widgets we append (None).
+        """
+        actions = self.actions()
+        for i, action in enumerate(actions):
+            w = self.widgetForAction(action)
+            if not w or not w.isVisible():
+                continue
+            mid = w.x() + w.width() // 2
+            if x < mid:
+                return i, action
+        return len(actions), None
+
+    def _indicator_x_at(self, pos_x):
+        """Return the x-pixel for the drop indicator line."""
+        idx, before_action = self._insertion_index_at(pos_x)
+        if before_action:
+            w = self.widgetForAction(before_action)
+            return w.x() - 1 if w else -1
+        # Past all widgets → right edge of last visible widget
+        for action in reversed(self.actions()):
+            w = self.widgetForAction(action)
+            if w and w.isVisible():
+                return w.x() + w.width()
+        return -1
 
     def eventFilter(self, obj, event):
         if isinstance(obj, QToolButton):
@@ -117,6 +148,8 @@ class DraggableToolBar(QToolBar):
         drag.setPixmap(widget.grab())
         drag.exec(Qt.MoveAction)
         self._drag_action = None
+        self._drop_indicator_x = -1
+        self.update()
         
     def dragEnterEvent(self, event):
         if event.mimeData().hasText() and event.mimeData().text() in self._id_actions:
@@ -125,21 +158,42 @@ class DraggableToolBar(QToolBar):
     def dragMoveEvent(self, event):
         if event.mimeData().hasText() and event.mimeData().text() in self._id_actions:
             event.acceptProposedAction()
-            
+            new_x = self._indicator_x_at(event.pos().x())
+            if new_x != self._drop_indicator_x:
+                self._drop_indicator_x = new_x
+                self.update()
+
+    def dragLeaveEvent(self, event):
+        self._drop_indicator_x = -1
+        self.update()
+        super().dragLeaveEvent(event)
+
     def dropEvent(self, event):
-        drop_pos = event.pos()
-        target_action = self.actionAt(drop_pos)
-        
-        if self._drag_action and self._drag_action != target_action:
+        _idx, before_action = self._insertion_index_at(event.pos().x())
+
+        if self._drag_action and self._drag_action != before_action:
             self.removeAction(self._drag_action)
-            if target_action:
-                self.insertAction(target_action, self._drag_action)
+            if before_action:
+                self.insertAction(before_action, self._drag_action)
             else:
                 self.addAction(self._drag_action)
-                
             self.order_changed.emit(self.get_order())
-            
+
+        self._drop_indicator_x = -1
+        self.update()
         event.acceptProposedAction()
+
+    def paintEvent(self, event):
+        super().paintEvent(event)
+        if self._drop_indicator_x < 0:
+            return
+        from PySide6.QtGui import QPainter, QPen
+        from theme import get_active_accent
+        painter = QPainter(self)
+        pen = QPen(get_active_accent()["accent"], 2)
+        painter.setPen(pen)
+        painter.drawLine(self._drop_indicator_x, 4, self._drop_indicator_x, self.height() - 4)
+        painter.end()
 
 
 class MainWindow(QMainWindow):
