@@ -2040,6 +2040,7 @@ class MainWindow(QMainWindow):
 
     def toggle_web_focus(self):
         from icons import icon
+        from theme import get_active_palette, compact_toolbar_stylesheet
         if self._web_dock and self._web_dock.isVisible():
             if self.main_splitter.isVisible():
                 self.main_splitter.hide()
@@ -2065,7 +2066,6 @@ class MainWindow(QMainWindow):
         tb_layout.addWidget(lbl_title)
         tb_layout.addStretch()
 
-        from icons import icon
         icon_sz = 26
         icon_qsize = QSize(icon_sz, icon_sz)
 
