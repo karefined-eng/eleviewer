@@ -174,6 +174,7 @@ from theme import compact_toolbar_stylesheet, ICON_SIZE_COMPACT
 
 
 class WebPanel(QWidget):
+    tabs_changed = Signal()
     expand_requested = Signal()
 
     def __init__(self, parent=None):
