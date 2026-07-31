@@ -63,9 +63,8 @@ jobs:
 
       - name: Compile Inno Setup Installer
         run: |
-          # Copy Nuitka standalone distribution to dist/
+          # Ensure output directory exists
           mkdir dist
-          cp main.dist/EleViewer.exe dist/
           
           # Compile setup.iss with dynamic version from git tag
           iscc /DAppVersion=${{ steps.version.outputs.VERSION }} setup.iss

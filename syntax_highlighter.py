@@ -1,7 +1,7 @@
 import re
 from PySide6.QtGui import QSyntaxHighlighter, QTextCharFormat, QFont, QColor
 from PySide6.QtCore import Qt
-from theme import get_brand_accent, BRAND_MUTED, BRAND_MUTED_FG
+from theme import get_brand_accent, get_active_palette
 
 class MarkdownHighlighter(QSyntaxHighlighter):
     def __init__(self, parent=None):
@@ -9,10 +9,11 @@ class MarkdownHighlighter(QSyntaxHighlighter):
         self._setup_formats()
 
     def _setup_formats(self):
+        p = get_active_palette()
         accent_hex = get_brand_accent()
         accent_color = QColor(accent_hex)
-        muted_color = QColor(BRAND_MUTED_FG)
-        bg_muted = QColor(BRAND_MUTED)
+        muted_color = QColor(p['BRAND_MUTED_FG'])
+        bg_muted = QColor(p['BRAND_MUTED'])
 
         self.rules = []
 
@@ -71,10 +72,11 @@ class HtmlHighlighter(QSyntaxHighlighter):
         self._setup_formats()
 
     def _setup_formats(self):
+        p = get_active_palette()
         accent_hex = get_brand_accent()
         accent_color = QColor(accent_hex)
-        muted_color = QColor(BRAND_MUTED_FG)
-        bg_muted = QColor(BRAND_MUTED)
+        muted_color = QColor(p['BRAND_MUTED_FG'])
+        bg_muted = QColor(p['BRAND_MUTED'])
 
         self.rules = []
 

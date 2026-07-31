@@ -51,10 +51,8 @@ Name: "associate"; Description: "Open my study files (PDFs, Word docs, Excel, Po
 Name: "contextmenu"; Description: "Add 'Open with EleViewer' to my right-click menu in Windows Explorer"; GroupDescription: "Windows Explorer Integration"
 
 [Files]
-; The source is the single portable executable created by PyInstaller.
-Source: "dist\EleViewer.exe"; DestDir: "{app}"; Flags: ignoreversion
-Source: "icons\*"; DestDir: "{app}\icons"; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "getting_started\*"; DestDir: "{app}\getting_started"; Flags: ignoreversion recursesubdirs createallsubdirs
+; The source is the Nuitka standalone directory (which includes DLLs and native Rust extensions).
+Source: "main.dist\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
 Name: "{autoprograms}\EleViewer"; Filename: "{app}\EleViewer.exe"
