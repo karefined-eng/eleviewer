@@ -9,5 +9,16 @@ Installers:
     InstallerSha256: E1EF2B0FB6A01D3061331297B0FF621FD70A2E8C35338148A7E75CCF777FED3A
 Commands:
   - eleviewer
+FileExtensions:
+  - pdf
+  - docx
+  - xlsx
+  - pptx
+  - md
+  - csv
+  - tsv
+  - txt
+  - html
+  - htm
 ManifestType: installer
 ManifestVersion: 1.6.0
