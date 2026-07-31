@@ -1072,7 +1072,7 @@ class MainWindow(QMainWindow):
         
         list_style = f"""
             QListWidget {{ background: transparent; border: none; color: {p['BRAND_PRIMARY']}; outline: none; font-size: 14px; }}
-            QListWidget::item {{ padding: 10px; border-radius: 6px; }}
+            QListWidget::item {{ padding: 10px; border-radius: 6px; color: {p['BRAND_PRIMARY']}; }}
             QListWidget::item:hover {{ background: {p['BRAND_PANEL_2']}; }}
         """
         
@@ -1090,7 +1090,7 @@ class MainWindow(QMainWindow):
             recent_list.addItem(QListWidgetItem("No recent files"))
         else:
             for path in recent_files:
-                item = QListWidgetItem(icon("book-open", size=16), "  " + os.path.basename(path))
+                item = QListWidgetItem(icon("book-open", size=16, color=p['BRAND_PRIMARY']), "  " + os.path.basename(path))
                 item.setData(Qt.UserRole, path)
                 recent_list.addItem(item)
         recent_list.setFixedHeight(min(45 * max(1, len(recent_files)), 150))
@@ -1111,7 +1111,7 @@ class MainWindow(QMainWindow):
             bm_list.addItem(QListWidgetItem("No bookmarks"))
         else:
             for b in bms:
-                item = QListWidgetItem(icon("bookmark", size=16), "  " + b.get("label", "Bookmark"))
+                item = QListWidgetItem(icon("bookmark", size=16, color=p['BRAND_PRIMARY']), "  " + b.get("label", "Bookmark"))
                 item.setData(Qt.UserRole, b)
                 bm_list.addItem(item)
         bm_list.setFixedHeight(min(45 * max(1, len(bms)), 150))
@@ -1149,7 +1149,7 @@ class MainWindow(QMainWindow):
         
         btn_note = QToolButton()
         btn_note.setText(" New Text Note")
-        btn_note.setIcon(icon("file-plus", size=18))
+        btn_note.setIcon(icon("file-plus", size=18, color=p['BRAND_PRIMARY']))
         btn_note.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
         btn_note.setStyleSheet(btn_style)
         btn_note.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
@@ -1158,7 +1158,7 @@ class MainWindow(QMainWindow):
         
         btn_web = QToolButton()
         btn_web.setText(" Open Web Browser")
-        btn_web.setIcon(icon("globe", size=18))
+        btn_web.setIcon(icon("globe", size=18, color=p['BRAND_PRIMARY']))
         btn_web.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
         btn_web.setStyleSheet(btn_style)
         btn_web.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
@@ -1179,6 +1179,7 @@ class MainWindow(QMainWindow):
             ("Alt+V", "Toggle vault"),
             ("F11", "Zen mode")
         ]
+
         grid = QWidget()
         grid_layout = QGridLayout(grid)
         grid_layout.setSpacing(12)

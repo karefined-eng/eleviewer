@@ -9,7 +9,7 @@ from PySide6.QtGui import QFont
 from settings import load_settings, save_settings, DEFAULT_SETTINGS, DEFAULT_WEB_TABS
 from theme import (
     MARKDOWN_ICON_SIZE_MIN, MARKDOWN_ICON_SIZE_MAX,
-    resolve_markdown_icon_size, BRAND_PANEL, BRAND_BORDER, BRAND_BACKGROUND
+    resolve_markdown_icon_size, get_active_palette
 )
 
 
@@ -18,11 +18,12 @@ class SettingCard(QFrame):
     def __init__(self, title_text, desc_text, control_widget, parent=None):
         super().__init__(parent)
         self.setObjectName("SettingCard")
+        p = get_active_palette()
         # Inline styling fallback (better if in theme.py, but safe here)
         self.setStyleSheet(f"""
             #SettingCard {{
-                background: {BRAND_PANEL};
-                border: 1px solid {BRAND_BORDER};
+                background: {p['BRAND_PANEL']};
+                border: 1px solid {p['BRAND_BORDER']};
                 border-radius: 8px;
             }}
         """)
@@ -73,6 +74,7 @@ class SettingsView(QWidget):
         super().__init__(parent)
         self.main_window = main_window
         self.settings = load_settings()
+        p = get_active_palette()
         
         main_layout = QHBoxLayout(self)
         main_layout.setContentsMargins(0, 0, 0, 0)
@@ -81,13 +83,13 @@ class SettingsView(QWidget):
         # Sidebar
         self.sidebar = QListWidget()
         self.sidebar.setFixedWidth(200)
-        self.sidebar.setStyleSheet(f"background: {BRAND_BACKGROUND}; border-right: 1px solid {BRAND_BORDER}; border-top: none; border-bottom: none; border-left: none;")
+        self.sidebar.setStyleSheet(f"background: {p['BRAND_BACKGROUND']}; border-right: 1px solid {p['BRAND_BORDER']}; border-top: none; border-bottom: none; border-left: none; color: {p['BRAND_PRIMARY']};")
         self.sidebar.setFocusPolicy(Qt.NoFocus)
         self.sidebar.setSpacing(4)
         
         # Main content area
         self.stack = QStackedWidget()
-        self.stack.setStyleSheet(f"background: {BRAND_BACKGROUND};")
+        self.stack.setStyleSheet(f"background: {p['BRAND_BACKGROUND']}; color: {p['BRAND_PRIMARY']};")
         
         main_layout.addWidget(self.sidebar)
         main_layout.addWidget(self.stack)

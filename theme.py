@@ -254,25 +254,26 @@ def compact_toolbar_stylesheet():
 
 
 def xlsx_sheet_tab_stylesheet():
+    p = get_active_palette()
     accent = get_active_accent()
     return f"""
         QTabBar {{
-            background: {BRAND_PANEL};
-            border-top: 1px solid {BRAND_BORDER};
+            background: {p['BRAND_PANEL']};
+            border-top: 1px solid {p['BRAND_BORDER']};
         }}
         QTabBar::tab {{
-            background: {BRAND_PANEL_2};
-            color: {BRAND_MUTED_FG};
+            background: {p['BRAND_PANEL_2']};
+            color: {p['BRAND_MUTED_FG']};
             padding: 6px 16px;
             margin-right: 1px;
-            border-right: 1px solid {BRAND_BORDER};
+            border-right: 1px solid {p['BRAND_BORDER']};
             font-size: 12px;
         }}
         QTabBar::tab:selected {{
-            background: {BRAND_BACKGROUND};
-            color: {BRAND_PRIMARY};
+            background: {p['BRAND_BACKGROUND']};
+            color: {p['BRAND_PRIMARY']};
             font-weight: bold;
             border-top: 2px solid {accent['accent']};
         }}
-        QTabBar::tab:hover {{ background: {BRAND_MUTED}; }}
+        QTabBar::tab:hover {{ background: {p['BRAND_MUTED']}; }}
     """
