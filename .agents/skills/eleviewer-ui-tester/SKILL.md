@@ -51,8 +51,9 @@ As a core tenet of the "Sovereignty Workstation", the UI must remain fast and co
 - **Offline-First Resilience:** Ensure no network calls or telemetry block the UI. The app must function instantly without an internet connection.
 
 ### D. Critical Gotchas to Check
-- **Lazy-Scope Import Contamination (Rule 25):** Any lazy-loaded function (like `open_web_tab()`) containing local imports AND `global` statements MUST place all local imports at the VERY TOP of the function scope. Mid-function imports cause Python to treat the symbol as an unbound local throughout the entire method, raising `UnboundLocalError` when accessed above the import line.
+- **Lazy-Scope Import Contamination (Rule 25 & 36):** Any lazy-loaded function (like `open_web_tab()` or `toggle_web_focus()`) containing local imports MUST place ALL needed names at the VERY TOP of the function body. Module-level imports become invisible inside functions that contain any local `from x import y` statement. Missing imports raise a fatal `NameError` only at runtime when the lazy path executes — not during module load. Always grep for every name used in the function and confirm it's imported locally.
 - **Dynamic Theme Palette Access (Rule 2):** PySide6 UI modules (`csv_viewer.py`, `xlsx_viewer.py`) MUST access colors dynamically via `p = get_active_palette()` (e.g., `p['BRAND_PANEL']`) inside initialization methods. Never use module-level static imports or unimported static constants.
+- **QSyntaxHighlighter Override Bug (Rule 40):** If syntax highlighting (bold headings, colored inline code, italics) is invisible in `MarkdownViewer` or `HtmlViewer`, the root cause is almost always `color`, `font-size`, or `font-family` inside the `QPlainTextEdit.setStyleSheet()` block. Qt's stylesheet engine silently overrides all `QTextCharFormat` properties applied by the highlighter. Fix: remove those CSS properties from the stylesheet; inject them natively via `widget.setFont(QFont("Consolas", 14))` and `palette.setColor(QPalette.Text, QColor(...)); widget.setPalette(palette)`. Then call `highlighter._setup_formats(); highlighter.rehighlight()`.
 
 ### E. Auto-Telemetry Crash Triage (`gh issue list`)
 Because EleViewer suppresses terminal stack traces and posts crashes to GitHub via telemetry:
@@ -63,6 +64,14 @@ Because EleViewer suppresses terminal stack traces and posts crashes to GitHub v
    ```powershell
    gh issue close 45; gh issue close 46; gh issue close 47
    ```
+
+### F. Distribution & Bundling Integrity Check
+When auditing a release cycle, verify the following are consistent across all channels:
+1. **setup.iss FileExtensions:** Confirm ProgIDs for `.txt`, `.csv`, `.tsv`, `.html`, `.htm`, `.md`, `.pdf`, `.docx`, `.xlsx`, `.pptx` are all registered under `HKCU\Software\Classes\` (not `HKCR`). The `[Tasks]` section should list all formats explicitly.
+2. **winget `installer.yaml` FileExtensions:** The `FileExtensions:` block MUST list all 10 supported extensions (`pdf`, `docx`, `xlsx`, `pptx`, `md`, `csv`, `tsv`, `txt`, `html`, `htm`). Missing this field prevents Windows Open With integration for users who install via `winget install`.
+3. **CI Rust Build Order (`build.yml`):** The workflow must run `cd eleviewer-native; maturin develop --release` BEFORE the Nuitka compile step. Never use `pip install ./eleviewer-native` — this requires a pre-built `.whl` that won't exist on a fresh runner.
+4. **Nuitka Module Inclusion:** Verify `--include-module=eleviewer_native` is present in the Nuitka compile step so the Rust `.pyd` is explicitly bundled into `main.dist/`.
+5. **Stale Dependencies:** Run `grep -r "import <package>" --include="*.py" .` for every entry in `requirements.txt`. Remove any package with zero import references (e.g., `pygame` violates Rule 20 — native WinMM audio via `ctypes` replaces it).
 
 ---
 
