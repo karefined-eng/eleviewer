@@ -30,11 +30,18 @@ DEFAULT_SETTINGS = {
     "theme_mode": "dark",
     "theme_accent": "blue",
     "tts_voice_id": None,
+    "tts_rate": 200,
     "tts_read_mode": "page",
     "onboarding_completed": False,
     "last_run_version": "0.0.0",
     "file_search_scope": "active_vault",
     "toolbar_order": ["new", "vault", "bookmarks", "open", "save", "tts", "web", "settings"],
+    "hardware_acceleration_enabled": True,
+    "restore_session_tabs": True,
+    "vault_auto_index": True,
+    "web_enable_javascript": True,
+    "web_enable_adblock": True,
+    "toolbar_hidden": [],
 }
 
 

@@ -64,10 +64,9 @@ def _tab_icon_for(path_or_name, active=False):
     return file_type_icon(ext or ".txt", size=18, active=active)
 
 
-
-
 class DraggableToolBar(QToolBar):
     order_changed = Signal(list)
+    hidden_changed = Signal(list)
 
     def __init__(self, title, parent=None):
         super().__init__(title, parent)
@@ -91,6 +90,9 @@ class DraggableToolBar(QToolBar):
 
     def get_order(self):
         return [self._action_ids[a] for a in self.actions() if a in self._action_ids]
+        
+    def get_hidden(self):
+        return [aid for aid, action in self._id_actions.items() if action not in self.actions()]
 
     def registered_action_ids(self):
         return list(self._id_actions.keys())
@@ -118,7 +120,7 @@ class DraggableToolBar(QToolBar):
         if before_action:
             w = self.widgetForAction(before_action)
             return w.x() - 1 if w else -1
-        # Past all widgets → right edge of last visible widget
+        # Past all widgets   right edge of last visible widget
         for action in reversed(self.actions()):
             w = self.widgetForAction(action)
             if w and w.isVisible():
@@ -137,6 +139,36 @@ class DraggableToolBar(QToolBar):
                         self._start_drag(action, obj)
                         return True
         return super().eventFilter(obj, event)
+        
+    def contextMenuEvent(self, event):
+        from PySide6.QtWidgets import QMenu
+        menu = QMenu(self)
+        menu.setStyleSheet("QMenu { border-radius: 6px; padding: 4px; }")
+        
+        # Add toggles for all registered actions
+        for action_id, action in self._id_actions.items():
+            toggle_action = menu.addAction(action.text() or action_id.capitalize())
+            toggle_action.setCheckable(True)
+            # A registered action is considered "enabled" in the toolbar if it is in self.actions()
+            toggle_action.setChecked(action in self.actions())
+            toggle_action.toggled.connect(lambda checked, a_id=action_id: self._toggle_action_visibility(a_id, checked))
+            
+        menu.exec_(event.globalPos())
+        
+    def _toggle_action_visibility(self, action_id, visible):
+        action = self._id_actions.get(action_id)
+        if not action:
+            return
+            
+        if visible and action not in self.actions():
+            # Add it back to the end
+            self.add_action_by_id(action_id)
+            self.order_changed.emit(self.get_order())
+            self.hidden_changed.emit(self.get_hidden())
+        elif not visible and action in self.actions():
+            self.removeAction(action)
+            self.order_changed.emit(self.get_order())
+            self.hidden_changed.emit(self.get_hidden())
 
     def _start_drag(self, action, widget):
         self._drag_action = action
@@ -581,16 +613,21 @@ class MainWindow(QMainWindow):
         toolbar_order = settings_data.get("toolbar_order")
         if not isinstance(toolbar_order, list):
             toolbar_order = DEFAULT_SETTINGS["toolbar_order"]
+            
+        toolbar_hidden = settings_data.get("toolbar_hidden")
+        if not isinstance(toolbar_hidden, list):
+            toolbar_hidden = DEFAULT_SETTINGS.get("toolbar_hidden", [])
 
         # Add actions in the saved order
         for action_id in toolbar_order:
             if action_id == "web" and not WEB_AVAILABLE:
                 continue
-            self.toolbar.add_action_by_id(action_id)
+            if action_id not in toolbar_hidden:
+                self.toolbar.add_action_by_id(action_id)
             
-        # Add any remaining actions that are registered but missing from the saved order
+        # Add any remaining actions that are registered but missing from the saved order (and not hidden)
         for action_id in self.toolbar.registered_action_ids():
-            if action_id not in toolbar_order:
+            if action_id not in toolbar_order and action_id not in toolbar_hidden:
                 if action_id == "web" and not WEB_AVAILABLE:
                     continue
                 self.toolbar.add_action_by_id(action_id)
@@ -600,7 +637,14 @@ class MainWindow(QMainWindow):
             s = load_settings()
             s["toolbar_order"] = new_order
             save_settings(s)
+            
+        def save_hidden(new_hidden):
+            s = load_settings()
+            s["toolbar_hidden"] = new_hidden
+            save_settings(s)
+            
         self.toolbar.order_changed.connect(save_order)
+        self.toolbar.hidden_changed.connect(save_hidden)
 
     def _add_menu_action(self, menu, text, slot, shortcut=None):
         action = QAction(text, self)
