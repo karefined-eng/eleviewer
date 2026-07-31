@@ -196,6 +196,8 @@ class WebPanel(QWidget):
         self.url_bar = QLineEdit()
         self.url_bar.setPlaceholderText("Search or enter web URL...")
         self.url_bar.returnPressed.connect(self._navigate_current)
+        from theme import get_brand_accent
+        accent = get_brand_accent()
         self.url_bar.setStyleSheet(f"""
             QLineEdit {{
                 background: {p['BRAND_PANEL']};
@@ -206,7 +208,7 @@ class WebPanel(QWidget):
                 font-size: 13px;
             }}
             QLineEdit:focus {{
-                border: 1px solid {p['BRAND_ACCENT']};
+                border: 1px solid {accent};
             }}
         """)
 
@@ -264,7 +266,7 @@ class WebPanel(QWidget):
                 background: transparent;
             }}
             QProgressBar::chunk {{
-                background: {p['BRAND_ACCENT']};
+                background: {accent};
             }}
         """)
         self.progress_bar.hide()

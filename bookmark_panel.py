@@ -29,7 +29,11 @@ class BookmarkItemWidget(QWidget):
         page = bookmark.get("page_number", 0)
         suffix = f" · p.{page + 1}" if path.lower().endswith(".pdf") else ""
         
-        self.lbl_text = QLabel(f"<b>{label}</b><br><span style='color:#aaa'>{name}{suffix}</span>")
+        from theme import get_active_palette
+        p = get_active_palette()
+        c_prim = p["BRAND_PRIMARY"]
+        c_muted = p["BRAND_MUTED_FG"]
+        self.lbl_text = QLabel(f"<span style='color:{c_prim}; font-weight:bold;'>{label}</span><br><span style='color:{c_muted}; font-size:11px;'>{name}{suffix}</span>")
         self.lbl_text.setTextFormat(Qt.RichText)
         
         self.btn_edit = QToolButton()
@@ -39,15 +43,16 @@ class BookmarkItemWidget(QWidget):
         self.btn_edit.clicked.connect(self._on_edit)
         
         self.btn_del = QToolButton()
-        self.btn_del.setIcon(icon("square", size=14)) # fallback, maybe use eraser or trash if we had it, but pencil and square are available. Wait, I can just use a simple text 'x' if no trash icon exists, but wait, do we have a trash icon? Let's check our icon set. I'll just use the eraser icon or text "X". Or I can use 'eraser' icon.
+        self.btn_del.setIcon(icon("square", size=14))
         self.btn_del.setText("X")
         self.btn_del.setToolTip("Delete Bookmark")
-        self.btn_del.setStyleSheet("QToolButton { color: #f44336; font-weight: bold; padding: 2px; border:none; } QToolButton:hover { background: #550000; }")
+        self.btn_del.setStyleSheet(f"QToolButton {{ color: #f44336; font-weight: bold; padding: 2px; border:none; }} QToolButton:hover {{ background: {p['BRAND_PANEL_2']}; }}")
         self.btn_del.clicked.connect(self._on_delete)
 
         layout.addWidget(self.lbl_text, stretch=1)
         layout.addWidget(self.btn_edit)
         layout.addWidget(self.btn_del)
+
 
     def _on_edit(self):
         from PySide6.QtWidgets import (
@@ -97,29 +102,35 @@ class BookmarkPanel(QWidget):
         layout.setContentsMargins(4, 4, 4, 4)
         layout.setSpacing(4)
 
-        header = QLabel("BOOKMARKS")
-        header.setStyleSheet(f"color: {BRAND_MUTED_FG}; font-size: 11px; font-weight: bold; padding: 4px;")
-        layout.addWidget(header)
+        self.header = QLabel("BOOKMARKS")
+        layout.addWidget(self.header)
 
         self.list_widget = QListWidget()
-        accent = get_brand_accent()
-        self.list_widget.setStyleSheet(f"""
-            QListWidget {{
-                background: {BRAND_PANEL};
-                color: {BRAND_PRIMARY};
-                border: none;
-                font-size: 13px;
-            }}
-            QListWidget::item {{ padding: 2px; }}
-            QListWidget::item:selected {{ background: {accent}; color: {BRAND_BACKGROUND}; }}
-            QListWidget::item:hover {{ background: {BRAND_MUTED}; }}
-        """)
         self.list_widget.itemDoubleClicked.connect(self._on_item_double_clicked)
         self.list_widget.setContextMenuPolicy(Qt.CustomContextMenu)
         self.list_widget.customContextMenuRequested.connect(self._show_context_menu)
         layout.addWidget(self.list_widget)
 
+        self.reload_theme()
         self.refresh()
+
+    def reload_theme(self):
+        from theme import get_active_palette, get_brand_accent
+        p = get_active_palette()
+        accent = get_brand_accent()
+        self.setStyleSheet(f"background-color: {p['BRAND_PANEL']}; color: {p['BRAND_PRIMARY']};")
+        self.header.setStyleSheet(f"color: {p['BRAND_MUTED_FG']}; font-size: 11px; font-weight: bold; padding: 4px;")
+        self.list_widget.setStyleSheet(f"""
+            QListWidget {{
+                background: {p['BRAND_PANEL']};
+                color: {p['BRAND_PRIMARY']};
+                border: none;
+                font-size: 13px;
+            }}
+            QListWidget::item {{ padding: 2px; }}
+            QListWidget::item:selected {{ background: {accent}; color: {p['BRAND_PRIMARY_FG']}; }}
+            QListWidget::item:hover {{ background: {p['BRAND_PANEL_2']}; }}
+        """)
 
     def refresh(self):
         self.list_widget.clear()

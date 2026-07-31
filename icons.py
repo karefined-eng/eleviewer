@@ -19,7 +19,14 @@ else:
 _cache: dict[tuple[str, int, str], QIcon] = {}
 
 
-def icon(name: str, size: int = ICON_SIZE_TOOLBAR, color: str = "#e0e0e0") -> QIcon:
+def icon(name: str, size: int = ICON_SIZE_TOOLBAR, color: str = None) -> QIcon:
+    if color is None:
+        try:
+            from theme import get_active_palette
+            color = get_active_palette().get("BRAND_PRIMARY", "#e0e0e0")
+        except Exception:
+            color = "#e0e0e0"
+
     key = (name, size, color)
     if key in _cache:
         return _cache[key]

@@ -104,12 +104,12 @@ def main_window_stylesheet():
     accent = get_active_accent()
     return f"""
         QMainWindow {{ background-color: {p['BRAND_BACKGROUND']}; }}
-        QToolBar {{ background-color: {p['BRAND_PANEL']}; border-bottom: 1px solid {p['BRAND_BORDER']}; padding: 6px; spacing: 12px; }}
-        QToolButton {{ color: {p['BRAND_PRIMARY']}; background-color: transparent; border: none; padding: 6px; border-radius: 6px; min-width: 28px; min-height: 28px; }}
+        QToolBar {{ background-color: {p['BRAND_PANEL']}; border-bottom: 1px solid {p['BRAND_BORDER']}; padding: 4px 8px; spacing: 4px; }}
+        QToolButton {{ color: {p['BRAND_PRIMARY']}; background-color: transparent; border: none; padding: 4px 6px; border-radius: 6px; }}
         QToolButton:hover {{ background-color: {p['BRAND_PANEL_2']}; }}
         QToolButton:pressed {{ background-color: {accent['pressed']}; color: {p['BRAND_BACKGROUND']}; }}
         QToolButton:checked {{ background-color: {accent['accent']}; color: {p['BRAND_BACKGROUND']}; }}
-        QToolBar QToolButton {{ min-width: 65px; min-height: 50px; font-size: 11px; }}
+        QToolBar QToolButton {{ min-width: 32px; min-height: 28px; padding: 4px 8px; font-size: 12px; }}
         QTabWidget::pane {{ border: 1px solid {p['BRAND_BORDER']}; background-color: {p['BRAND_PANEL']}; }}
         QTabBar {{ background-color: {p['TAB_BAR_BG']}; border-bottom: 1px solid {p['BRAND_BORDER']}; }}
         QTabBar::tab {{ background-color: {p['TAB_BG']}; color: {p['BRAND_MUTED_FG']}; padding: 6px 14px; margin-right: 1px; font-size: 11px; font-family: 'Segoe UI', sans-serif; border-top: 2px solid transparent; border-top-left-radius: 6px; border-top-right-radius: 6px; }}

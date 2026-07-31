@@ -33,31 +33,33 @@ class QuickSwitcher(QDialog):
                     seen.add(f)
         
         self.setWindowTitle("Quick Switcher")
+        from theme import get_active_palette, get_brand_accent
+        p = get_active_palette()
         accent = get_brand_accent()
         self.setStyleSheet(f"""
             QDialog {{
-                background: {BRAND_BACKGROUND};
-                color: {BRAND_PRIMARY};
+                background: {p['BRAND_BACKGROUND']};
+                color: {p['BRAND_PRIMARY']};
             }}
             QLineEdit {{
-                background: {BRAND_PANEL};
-                color: {BRAND_PRIMARY};
-                border: 1px solid {BRAND_BORDER};
+                background: {p['BRAND_PANEL']};
+                color: {p['BRAND_PRIMARY']};
+                border: 1px solid {p['BRAND_BORDER']};
                 padding: 8px;
                 font-size: 14px;
                 selection-background-color: {accent};
             }}
             QListWidget {{
-                background: {BRAND_PANEL};
-                color: {BRAND_PRIMARY};
-                border: 1px solid {BRAND_BORDER};
+                background: {p['BRAND_PANEL']};
+                color: {p['BRAND_PRIMARY']};
+                border: 1px solid {p['BRAND_BORDER']};
             }}
             QListWidget::item:selected {{
                 background: {accent};
-                color: {BRAND_BACKGROUND};
+                color: {p['BRAND_PRIMARY_FG']};
             }}
             QListWidget::item:hover {{
-                background: {BRAND_MUTED};
+                background: {p['BRAND_PANEL_2']};
             }}
         """)
         

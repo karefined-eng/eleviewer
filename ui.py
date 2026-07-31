@@ -555,11 +555,25 @@ class MainWindow(QMainWindow):
                 lambda idx=i-1: self.tabs.setCurrentIndex(min(idx, self.tabs.count()-1)) if self.tabs.count() > 0 else None
             )
 
+    def apply_theme(self):
+        self.setStyleSheet(main_window_stylesheet())
+        self._setup_status_bar()
+        self.create_menu()
+        if self.vault_panel and hasattr(self.vault_panel, "reload_theme"):
+            self.vault_panel.reload_theme()
+        if self.bookmarks_panel and hasattr(self.bookmarks_panel, "reload_theme"):
+            self.bookmarks_panel.reload_theme()
+        if hasattr(self, "tabs"):
+            for i in range(self.tabs.count()):
+                w = self.tabs.widget(i)
+                if hasattr(w, "reload_theme"):
+                    w.reload_theme()
+
     def _build_toolbar(self):
         self.toolbar = DraggableToolBar("Main Toolbar")
         self.toolbar.setMovable(False)
-        self.toolbar.setIconSize(QSize(ICON_SIZE_TOOLBAR, ICON_SIZE_TOOLBAR))
-        self.toolbar.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
+        self.toolbar.setIconSize(QSize(ICON_SIZE_COMPACT, ICON_SIZE_COMPACT))
+        self.toolbar.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
         self.addToolBar(self.toolbar)
 
         new_file_action = QAction(icon("file-plus", size=ICON_SIZE_TOOLBAR), "New File", self)

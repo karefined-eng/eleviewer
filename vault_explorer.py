@@ -84,7 +84,21 @@ class VaultExplorer(QWidget):
         self.tree.setHeaderHidden(True)
         self.tree.setAnimated(True)
         self.tree.setIndentation(16)
+        self.tree.itemExpanded.connect(self._on_item_expanded)
+        self.tree.itemDoubleClicked.connect(self._on_item_double_clicked)
+        self.tree.itemSelectionChanged.connect(self._on_tree_selection_changed)
+
+        layout.addLayout(header_row)
+        layout.addWidget(self.tree)
+        self.reload_theme()
+
+    def reload_theme(self):
         p = get_active_palette()
+        accent = get_brand_accent()
+        self.setStyleSheet(f"background-color: {p['BRAND_PANEL']}; color: {p['BRAND_PRIMARY']};")
+        self.vault_selector.setStyleSheet(
+            f"QComboBox {{ background: {p['BRAND_PANEL_2']}; color: {p['BRAND_PRIMARY']}; border: 1px solid {p['BRAND_BORDER']}; padding: 4px; border-radius: 4px; }} QComboBox QAbstractItemView {{ background: {p['BRAND_PANEL']}; color: {p['BRAND_PRIMARY']}; border: 1px solid {p['BRAND_BORDER']}; selection-background-color: {accent}; selection-color: {p['BRAND_PRIMARY_FG']}; }}"
+        )
         self.tree.setStyleSheet(f"""
             QTreeWidget {{
                 background: {p['BRAND_PANEL']};
@@ -94,15 +108,9 @@ class VaultExplorer(QWidget):
                 outline: none;
             }}
             QTreeWidget::item {{ padding: 5px 6px; border-left: 2px solid transparent; }}
-            QTreeWidget::item:selected {{ background: {p['BRAND_PANEL_2']}; border-left: 2px solid {get_brand_accent()}; color: #ffffff; font-weight: bold; }}
+            QTreeWidget::item:selected {{ background: {p['BRAND_PANEL_2']}; border-left: 2px solid {accent}; color: {p['BRAND_PRIMARY']}; font-weight: bold; }}
             QTreeWidget::item:hover:!selected {{ background: {p['BRAND_PANEL_2']}; }}
         """)
-        self.tree.itemExpanded.connect(self._on_item_expanded)
-        self.tree.itemDoubleClicked.connect(self._on_item_double_clicked)
-        self.tree.itemSelectionChanged.connect(self._on_tree_selection_changed)
-
-        layout.addLayout(header_row)
-        layout.addWidget(self.tree)
 
     def set_show_all_files(self, show_all):
         self._show_all_files = show_all

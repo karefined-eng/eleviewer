@@ -18,15 +18,6 @@ class SettingCard(QFrame):
     def __init__(self, title_text, desc_text, control_widget, parent=None):
         super().__init__(parent)
         self.setObjectName("SettingCard")
-        p = get_active_palette()
-        # Inline styling fallback (better if in theme.py, but safe here)
-        self.setStyleSheet(f"""
-            #SettingCard {{
-                background: {p['BRAND_PANEL']};
-                border: 1px solid {p['BRAND_BORDER']};
-                border-radius: 8px;
-            }}
-        """)
         self.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Fixed)
         
         layout = QHBoxLayout(self)
@@ -35,22 +26,34 @@ class SettingCard(QFrame):
         text_layout = QVBoxLayout()
         text_layout.setSpacing(4)
         
-        title = QLabel(title_text)
-        font = title.font()
+        self.title = QLabel(title_text)
+        font = self.title.font()
         font.setBold(True)
-        title.setFont(font)
+        self.title.setFont(font)
         
-        desc = QLabel(desc_text)
-        desc.setWordWrap(True)
-        desc.setStyleSheet("color: #888888;")
+        self.desc = QLabel(desc_text)
+        self.desc.setWordWrap(True)
         
-        text_layout.addWidget(title)
-        text_layout.addWidget(desc)
+        text_layout.addWidget(self.title)
+        text_layout.addWidget(self.desc)
         
         layout.addLayout(text_layout, 1)
         
         control_widget.setMinimumWidth(150)
         layout.addWidget(control_widget, 0, Qt.AlignVCenter | Qt.AlignRight)
+        self.reload_theme()
+
+    def reload_theme(self):
+        p = get_active_palette()
+        self.setStyleSheet(f"""
+            #SettingCard {{
+                background: {p['BRAND_PANEL']};
+                border: 1px solid {p['BRAND_BORDER']};
+                border-radius: 8px;
+            }}
+        """)
+        self.title.setStyleSheet(f"color: {p['BRAND_PRIMARY']};")
+        self.desc.setStyleSheet(f"color: {p['BRAND_MUTED_FG']};")
 
 
 class SettingsCategory(QWidget):
@@ -74,7 +77,6 @@ class SettingsView(QWidget):
         super().__init__(parent)
         self.main_window = main_window
         self.settings = load_settings()
-        p = get_active_palette()
         
         main_layout = QHBoxLayout(self)
         main_layout.setContentsMargins(0, 0, 0, 0)
@@ -83,13 +85,11 @@ class SettingsView(QWidget):
         # Sidebar
         self.sidebar = QListWidget()
         self.sidebar.setFixedWidth(200)
-        self.sidebar.setStyleSheet(f"background: {p['BRAND_BACKGROUND']}; border-right: 1px solid {p['BRAND_BORDER']}; border-top: none; border-bottom: none; border-left: none; color: {p['BRAND_PRIMARY']};")
         self.sidebar.setFocusPolicy(Qt.NoFocus)
         self.sidebar.setSpacing(4)
         
         # Main content area
         self.stack = QStackedWidget()
-        self.stack.setStyleSheet(f"background: {p['BRAND_BACKGROUND']}; color: {p['BRAND_PRIMARY']};")
         
         main_layout.addWidget(self.sidebar)
         main_layout.addWidget(self.stack)
@@ -99,6 +99,33 @@ class SettingsView(QWidget):
         self.sidebar.currentRowChanged.connect(self.stack.setCurrentIndex)
         if self.sidebar.count() > 0:
             self.sidebar.setCurrentRow(0)
+        self.reload_theme()
+
+    def reload_theme(self):
+        p = get_active_palette()
+        from theme import get_brand_accent
+        accent = get_brand_accent()
+        self.setStyleSheet(f"background-color: {p['BRAND_BACKGROUND']}; color: {p['BRAND_PRIMARY']};")
+        self.sidebar.setStyleSheet(f"""
+            QListWidget {{
+                background: {p['BRAND_BACKGROUND']};
+                border-right: 1px solid {p['BRAND_BORDER']};
+                border-top: none; border-bottom: none; border-left: none;
+                color: {p['BRAND_PRIMARY']};
+                font-size: 13px;
+            }}
+            QListWidget::item {{ padding: 8px 12px; border-radius: 4px; margin: 2px 4px; }}
+            QListWidget::item:selected {{ background: {accent}; color: {p['BRAND_PRIMARY_FG']}; font-weight: bold; }}
+            QListWidget::item:hover:!selected {{ background: {p['BRAND_PANEL_2']}; }}
+        """)
+        self.stack.setStyleSheet(f"background: {p['BRAND_BACKGROUND']}; color: {p['BRAND_PRIMARY']};")
+        # Reload theme on all SettingCards inside stacked pages
+        for i in range(self.stack.count()):
+            scroll = self.stack.widget(i)
+            if hasattr(scroll, 'widget') and scroll.widget():
+                cat = scroll.widget()
+                for child in cat.findChildren(SettingCard):
+                    child.reload_theme()
 
     def _build_ui(self):
         self._add_category("Startup & Defaults", self._build_general_tab())
