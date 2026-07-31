@@ -1958,7 +1958,10 @@ class MainWindow(QMainWindow):
 
     def show_find(self):
         editor = self.current_editor()
-        if hasattr(editor, "find_text"):
+        if hasattr(editor, "show_find_bar"):
+            # Viewer owns its own find UI (e.g. PdfViewer)
+            editor.show_find_bar()
+        elif hasattr(editor, "find_text"):
             self.find_replace_panel.show()
             self.find_replace_panel.focus_find()
 

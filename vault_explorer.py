@@ -14,6 +14,7 @@ from settings import (
     get_vault_paths, add_vault_path, remove_vault_path,
     set_active_vault_index, load_settings,
 )
+from vault_indexer import schedule_vault_index
 from theme import (
     compact_toolbar_stylesheet, ICON_SIZE_COMPACT, ICON_SIZE_VAULT_TREE,
     get_active_palette, get_brand_accent
@@ -119,6 +120,8 @@ class VaultExplorer(QWidget):
         self._refresh_selector()
         if self._vault_paths:
             self._load_vault_tree(self._vault_paths[self._active_index])
+            schedule_vault_index(self._vault_paths)
+            schedule_vault_index(self._vault_paths)
 
     def add_vault(self, path):
         if not path or not os.path.isdir(path):
@@ -128,6 +131,7 @@ class VaultExplorer(QWidget):
         self._active_index = 0
         self._refresh_selector()
         self._load_vault_tree(path)
+        schedule_vault_index([path])
         self.vaults_changed.emit()
 
     def remove_current_vault(self):
@@ -164,6 +168,9 @@ class VaultExplorer(QWidget):
         idx = self.vault_selector.currentIndex()
         if idx >= 0:
             self._on_vault_selected(idx)
+            vault_path = self.vault_selector.currentData()
+            if vault_path:
+                schedule_vault_index([vault_path])
 
     def _emit_search(self):
         vault_path = self.vault_selector.currentData()

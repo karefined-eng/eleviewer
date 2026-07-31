@@ -80,6 +80,20 @@ class DocxViewer(QWidget):
     def set_bookmark_callback(self, callback):
         self._bookmark_callback = callback
 
+    # ── In-document search (Ctrl+F via global FindReplaceWidget) ──────
+
+    def find_text(self, text, match_case=False, whole_word=False, forward=True):
+        """Delegate to QTextBrowser.find(); returns True if match found."""
+        from PySide6.QtGui import QTextDocument
+        flags = QTextDocument.FindFlag(0)
+        if match_case:
+            flags |= QTextDocument.FindFlag.FindCaseSensitively
+        if whole_word:
+            flags |= QTextDocument.FindFlag.FindWholeWords
+        if not forward:
+            flags |= QTextDocument.FindFlag.FindBackward
+        return self.editor.find(text, flags)
+
     def load_from_path(self, file_path):
         """Load DOCX file from disk with progressive fallbacks."""
         self.file_path = file_path

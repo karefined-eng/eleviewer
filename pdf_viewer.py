@@ -15,13 +15,13 @@ try:
 except ImportError:
     QTPDF_AVAILABLE = False
 
+from PySide6.QtGui import QIntValidator, QKeyEvent, QWheelEvent, QShortcut, QKeySequence
+from PySide6.QtCore import Qt, Signal, QTimer, QSize, QPointF, QThread
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QToolButton, QLabel,
     QMessageBox, QComboBox, QMenu, QLineEdit, QTreeView,
     QSplitter,
 )
-from PySide6.QtGui import QIntValidator, QKeyEvent, QWheelEvent, QShortcut, QKeySequence
-from PySide6.QtCore import Qt, Signal, QTimer, QSize, QPointF, QThread
 
 class PdfTextWorker(QThread):
     """Off-thread PDF text extraction worker to prevent GUI freezes during TTS and page scans."""
@@ -253,8 +253,50 @@ class PdfViewer(QWidget):
         QShortcut(QKeySequence(Qt.Key_Left), self, context=Qt.WidgetWithChildrenShortcut).activated.connect(self.prev_page)
         QShortcut(QKeySequence(Qt.Key_Right), self, context=Qt.WidgetWithChildrenShortcut).activated.connect(self.next_page)
 
+        # ── Inline find bar (Ctrl+F) ────────────────────────────────────
+        self._find_bar = QWidget()
+        self._find_bar.setVisible(False)
+        find_bar_layout = QHBoxLayout(self._find_bar)
+        find_bar_layout.setContentsMargins(6, 4, 6, 4)
+        find_bar_layout.setSpacing(4)
+        self._find_input = QLineEdit()
+        self._find_input.setPlaceholderText("Find in PDF...")
+        self._find_input.setFixedWidth(200)
+        self._find_input.setStyleSheet(
+            f"QLineEdit {{ background:{p['BRAND_PANEL_2']}; color:{p['BRAND_PRIMARY']};"
+            f" border:1px solid {p['BRAND_BORDER']}; border-radius:4px; padding:2px 6px; font-size:12px; }}"
+        )
+        self._find_input.returnPressed.connect(self._pdf_find_next)
+        self._find_match_label = QLabel("")
+        self._find_match_label.setStyleSheet(f"color:{p['BRAND_MUTED_FG']}; font-size:11px; padding:0 4px;")
+        btn_find_prev = QToolButton()
+        btn_find_prev.setIcon(icon("arrow-up", size=16))
+        btn_find_prev.setToolTip("Previous match")
+        btn_find_prev.setStyleSheet(compact_toolbar_stylesheet())
+        btn_find_prev.clicked.connect(self._pdf_find_prev)
+        btn_find_next = QToolButton()
+        btn_find_next.setIcon(icon("arrow-down", size=16))
+        btn_find_next.setToolTip("Next match")
+        btn_find_next.setStyleSheet(compact_toolbar_stylesheet())
+        btn_find_next.clicked.connect(self._pdf_find_next)
+        btn_find_close = QToolButton()
+        btn_find_close.setIcon(icon("x", size=14))
+        btn_find_close.setStyleSheet(compact_toolbar_stylesheet())
+        btn_find_close.clicked.connect(self._hide_find_bar)
+        find_bar_layout.addStretch()
+        find_bar_layout.addWidget(self._find_input)
+        find_bar_layout.addWidget(self._find_match_label)
+        find_bar_layout.addWidget(btn_find_prev)
+        find_bar_layout.addWidget(btn_find_next)
+        find_bar_layout.addWidget(btn_find_close)
+        self._find_results: list[int] = []  # matching page indices
+        self._find_cursor = -1
+        QShortcut(QKeySequence("Ctrl+F"), self, context=Qt.WidgetWithChildrenShortcut).activated.connect(self.show_find_bar)
+        QShortcut(QKeySequence("Escape"), self, context=Qt.WidgetWithChildrenShortcut).activated.connect(self._hide_find_bar)
+
         outer.addLayout(toolbar)
         outer.addWidget(self.content_splitter)
+        outer.addWidget(self._find_bar)
 
         if file_path:
             self.load_from_path(file_path)
@@ -465,7 +507,10 @@ class PdfViewer(QWidget):
     def keyPressEvent(self, event: QKeyEvent):
         """Catch key events when the PdfViewer widget itself has focus."""
         key = event.key()
-        if key in (Qt.Key_Left, Qt.Key_PageUp):
+        if event.modifiers() & Qt.ControlModifier and key == Qt.Key_F:
+            self.show_find_bar()
+            event.accept()
+        elif key in (Qt.Key_Left, Qt.Key_PageUp):
             self.prev_page()
             event.accept()
         elif key in (Qt.Key_Right, Qt.Key_PageDown):
@@ -476,6 +521,84 @@ class PdfViewer(QWidget):
             event.accept()
         else:
             super().keyPressEvent(event)
+
+    # ── Find (Ctrl+F) ──────────────────────────────────────────────
+
+    def show_find_bar(self):
+        """Show the inline find bar (called by ui.py Ctrl+F or own shortcut)."""
+        self._find_bar.setVisible(True)
+        self._find_input.setFocus()
+        self._find_input.selectAll()
+
+    # Alias so ui.py show_find() can detect this viewer supports find
+    def find_text(self, text, match_case=False, whole_word=False, forward=True):
+        """Called by ui.py FindReplaceWidget signals; we run our own bar instead."""
+        self.show_find_bar()
+        if text:
+            self._find_input.setText(text)
+            if forward:
+                self._pdf_find_next()
+            else:
+                self._pdf_find_prev()
+        return True
+
+    def _hide_find_bar(self):
+        if self._find_bar.isVisible():
+            self._find_bar.setVisible(False)
+            self._find_results.clear()
+            self._find_cursor = -1
+            self._find_match_label.setText("")
+
+    def _get_page_text(self, page_idx: int) -> str:
+        """Return cached page text, triggering extraction if needed."""
+        if not hasattr(self, "_page_text_cache"):
+            self._page_text_cache = {}
+        if page_idx in self._page_text_cache:
+            return self._page_text_cache[page_idx]
+        # Synchronous fallback for find (only on user action, not scrolling)
+        if self.pdf_doc_qt:
+            try:
+                sel = self.pdf_doc_qt.getAllText(page_idx)
+                text = sel.text() if hasattr(sel, "text") else ""
+                self._page_text_cache[page_idx] = text
+                return text
+            except Exception:
+                pass
+        return ""
+
+    def _build_find_results(self, query: str) -> list[int]:
+        """Return list of page indices that contain query (case-insensitive)."""
+        q = query.lower()
+        return [p for p in range(self.total_pages) if q in self._get_page_text(p).lower()]
+
+    def _pdf_find_next(self):
+        query = self._find_input.text().strip()
+        if not query or not self.pdf_doc_qt:
+            return
+        self._find_results = self._build_find_results(query)
+        if not self._find_results:
+            self._find_match_label.setText("No matches")
+            return
+        self._find_cursor = (self._find_cursor + 1) % len(self._find_results)
+        self._jump_to_find_result()
+
+    def _pdf_find_prev(self):
+        query = self._find_input.text().strip()
+        if not query or not self.pdf_doc_qt:
+            return
+        self._find_results = self._build_find_results(query)
+        if not self._find_results:
+            self._find_match_label.setText("No matches")
+            return
+        self._find_cursor = (self._find_cursor - 1) % len(self._find_results)
+        self._jump_to_find_result()
+
+    def _jump_to_find_result(self):
+        page = self._find_results[self._find_cursor]
+        self.go_to_bookmark(page_number=page)
+        self._find_match_label.setText(
+            f"{self._find_cursor + 1}/{len(self._find_results)}"
+        )
 
     # ── Bookmark ─────────────────────────────────────────────────────
 

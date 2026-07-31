@@ -18,6 +18,7 @@ PINNED_FILE_PATH = APP_DATA_DIR / "pinned_files.json"
 SESSION_FILE_PATH = APP_DATA_DIR / "session.json"
 SETTINGS_FILE_PATH = APP_DATA_DIR / "settings.json"
 BOOKMARKS_FILE_PATH = APP_DATA_DIR / "bookmarks.json"
+VAULT_INDEX_DB_PATH = APP_DATA_DIR / "vault_index.db"
 
 
 

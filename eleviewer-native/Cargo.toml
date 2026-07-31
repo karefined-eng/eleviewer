@@ -1,0 +1,14 @@
+[package]
+name = "eleviewer-native"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "eleviewer_native"
+crate-type = ["cdylib"]
+
+[dependencies]
+pyo3 = { version = "0.22", features = ["extension-module"] }
+rusqlite = { version = "0.32", features = ["bundled"] }
+walkdir = "2"
+rayon = "1"

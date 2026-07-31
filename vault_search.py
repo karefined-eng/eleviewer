@@ -8,12 +8,13 @@ from PySide6.QtCore import Qt, Signal, QTimer, QThread, QEvent
 from theme import get_active_palette, get_brand_accent
 from file_icons import file_type_icon
 from settings import load_settings
+from vault_indexer import search_index, schedule_vault_index
 
 
-# FIX: search runs on QThreadPool worker to prevent GUI thread freezing
+# FIX: search runs on QThread worker to prevent GUI thread freezing
 # SECURITY: canonicalize paths to prevent symlink traversal
 class VaultSearchWorker(QThread):
-    result_found = Signal(str, str, str, str) # filename, display_dir, vault_name, full_path
+    result_found = Signal(str, str, str, str, str)  # filename, display_dir, vault_name, full_path, snippet
 
     def __init__(self, vaults_to_search, query):
         super().__init__()
@@ -25,7 +26,31 @@ class VaultSearchWorker(QThread):
         self._is_cancelled = True
 
     def run(self):
+        query = self.query.strip().lower()
+        if not query or self._is_cancelled:
+            return
+
+        seen_paths: set[str] = set()
         count = 0
+
+        try:
+            for filename, display_dir, vault_name, full_path, snippet in search_index(
+                self.vaults_to_search, query, limit=100
+            ):
+                if self._is_cancelled or count >= 100:
+                    break
+                if full_path in seen_paths:
+                    continue
+                seen_paths.add(full_path)
+                self.result_found.emit(filename, display_dir, vault_name, full_path, snippet)
+                count += 1
+        except Exception:
+            pass
+
+        if self._is_cancelled:
+            return
+
+        # Filename fallback for files not yet indexed
         for vault in self.vaults_to_search:
             if self._is_cancelled or count >= 100:
                 break
@@ -36,34 +61,35 @@ class VaultSearchWorker(QThread):
 
             vault_str = str(vault_resolved)
             vault_name = vault_resolved.name
-            # SECURITY: followlinks=False prevents traversing symlinks outside vault
             for root, dirs, files in os.walk(vault_str, followlinks=False):
-
                 if self._is_cancelled or count >= 100:
                     break
                 abs_root = os.path.abspath(root)
-                # SECURITY: block paths that escape vault boundary
                 if not abs_root.startswith(vault_str):
                     dirs.clear()
                     continue
 
-                dirs[:] = [d for d in dirs if not d.startswith('.')]
+                dirs[:] = [d for d in dirs if not d.startswith(".")]
 
                 for f in files:
                     if self._is_cancelled or count >= 100:
                         break
-                    if f.startswith('.'):
+                    if f.startswith("."):
                         continue
-                    if self.query in f.lower():
-                        full_path = os.path.join(root, f)
-                        abs_full_path = os.path.abspath(full_path)
-                        if not abs_full_path.startswith(vault_str):
-                            continue
+                    if query not in f.lower():
+                        continue
+                    full_path = os.path.join(root, f)
+                    abs_full_path = os.path.abspath(full_path)
+                    if not abs_full_path.startswith(vault_str):
+                        continue
+                    if abs_full_path in seen_paths:
+                        continue
+                    seen_paths.add(abs_full_path)
 
-                        rel_path = os.path.relpath(root, vault_str)
-                        display_dir = "" if rel_path == "." else f" ({rel_path})"
-                        self.result_found.emit(f, display_dir, vault_name, abs_full_path)
-                        count += 1
+                    rel_path = os.path.relpath(root, vault_str)
+                    display_dir = "" if rel_path == "." else f" ({rel_path})"
+                    self.result_found.emit(f, display_dir, vault_name, abs_full_path, "")
+                    count += 1
 
 
 class VaultSearchDialog(QDialog):
@@ -95,7 +121,7 @@ class VaultSearchDialog(QDialog):
         
         header_layout = QHBoxLayout()
         self.search_input = QLineEdit()
-        self.search_input.setPlaceholderText("Search file names...")
+        self.search_input.setPlaceholderText("Search file names and content...")
         self.search_input.textChanged.connect(self._on_text_changed)
         
         self.scope_combo = QComboBox()
@@ -127,6 +153,9 @@ class VaultSearchDialog(QDialog):
         self.search_timer.timeout.connect(self._do_search)
         
         self.search_input.setFocus()
+
+        vaults = [active_vault] if active_vault else all_vaults
+        schedule_vault_index(vaults if vaults else all_vaults)
         
     def _on_text_changed(self):
         self.search_timer.start(300)
@@ -152,8 +181,11 @@ class VaultSearchDialog(QDialog):
         self._search_worker.result_found.connect(self._on_result_found)
         self._search_worker.start()
 
-    def _on_result_found(self, f, display_dir, vault_name, full_path):
-        item = QListWidgetItem(f"{f}{display_dir} — [{vault_name}]")
+    def _on_result_found(self, f, display_dir, vault_name, full_path, snippet):
+        label = f"{f}{display_dir} — [{vault_name}]"
+        if snippet:
+            label = f"{label}\n  {snippet}"
+        item = QListWidgetItem(label)
         item.setData(Qt.UserRole, full_path)
         item.setIcon(file_type_icon(Path(f).suffix, 16))
         self.results_list.addItem(item)
@@ -200,4 +232,3 @@ class VaultSearchDialog(QDialog):
             self.reject()
             return True
         return super().event(ev)
-
