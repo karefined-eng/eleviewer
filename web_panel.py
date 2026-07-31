@@ -163,14 +163,14 @@ class WebViewWrapper(metaclass=_LazyWebViewMeta):
 
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QTabWidget, QLineEdit,
-    QToolButton, QTabBar,
+    QToolButton, QTabBar, QProgressBar,
 )
 from PySide6.QtCore import Qt, Signal, QSize
 from PySide6.QtGui import QKeySequence, QShortcut
 
 from icons import icon
 from settings import load_settings, save_settings, DEFAULT_WEB_TABS
-from theme import compact_toolbar_stylesheet, ICON_SIZE_COMPACT
+from theme import compact_toolbar_stylesheet, ICON_SIZE_COMPACT, get_active_palette
 
 
 class WebPanel(QWidget):
@@ -185,14 +185,30 @@ class WebPanel(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
 
+        p = get_active_palette()
+
         nav = QHBoxLayout()
-        nav.setContentsMargins(4, 4, 4, 0)
-        icon_sz = 24  # Larger icons for web panel
+        nav.setContentsMargins(6, 4, 6, 4)
+        nav.setSpacing(4)
+        icon_sz = 20
         icon_qsize = QSize(icon_sz, icon_sz)
 
         self.url_bar = QLineEdit()
-        self.url_bar.setPlaceholderText("https://...")
+        self.url_bar.setPlaceholderText("Search or enter web URL...")
         self.url_bar.returnPressed.connect(self._navigate_current)
+        self.url_bar.setStyleSheet(f"""
+            QLineEdit {{
+                background: {p['BRAND_PANEL']};
+                color: {p['BRAND_PRIMARY']};
+                border: 1px solid {p['BRAND_BORDER']};
+                border-radius: 6px;
+                padding: 4px 10px;
+                font-size: 13px;
+            }}
+            QLineEdit:focus {{
+                border: 1px solid {p['BRAND_ACCENT']};
+            }}
+        """)
 
         self.btn_back = QToolButton()
         self.btn_back.setIconSize(icon_qsize)
@@ -208,27 +224,15 @@ class WebPanel(QWidget):
 
         self.btn_refresh = QToolButton()
         self.btn_refresh.setIconSize(icon_qsize)
-        self.btn_refresh.setIcon(icon("rotate-cw", size=icon_sz)) # Using rotate-cw instead of refresh-cw which might not exist
+        self.btn_refresh.setIcon(icon("rotate-cw", size=icon_sz))
         self.btn_refresh.setToolTip("Reload page (Ctrl+R / F5)")
         self.btn_refresh.clicked.connect(self._reload_current)
-
-        self.btn_bookmark = QToolButton()
-        self.btn_bookmark.setIconSize(icon_qsize)
-        self.btn_bookmark.setIcon(icon("bookmark", size=icon_sz))
-        self.btn_bookmark.setToolTip("Bookmark this web page (Ctrl+D)")
-        self.btn_bookmark.clicked.connect(self._bookmark_current)
 
         self.btn_add = QToolButton()
         self.btn_add.setIconSize(icon_qsize)
         self.btn_add.setIcon(icon("plus", size=icon_sz))
         self.btn_add.setToolTip("New tab")
         self.btn_add.clicked.connect(self.add_tab)
-
-        self.btn_history = QToolButton()
-        self.btn_history.setIconSize(icon_qsize)
-        self.btn_history.setIcon(icon("clock", size=icon_sz))
-        self.btn_history.setToolTip("Show browsing history")
-        self.btn_history.clicked.connect(self._show_history)
         
         self.btn_expand = QToolButton()
         self.btn_expand.setIconSize(icon_qsize)
@@ -236,7 +240,7 @@ class WebPanel(QWidget):
         self.btn_expand.setToolTip("Toggle Web Focus")
         self.btn_expand.clicked.connect(self.expand_requested.emit)
 
-        for btn in (self.btn_back, self.btn_forward, self.btn_refresh, self.btn_bookmark, self.btn_history, self.btn_add, self.btn_expand):
+        for btn in (self.btn_back, self.btn_forward, self.btn_refresh, self.btn_add, self.btn_expand):
             btn.setStyleSheet(compact_toolbar_stylesheet())
             btn.setAutoRaise(True)
 
@@ -244,10 +248,23 @@ class WebPanel(QWidget):
         nav.addWidget(self.btn_forward)
         nav.addWidget(self.btn_refresh)
         nav.addWidget(self.url_bar, stretch=1)
-        nav.addWidget(self.btn_bookmark)
-        nav.addWidget(self.btn_history)
         nav.addWidget(self.btn_add)
         nav.addWidget(self.btn_expand)
+
+        # Sleek 2px loading indicator
+        self.progress_bar = QProgressBar()
+        self.progress_bar.setFixedHeight(2)
+        self.progress_bar.setTextVisible(False)
+        self.progress_bar.setStyleSheet(f"""
+            QProgressBar {{
+                border: none;
+                background: transparent;
+            }}
+            QProgressBar::chunk {{
+                background: {p['BRAND_ACCENT']};
+            }}
+        """)
+        self.progress_bar.hide()
 
         self.tabs = QTabWidget()
         self.tabs.setTabsClosable(True)
@@ -256,6 +273,7 @@ class WebPanel(QWidget):
         self.tabs.currentChanged.connect(self._on_tab_changed)
 
         layout.addLayout(nav)
+        layout.addWidget(self.progress_bar)
         layout.addWidget(self.tabs)
 
         QShortcut(QKeySequence("Ctrl+R"), self, self._reload_current)
@@ -282,7 +300,23 @@ class WebPanel(QWidget):
         if self.tabs.count() == 0:
             self.add_tab()
         self.tabs.blockSignals(False)
+        self._update_tab_bar_visibility()
         self._on_tab_changed(self.tabs.currentIndex())
+
+    def _update_tab_bar_visibility(self):
+        self.tabs.tabBar().setVisible(self.tabs.count() > 1)
+
+    def _on_load_progress(self, view, progress):
+        if view is self._current_view():
+            if progress < 100:
+                self.progress_bar.setValue(progress)
+                self.progress_bar.show()
+            else:
+                self.progress_bar.hide()
+
+    def _on_load_finished(self, view, ok):
+        if view is self._current_view():
+            self.progress_bar.hide()
 
     def _add_tab_widget(self, url, title="Web"):
         if not WEB_AVAILABLE:
@@ -291,9 +325,12 @@ class WebPanel(QWidget):
         view.setUrl(QUrl(url))
         view.urlChanged.connect(lambda u, v=view: self._on_url_changed(v, u))
         view.titleChanged.connect(lambda t, v=view: self._on_title_changed(v, t))
+        view.loadProgress.connect(lambda p, v=view: self._on_load_progress(v, p))
+        view.loadFinished.connect(lambda ok, v=view: self._on_load_finished(v, ok))
         index = self.tabs.addTab(view, title)
         self._tabs_data.append({"title": title, "url": url})
         self.tabs.setCurrentIndex(index)
+        self._update_tab_bar_visibility()
         return view
 
     def add_tab(self, url=None, title="New Tab"):
@@ -350,6 +387,7 @@ class WebPanel(QWidget):
             if hasattr(widget, "page"):
                 widget.page().deleteLater()
             widget.deleteLater()
+        self._update_tab_bar_visibility()
         self.persist_tabs()
 
 
