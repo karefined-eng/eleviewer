@@ -1,21 +1,89 @@
 from pathlib import Path
 
 from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QTableWidget, QTableWidgetItem, QTabBar, QHeaderView,
+    QWidget, QVBoxLayout, QHBoxLayout, QTableView, QTabBar, QHeaderView,
+    QAbstractItemView, QLabel,
 )
-from PySide6.QtCore import Signal, Qt
+from PySide6.QtCore import Signal, Qt, QAbstractTableModel, QModelIndex
+import warnings
+warnings.filterwarnings('ignore', category=UserWarning, module='openpyxl')
 from openpyxl import load_workbook
 from openpyxl.cell.cell import MergedCell
 import io
 
 from theme import (
-    xlsx_sheet_tab_stylesheet, BRAND_PANEL, BRAND_PRIMARY, 
-    BRAND_BORDER, BRAND_ACCENT, BRAND_BACKGROUND
+    xlsx_sheet_tab_stylesheet, get_active_palette, get_brand_accent
 )
+import re
+
+
+class XlsxTableModel(QAbstractTableModel):
+    """Virtualized model for high-performance rendering of Excel worksheets."""
+    def __init__(self, data=None, parent=None):
+        super().__init__(parent)
+        self._data = data if data else [[""]]
+        self._max_cols = max((len(r) for r in self._data), default=1)
+
+    def rowCount(self, parent=QModelIndex()):
+        return len(self._data)
+
+    def columnCount(self, parent=QModelIndex()):
+        return self._max_cols
+
+    def data(self, index, role=Qt.DisplayRole):
+        if not index.isValid():
+            return None
+        r, c = index.row(), index.column()
+        if role in (Qt.DisplayRole, Qt.EditRole):
+            if r < len(self._data) and c < len(self._data[r]):
+                return str(self._data[r][c])
+            return ""
+        return None
+
+    def setData(self, index, value, role=Qt.EditRole):
+        if index.isValid() and role == Qt.EditRole:
+            r, c = index.row(), index.column()
+            while len(self._data) <= r:
+                self._data.append([])
+            while len(self._data[r]) <= c:
+                self._data[r].append("")
+            self._data[r][c] = str(value)
+            self.dataChanged.emit(index, index, [Qt.DisplayRole, Qt.EditRole])
+            return True
+        return False
+
+    def flags(self, index):
+        if not index.isValid():
+            return Qt.NoItemFlags
+        return Qt.ItemIsSelectable | Qt.ItemIsEnabled | Qt.ItemIsEditable
+
+    def headerData(self, section, orientation, role=Qt.DisplayRole):
+        if role == Qt.DisplayRole:
+            if orientation == Qt.Horizontal:
+                return self._col_to_letter(section)
+            elif orientation == Qt.Vertical:
+                return str(section + 1)
+        return None
+
+    def _col_to_letter(self, col_idx):
+        result = ""
+        while col_idx >= 0:
+            result = chr(col_idx % 26 + 65) + result
+            col_idx = col_idx // 26 - 1
+        return result
+
+    def set_data(self, data):
+        self.beginResetModel()
+        self._data = data if data else [[""]]
+        self._max_cols = max((len(r) for r in self._data), default=1)
+        self.endResetModel()
+
+    def get_data(self):
+        return self._data
 
 
 class XlsxViewer(QWidget):
-    """XLSX viewer with Google Sheets-style bottom sheet tabs."""
+    """XLSX viewer with Google Sheets-style bottom sheet tabs and virtualized grid."""
 
     textChanged = Signal()
 
@@ -27,22 +95,41 @@ class XlsxViewer(QWidget):
         self.current_sheet_name = None
         self.merged_cells_ranges = set()
         self._loading_sheet = False
+        self._bookmark_callback = None
+        self._last_found = None
 
         layout = QVBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
 
-        self.table = QTableWidget()
+        # Read-only info banner
+        banner_row = QHBoxLayout()
+        banner_row.setContentsMargins(6, 3, 6, 3)
+        self._readonly_label = QLabel("\U0001f512 View-only — formula values shown. Editing disabled to protect formulas.")
+        p = get_active_palette()
+        self._readonly_label.setStyleSheet(
+            f"color: {p['BRAND_PRIMARY']}; font-size: 11px; opacity: 0.7;"
+        )
+        banner_row.addWidget(self._readonly_label)
+        banner_row.addStretch()
+        layout.addLayout(banner_row)
+
+        self.model = XlsxTableModel()
+        self.model.dataChanged.connect(self._on_cell_changed)
+        self.table = QTableView()
+        self.table.setModel(self.model)
+        # Option C: strictly view-only — no editing allowed so formulas are never overwritten
+        self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        p = get_active_palette()
         self.table.setStyleSheet(f"""
-            QTableWidget {{
-                background: {BRAND_PANEL};
-                color: {BRAND_PRIMARY};
-                gridline-color: {BRAND_BORDER};
+            QTableView {{
+                background: {p['BRAND_PANEL']};
+                color: {p['BRAND_PRIMARY']};
+                gridline-color: {p['BRAND_BORDER']};
+                border: none;
             }}
-            QTableWidget::item {{ padding: 5px; }}
-            QTableWidget::item:selected {{ background: {BRAND_ACCENT}; color: {BRAND_BACKGROUND}; }}
+            QTableView::item:selected {{ background: {get_brand_accent()}; color: {p['BRAND_BACKGROUND']}; }}
         """)
-        self.table.itemChanged.connect(self._on_cell_changed)
 
         self.sheet_tabs = QTabBar()
         self.sheet_tabs.setDrawBase(True)
@@ -71,7 +158,7 @@ class XlsxViewer(QWidget):
 
     def load_from_path(self, file_path):
         try:
-            self.workbook = load_workbook(file_path, data_only=False, keep_vba=False)
+            self.workbook = load_workbook(file_path, data_only=True, keep_vba=False)
             self.sheet_tabs.blockSignals(True)
             while self.sheet_tabs.count():
                 self.sheet_tabs.removeTab(0)
@@ -89,6 +176,8 @@ class XlsxViewer(QWidget):
                 raise Exception(
                     "XLSX file compatibility issue. Try opening in Excel and re-saving."
                 )
+            elif "not a zip file" in error_msg.lower() or "badzipfile" in error_msg.lower():
+                raise Exception("The selected file is not a valid Excel (.xlsx) archive or is corrupted.")
             raise Exception(f"Failed to load XLSX: {error_msg}")
 
     def _on_tab_index_changed(self, index):
@@ -103,16 +192,15 @@ class XlsxViewer(QWidget):
         if not self.workbook or not self.current_sheet_name:
             return
         ws = self.workbook[self.current_sheet_name]
-        for row_idx in range(self.table.rowCount()):
-            for col_idx in range(self.table.columnCount()):
+        grid_data = self.model.get_data()
+        for row_idx, row in enumerate(grid_data):
+            for col_idx, val in enumerate(row):
                 try:
                     cell = ws.cell(row=row_idx + 1, column=col_idx + 1)
                     if isinstance(cell, MergedCell):
                         continue
-                    item = self.table.item(row_idx, col_idx)
-                    value = item.text() if item else ""
-                    if str(cell.value or "") != value:
-                        cell.value = value
+                    if str(cell.value or "") != str(val or ""):
+                        cell.value = val
                 except Exception:
                     continue
 
@@ -127,29 +215,28 @@ class XlsxViewer(QWidget):
         max_col = max(ws.max_column or 1, 10)
         self.merged_cells_ranges = set(ws.merged_cells.ranges)
 
-        self.table.blockSignals(True)
-        self.table.setRowCount(max_row)
-        self.table.setColumnCount(max_col)
-
+        rows_data = []
         for row_idx in range(1, max_row + 1):
+            row_vals = []
             for col_idx in range(1, max_col + 1):
                 try:
                     cell = ws.cell(row=row_idx, column=col_idx)
-                    is_merged = isinstance(cell, MergedCell)
                     value = cell.value if cell.value is not None else ""
-                    item = QTableWidgetItem(str(value))
-                    if is_merged:
-                        item.setFlags(item.flags() & ~Qt.ItemIsEditable)
-                    self.table.setItem(row_idx - 1, col_idx - 1, item)
+                    row_vals.append(str(value))
                 except Exception:
-                    self.table.setItem(row_idx - 1, col_idx - 1, QTableWidgetItem(""))
+                    row_vals.append("")
+            rows_data.append(row_vals)
 
+        self.model.set_data(rows_data)
         header = self.table.horizontalHeader()
-        header.setSectionResizeMode(QHeaderView.ResizeToContents)
-        self.table.blockSignals(False)
+        header.setSectionResizeMode(QHeaderView.Interactive)
+        for c in range(min(max_col, 15)):
+            self.table.resizeColumnToContents(c)
+            if self.table.columnWidth(c) < 80:
+                self.table.setColumnWidth(c, 80)
         self._loading_sheet = False
 
-    def _on_cell_changed(self, item):
+    def _on_cell_changed(self, top_left=None, bottom_right=None, roles=None):
         if self._loading_sheet:
             return
         self.is_modified = True
@@ -167,13 +254,116 @@ class XlsxViewer(QWidget):
 
     def toPlainText(self):
         text_rows = []
-        for row_idx in range(self.table.rowCount()):
-            row_vals = []
-            for col_idx in range(self.table.columnCount()):
-                item = self.table.item(row_idx, col_idx)
-                row_vals.append(item.text() if item else "")
-            text_rows.append(" | ".join(row_vals))
+        for row in self.model.get_data():
+            text_rows.append(" | ".join(row))
         return "\n".join(text_rows)
 
     def setPlainText(self, text):
         pass
+
+    def set_bookmark_callback(self, callback):
+        self._bookmark_callback = callback
+
+    def _bookmark_payload(self):
+        return {
+            "page_number": self.sheet_tabs.currentIndex(),
+            "scroll_position_y": float(self.table.verticalScrollBar().value()),
+            "scroll_position_x": float(self.table.horizontalScrollBar().value()),
+            "label": f"Sheet '{self.current_sheet_name or 'Unknown'}'",
+        }
+
+    def go_to_bookmark(self, page_number=0, scroll_position_y=0.0, **kwargs):
+        if 0 <= page_number < self.sheet_tabs.count():
+            self.sheet_tabs.setCurrentIndex(int(page_number))
+        self.table.verticalScrollBar().setValue(int(scroll_position_y))
+        if "scroll_position_x" in kwargs:
+            self.table.horizontalScrollBar().setValue(int(kwargs["scroll_position_x"]))
+
+    def find_text(self, text, match_case, whole_word, forward):
+        if not text:
+            return False
+        
+        data = self.model.get_data()
+        rows = len(data)
+        cols = self.model.columnCount()
+        
+        start_r = 0
+        start_c = -1
+        
+        if self._last_found:
+            start_r, start_c = self._last_found
+        else:
+            sel = self.table.selectionModel().currentIndex()
+            if sel.isValid():
+                start_r, start_c = sel.row(), sel.column()
+        
+        flags = 0 if match_case else re.IGNORECASE
+        pattern = f"\\b{re.escape(text)}\\b" if whole_word else re.escape(text)
+        try:
+            regex = re.compile(pattern, flags)
+        except re.error:
+            return False
+
+        r, c = start_r, start_c
+        while True:
+            if forward:
+                c += 1
+                if c >= cols:
+                    c = 0
+                    r += 1
+                if r >= rows:
+                    r = 0
+            else:
+                c -= 1
+                if c < 0:
+                    c = cols - 1
+                    r -= 1
+                if r < 0:
+                    r = rows - 1
+
+            if (r, c) == (start_r, start_c) or (r >= rows) or (c >= len(data[r])):
+                return False
+
+            cell_val = str(data[r][c] if c < len(data[r]) else "")
+            if regex.search(cell_val):
+                idx = self.model.index(r, c)
+                self.table.setCurrentIndex(idx)
+                self.table.scrollTo(idx)
+                self._last_found = (r, c)
+                return True
+
+    def replace_text(self, find_str, replace_str, match_case, whole_word):
+        if self._last_found:
+            r, c = self._last_found
+            idx = self.model.index(r, c)
+            val = self.model.data(idx)
+            
+            flags = 0 if match_case else re.IGNORECASE
+            pattern = f"\\b{re.escape(find_str)}\\b" if whole_word else re.escape(find_str)
+            new_val = re.sub(pattern, replace_str, val, flags=flags)
+            
+            self.model.setData(idx, new_val)
+            self._flush_table_to_workbook()
+            self._last_found = None
+            self.find_text(find_str, match_case, whole_word, True)
+
+    def replace_all(self, find_str, replace_str, match_case, whole_word):
+        count = 0
+        flags = 0 if match_case else re.IGNORECASE
+        pattern = f"\\b{re.escape(find_str)}\\b" if whole_word else re.escape(find_str)
+        try:
+            regex = re.compile(pattern, flags)
+        except re.error:
+            return 0
+            
+        for r, row in enumerate(self.model.get_data()):
+            for c, val in enumerate(row):
+                str_val = str(val)
+                if regex.search(str_val):
+                    new_val = regex.sub(replace_str, str_val)
+                    self.model.setData(self.model.index(r, c), new_val)
+                    count += 1
+        if count > 0:
+            self._flush_table_to_workbook()
+            self._last_found = None
+        return count

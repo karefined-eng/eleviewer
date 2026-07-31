@@ -1,0 +1,155 @@
+{
+    "meta": {
+        "version": "1.0",
+        "stand": "2026-01-21",
+        "hinweis": "Bitte nur die Felder 'artikelId', 'bezeichnung', 'einheit' und ggf. 'beschreibung' ausfüllen. Die Struktur nicht verändern."
+    },
+    "artikelgruppen": {
+        "reinigung": {
+            "label": "Reinigung",
+            "positionsPrefix": "01-09",
+            "artikel": [
+                {
+                    "artikelId": "R001",
+                    "bezeichnung": "FassadenFix Systemreinigung bis 499 m²",
+                    "einheit": "m²",
+                    "beschreibung": "1. Schritt - Kostenfreie Musterfläche\n2. Schritt - Aufbau des gesetzlich vorgeschriebenen Abwasserauffangsystems\n3. Schritt - Auftragen der FassadenFix - Spezialreinigungslösung (FFCplus)\n4. Schritt - Sanftes Abspülen\n5. Schritt - Rückgewinnung & Vor-Ort-Wiederaufbereitung des anfallenden Schmutz- und Abwassers\n6. Schritt - Auftragen des FassadenFix Permanentschutzes (FFP) - 5 Jahre Algenfreiheit garantiert",
+                    "aktiv": true
+                },
+                {
+                    "artikelId": "R002",
+                    "bezeichnung": "FassadenFix Systemreinigung 500 - 999 m²",
+                    "einheit": "m²",
+                    "beschreibung": "Schritte analog R001",
+                    "aktiv": true
+                },
+                {
+                    "artikelId": "R003",
+                    "bezeichnung": "FassadenFix Systemreinigung 1.000 - 2.499 m²",
+                    "einheit": "m²",
+                    "beschreibung": "Schritte analog R001",
+                    "aktiv": true
+                },
+                {
+                    "artikelId": "R004",
+                    "bezeichnung": "FassadenFix Systemreinigung ab 2.500 m²",
+                    "einheit": "m²",
+                    "beschreibung": "Schritte analog R001",
+                    "aktiv": true
+                },
+                {
+                    "artikelId": "R005",
+                    "bezeichnung": "",
+                    "einheit": "m²",
+                    "beschreibung": "",
+                    "aktiv": false
+                },
+                {
+                    "artikelId": "R006",
+                    "bezeichnung": "",
+                    "einheit": "m²",
+                    "beschreibung": "",
+                    "aktiv": false
+                }
+            ]
+        },
+        "rabatte": {
+            "label": "Rabatte",
+            "positionsPrefix": "10-19",
+            "artikel": [
+                {
+                    "artikelId": "RAB01",
+                    "bezeichnung": "Frühbucherrabatt 6%",
+                    "einheit": "m²",
+                    "beschreibung": "Gilt nur bei Beauftragung bis [DATUM]",
+                    "rabattProzent": 6,
+                    "aktiv": true
+                },
+                {
+                    "artikelId": "RAB02",
+                    "bezeichnung": "Mengenrabatt ab 2.500 m²",
+                    "einheit": "m²",
+                    "beschreibung": "",
+                    "rabattProzent": 0,
+                    "aktiv": false
+                },
+                {
+                    "artikelId": "RAB03",
+                    "bezeichnung": "",
+                    "einheit": "m²",
+                    "beschreibung": "",
+                    "rabattProzent": 0,
+                    "aktiv": false
+                }
+            ]
+        },
+        "technik": {
+            "label": "Technik",
+            "positionsPrefix": "20-29",
+            "artikel": [
+                {
+                    "artikelId": "T001",
+                    "bezeichnung": "Einsatz Hubarbeitsbühne - Tagespauschale für 1 Gerät",
+                    "einheit": "Tag(e)",
+                    "beschreibung": "",
+                    "aktiv": true
+                },
+                {
+                    "artikelId": "T002",
+                    "bezeichnung": "Einsatz Hubarbeitsbühne - Sonderbühne",
+                    "einheit": "Tag(e)",
+                    "beschreibung": "",
+                    "aktiv": true
+                },
+                {
+                    "artikelId": "T003",
+                    "bezeichnung": "Spechtloch (klein) ausbessern in gedämmter Fassade",
+                    "einheit": "Stk",
+                    "beschreibung": "",
+                    "aktiv": true
+                },
+                {
+                    "artikelId": "T004",
+                    "bezeichnung": "Spechtloch (groß) ausbessern in gedämmter Fassade",
+                    "einheit": "Stk",
+                    "beschreibung": "",
+                    "aktiv": false
+                },
+                {
+                    "artikelId": "T005",
+                    "bezeichnung": "",
+                    "einheit": "",
+                    "beschreibung": "",
+                    "aktiv": false
+                }
+            ]
+        },
+        "nebenkosten": {
+            "label": "Nebenkosten",
+            "positionsPrefix": "30-39",
+            "artikel": [
+                {
+                    "artikelId": "N001",
+                    "bezeichnung": "Baustelleneinrichtung",
+                    "einheit": "Stk",
+                    "beschreibung": "",
+                    "aktiv": true
+                },
+                {
+                    "artikelId": "N002",
+                    "bezeichnung": "Übernachtungspauschale für 4 Mitarbeiter pro Tag",
+                    "einheit": "Tag(e)",
+                    "beschreibung": "75,- Euro (netto) pro Tag & Mitarbeiter - KANN ENTFALLEN",
+                    "aktiv": true
+                },
+                {
+                    "artikelId": "N003",
+                    "bezeichnung": "",
+                    "einheit": "",
+                    "beschreibung": "",
+                    "aktiv": false
+                }
+            ]
+        }
+    }
+}

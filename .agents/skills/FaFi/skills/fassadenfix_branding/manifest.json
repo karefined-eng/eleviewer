@@ -1,0 +1,60 @@
+{
+  "manifest_version": "1.0",
+  "type": "skill",
+  "name": "fassadenfix_branding",
+  "version": "1.0.0",
+  "description": "Erstellt und wendet FassadenFix Corporate Design automatisch an. Verwenden für: visuelle Gestaltung, Farbschemata, Typografie, UI-Komponenten, CSS-Styling, Webanwendungen, Dokumente, Präsentationen, Markenkonformität. Unterstützt Claude, Manus, ChatGPT, Gemini. STANDARD-SKILL mit Opt-Out-Prinzip.",
+  "author": "FassadenFix",
+  "tags": [
+    "styling",
+    "fassadenfix",
+    "branding",
+    "corporate-design"
+  ],
+  "capabilities": [
+    "styling",
+    "branding",
+    "visual_design"
+  ],
+  "implementation": {
+    "language": "python",
+    "entrypoint": "main.py"
+  },
+  "interface": {
+    "inputs": [
+      {
+        "name": "input",
+        "type": "string",
+        "description": "Eingabe für den Skill",
+        "required": true
+      }
+    ],
+    "outputs": [
+      {
+        "name": "output",
+        "type": "string",
+        "description": "Ausgabe des Skills"
+      }
+    ]
+  },
+  "dependencies": [],
+  "metadata": {
+    "created_at": "2026-02-02T00:00:00Z",
+    "updated_at": "2026-02-02T00:00:00Z",
+    "license": "Proprietary - FassadenFix GmbH",
+    "documentation": "SKILL.md"
+  },
+  "platforms": [
+    "claude",
+    "manus",
+    "chatgpt_codex",
+    "gemini",
+    "antigravity"
+  ],
+  "orchestration": {
+    "default_enabled": true,
+    "priority": 100,
+    "scope": "global",
+    "auto_inject": true
+  }
+}

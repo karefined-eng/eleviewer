@@ -1,0 +1,136 @@
+{
+  "tenant": {
+    "url": "https://TENANT.sharepoint.com",
+    "adminUrl": "https://TENANT-admin.sharepoint.com",
+    "adminEmail": "admin@TENANT.onmicrosoft.com"
+  },
+  "hubSite": {
+    "name": "FassadenFix Intranet",
+    "url": "/sites/FassadenFix-Intranet",
+    "language": 1031,
+    "template": "SITEPAGEPUBLISHING#0",
+    "description": "Zentrales Intranet der FassadenFix GmbH"
+  },
+  "navigation": {
+    "topNav": [
+      {
+        "title": "Start",
+        "url": "/sites/FassadenFix-Intranet"
+      },
+      {
+        "title": "Unternehmen",
+        "url": "/sites/FassadenFix-Intranet/SitePages/Unternehmen-Ueberblick.aspx",
+        "children": [
+          {
+            "title": "Unternehmen - Überblick",
+            "url": "/sites/FassadenFix-Intranet/SitePages/Unternehmen-Ueberblick.aspx"
+          },
+          {
+            "title": "Organisation & Werte",
+            "url": "/sites/FassadenFix-Intranet/SitePages/Organisation-Werte.aspx"
+          },
+          {
+            "title": "Arbeitsschutz & Pflichtunterweisungen",
+            "url": "/sites/FassadenFix-Intranet/SitePages/Arbeitsschutz.aspx"
+          }
+        ]
+      },
+      {
+        "title": "Abteilungen",
+        "url": "/sites/FassadenFix-Intranet/SitePages/Abteilungen.aspx",
+        "children": [
+          {
+            "title": "Anwendungstechnik",
+            "url": "/sites/FassadenFix-Intranet/SitePages/Abteilung-Anwendungstechnik.aspx"
+          },
+          {
+            "title": "Verwaltung",
+            "url": "/sites/FassadenFix-Intranet/SitePages/Abteilung-Verwaltung.aspx"
+          },
+          {
+            "title": "Vertrieb",
+            "url": "/sites/FassadenFix-Intranet/SitePages/Abteilung-Vertrieb.aspx"
+          },
+          {
+            "title": "Operative Teams",
+            "url": "/sites/FassadenFix-Intranet/SitePages/Abteilung-Operative-Teams.aspx"
+          }
+        ]
+      },
+      {
+        "title": "Teams",
+        "url": "/sites/FassadenFix-Intranet/SitePages/Teams.aspx"
+      },
+      {
+        "title": "Mein Bereich",
+        "url": "/sites/FassadenFix-Intranet/SitePages/Mein-Bereich.aspx"
+      }
+    ]
+  },
+  "pages": {
+    "unternehmen": [
+      {
+        "name": "Unternehmen-Ueberblick",
+        "title": "Unternehmen - Überblick",
+        "layout": "Article"
+      },
+      {
+        "name": "Organisation-Werte",
+        "title": "Organisation & Werte",
+        "layout": "Article"
+      },
+      {
+        "name": "Arbeitsschutz",
+        "title": "Arbeitsschutz & Pflichtunterweisungen",
+        "layout": "Article"
+      }
+    ],
+    "abteilungen": [
+      {
+        "name": "Abteilungen",
+        "title": "Abteilungen - Übersicht",
+        "layout": "Article"
+      },
+      {
+        "name": "Abteilung-Anwendungstechnik",
+        "title": "Anwendungstechnik",
+        "layout": "Article"
+      },
+      {
+        "name": "Abteilung-Verwaltung",
+        "title": "Verwaltung",
+        "layout": "Article"
+      },
+      {
+        "name": "Abteilung-Vertrieb",
+        "title": "Vertrieb",
+        "layout": "Article"
+      },
+      {
+        "name": "Abteilung-Operative-Teams",
+        "title": "Operative Teams",
+        "layout": "Article"
+      }
+    ],
+    "teams": [
+      {
+        "name": "Teams",
+        "title": "Teams - Übersicht",
+        "layout": "Article"
+      }
+    ],
+    "personal": [
+      {
+        "name": "Mein-Bereich",
+        "title": "Mein Bereich",
+        "layout": "Article"
+      }
+    ]
+  },
+  "permissions": {
+    "allEmployeesGroup": "Alle Mitarbeiter",
+    "ownersGroup": "FassadenFix Intranet Besitzer",
+    "membersGroup": "FassadenFix Intranet Mitglieder",
+    "visitorsGroup": "FassadenFix Intranet Besucher"
+  }
+}
