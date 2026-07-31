@@ -59,16 +59,12 @@ fn clean_path_str(path: &Path) -> String {
 }
 
 fn collect_vault_docs(vault_path: &Path) -> PyResult<Vec<IndexedDoc>> {
-    let vault_root = vault_path
-        .canonicalize()
-        .map_err(|e| pyo3::exceptions::PyOSError::new_err(e.to_string()))?;
-    let vault_str = clean_path_str(&vault_root);
-    let vault_name = vault_root
+    let vault_name = vault_path
         .file_name()
         .map(|n| n.to_string_lossy().into_owned())
-        .unwrap_or_else(|| vault_str.clone());
+        .unwrap_or_else(|| vault_path.to_string_lossy().into_owned());
 
-    let entries: Vec<PathBuf> = WalkDir::new(&vault_root)
+    let entries: Vec<PathBuf> = WalkDir::new(vault_path)
         .follow_links(false)
         .into_iter()
         .filter_map(|e| e.ok())
