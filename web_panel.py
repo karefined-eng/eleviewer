@@ -24,15 +24,22 @@ def get_persistent_profile():
                     info.block(True)
 
         from PySide6.QtCore import QCoreApplication
+        from settings import load_settings
+        settings_dict = load_settings()
+        
         _web_profile = QWebEngineProfile("eleviewer_web_profile", QCoreApplication.instance())
-        _interceptor = AdBlockInterceptor(_web_profile)
-        _web_profile.setUrlRequestInterceptor(_interceptor)
+        
+        if settings_dict.get("web_enable_adblock", True):
+            _interceptor = AdBlockInterceptor(_web_profile)
+            _web_profile.setUrlRequestInterceptor(_interceptor)
+            
         storage_path = str(APP_DATA_DIR / "web_data")
         _web_profile.setPersistentStoragePath(storage_path)
         _web_profile.setCachePath(storage_path)
         _web_profile.setPersistentCookiesPolicy(QWebEngineProfile.PersistentCookiesPolicy.ForcePersistentCookies)
         
         settings = _web_profile.settings()
+        settings.setAttribute(QWebEngineSettings.WebAttribute.JavascriptEnabled, settings_dict.get("web_enable_javascript", True))
         settings.setAttribute(QWebEngineSettings.WebAttribute.PluginsEnabled, False)
         settings.setAttribute(QWebEngineSettings.WebAttribute.WebGLEnabled, False)
         settings.setAttribute(QWebEngineSettings.WebAttribute.PdfViewerEnabled, False)
@@ -57,7 +64,10 @@ def get_web_view_class():
                 page = QWebEnginePage(get_persistent_profile(), self)
                 self.setPage(page)
                 page.featurePermissionRequested.connect(self._auto_deny_permissions)
-                page.loadFinished.connect(self._inject_ad_blocker)
+                
+                from settings import load_settings
+                if load_settings().get("web_enable_adblock", True):
+                    page.loadFinished.connect(self._inject_ad_blocker)
                 
             def _auto_deny_permissions(self, security_origin, feature):
                 self.page().setFeaturePermission(security_origin, feature, QWebEnginePage.PermissionPolicy.PermissionDeniedByUser)
@@ -213,7 +223,13 @@ class WebPanel(QWidget):
         self.btn_add.setToolTip("New tab")
         self.btn_add.clicked.connect(self.add_tab)
 
-        for btn in (self.btn_back, self.btn_forward, self.btn_refresh, self.btn_bookmark, self.btn_add):
+        self.btn_history = QToolButton()
+        self.btn_history.setIconSize(icon_qsize)
+        self.btn_history.setIcon(icon("clock", size=icon_sz))
+        self.btn_history.setToolTip("Show browsing history")
+        self.btn_history.clicked.connect(self._show_history)
+
+        for btn in (self.btn_back, self.btn_forward, self.btn_refresh, self.btn_bookmark, self.btn_history, self.btn_add):
             btn.setStyleSheet(compact_toolbar_stylesheet())
             btn.setAutoRaise(True)
 
@@ -222,6 +238,7 @@ class WebPanel(QWidget):
         nav.addWidget(self.btn_refresh)
         nav.addWidget(self.url_bar, stretch=1)
         nav.addWidget(self.btn_bookmark)
+        nav.addWidget(self.btn_history)
         nav.addWidget(self.btn_add)
 
         self.tabs = QTabWidget()
@@ -397,6 +414,45 @@ class WebPanel(QWidget):
                 window.show_status_message(f"Bookmarked: {title}", 2500)
         except Exception as e:
             print(f"[WebPanel] Bookmark error: {e}")
+
+    def _show_history(self):
+        view = self._current_view()
+        if not view:
+            return
+            
+        history = view.history()
+        
+        from PySide6.QtWidgets import QMenu
+        menu = QMenu(self)
+        
+        # Add back items
+        items = history.backItems(15)
+        for item in reversed(items):
+            action = menu.addAction(item.title() or item.url().toString())
+            action.triggered.connect(lambda checked=False, i=item: history.goToItem(i))
+            
+        if items:
+            menu.addSeparator()
+            
+        current = history.currentItem()
+        if current:
+            current_action = menu.addAction(current.title() or current.url().toString())
+            current_action.setEnabled(False)
+            font = current_action.font()
+            font.setBold(True)
+            current_action.setFont(font)
+            
+        forward_items = history.forwardItems(15)
+        if forward_items:
+            menu.addSeparator()
+            for item in forward_items:
+                action = menu.addAction(item.title() or item.url().toString())
+                action.triggered.connect(lambda checked=False, i=item: history.goToItem(i))
+                
+        if menu.isEmpty():
+            menu.addAction("No history").setEnabled(False)
+            
+        menu.exec_(self.btn_history.mapToGlobal(self.btn_history.rect().bottomLeft()))
 
     def persist_tabs(self):
         settings = load_settings()

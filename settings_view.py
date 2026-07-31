@@ -124,7 +124,8 @@ class SettingsView(QWidget):
             self.main_window.apply_theme()
         elif key == "vault_show_all_files":
             self.main_window.vault_panel.set_show_all_files(value)
-            self.main_window.vault_panel.refresh()
+            if hasattr(self.main_window.vault_panel, 'restore_from_settings'):
+                self.main_window.vault_panel.restore_from_settings()
         elif key in ("autosave_enabled", "autosave_interval_seconds"):
             if hasattr(self.main_window, 'autosaver'):
                 self.main_window.autosaver.apply_settings()

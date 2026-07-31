@@ -317,6 +317,10 @@ class MainWindow(QMainWindow):
     def handle_escape(self):
         if QApplication.activeModalWidget() is not None:
             return
+            
+        if getattr(self, "_zen_mode_active", False):
+            self.toggle_zen_mode()
+            return
 
         # Hide Find/Replace if open in current editor
         current_widget = self.tabs.currentWidget()
@@ -637,6 +641,7 @@ class MainWindow(QMainWindow):
             ("Ctrl+T", self.open_web_tab),
             ("Ctrl+Shift+T", self.reopen_closed_tab),
             ("F9", self.toggle_tts_bar),
+            ("F11", self.toggle_zen_mode),
             ("Ctrl+N", self.new_tab),
             ("Ctrl+O", self.open_file),
             ("Ctrl+S", self.save_file),
@@ -651,6 +656,26 @@ class MainWindow(QMainWindow):
             sc = QShortcut(QKeySequence(key_seq), self)
             sc.setContext(Qt.ApplicationShortcut)
             sc.activated.connect(slot)
+
+    def toggle_zen_mode(self):
+        if not hasattr(self, "_zen_mode_active"):
+            self._zen_mode_active = False
+            
+        self._zen_mode_active = not self._zen_mode_active
+        if self._zen_mode_active:
+            self.showFullScreen()
+            self.toolbar.hide()
+            self._zen_vault_was_visible = self.vault_panel.isVisible()
+            if self._zen_vault_was_visible:
+                self.vault_panel.hide()
+            self.statusBar().hide()
+            self.show_status_message("Zen Mode active. Press F11 or Esc to exit.", 3000)
+        else:
+            self.showNormal()
+            self.toolbar.show()
+            if getattr(self, "_zen_vault_was_visible", False):
+                self.vault_panel.show()
+            self.statusBar().show()
 
     def _restore_vault(self):
         settings = load_settings()
@@ -1554,7 +1579,19 @@ class MainWindow(QMainWindow):
                 if hasattr(self, "draft_manager"):
                     self.draft_manager.cleanup(path=getattr(editor, "file_path", None), editor_id=id(editor))
 
+        tab_type = "editor"
+        url = ""
+        if hasattr(editor, "url"):
+            tab_type = "web"
+            url = editor.url().toString()
+        elif hasattr(editor, "_is_welcome_screen"):
+            tab_type = "welcome"
+        elif hasattr(editor, "_is_settings_view"):
+            tab_type = "settings"
+
         self.closed_tabs.append({
+            "type": tab_type,
+            "url": url,
             "content": editor.toPlainText() if hasattr(editor, "toPlainText") else "",
             "file_path": getattr(editor, "file_path", None),
             "modified": getattr(editor, "is_modified", False),
@@ -1579,13 +1616,25 @@ class MainWindow(QMainWindow):
             self.show_status_message("No closed tabs to reopen", 2000)
             return
         tab_data = self.closed_tabs.pop()
+        
+        tab_type = tab_data.get("type", "editor")
+        if tab_type == "web":
+            self.open_web_tab(tab_data.get("url", ""))
+            return
+        elif tab_type == "welcome":
+            self.start_onboarding()
+            return
+        elif tab_type == "settings":
+            self.open_settings()
+            return
+            
         file_path = tab_data["file_path"]
         if file_path and os.path.exists(file_path):
             editor = create_viewer_widget(file_path)
             self._wire_editor(editor)
             if tab_data["modified"] and tab_data["content"] and not is_binary_format(file_path):
                 editor.setPlainText(tab_data["content"])
-                editor.is_modified = True
+                editor.is_modified = tab_data["modified"]
         elif tab_data["content"]:
             from editor import EditorTab
             editor = EditorTab()
