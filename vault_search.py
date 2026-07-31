@@ -8,7 +8,6 @@ from PySide6.QtCore import Qt, Signal, QTimer, QThread, QEvent
 from theme import get_active_palette, get_brand_accent
 from file_icons import file_type_icon
 from settings import load_settings
-from paths import scandir_walk
 
 
 # FIX: search runs on QThreadPool worker to prevent GUI thread freezing
@@ -38,7 +37,7 @@ class VaultSearchWorker(QThread):
             vault_str = str(vault_resolved)
             vault_name = vault_resolved.name
             # SECURITY: followlinks=False prevents traversing symlinks outside vault
-            for root, dirs, files in scandir_walk(vault_str, followlinks=False):
+            for root, dirs, files in os.walk(vault_str, followlinks=False):
 
                 if self._is_cancelled or count >= 100:
                     break
