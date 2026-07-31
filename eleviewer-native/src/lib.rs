@@ -6,7 +6,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
 
-const INDEX_EXTENSIONS: &[&str] = &[".md", ".txt", ".csv"];
+const INDEX_EXTENSIONS: &[&str] = &["md", "txt", "csv"];
 
 fn init_schema(conn: &Connection) -> rusqlite::Result<()> {
     conn.execute_batch(
@@ -49,11 +49,20 @@ struct IndexedDoc {
     mtime: f64,
 }
 
+fn clean_path_str(path: &Path) -> String {
+    let s = path.to_string_lossy();
+    if let Some(stripped) = s.strip_prefix(r"\\?\") {
+        stripped.to_string()
+    } else {
+        s.into_owned()
+    }
+}
+
 fn collect_vault_docs(vault_path: &Path) -> PyResult<Vec<IndexedDoc>> {
     let vault_root = vault_path
         .canonicalize()
         .map_err(|e| pyo3::exceptions::PyOSError::new_err(e.to_string()))?;
-    let vault_str = vault_root.to_string_lossy().into_owned();
+    let vault_str = clean_path_str(&vault_root);
     let vault_name = vault_root
         .file_name()
         .map(|n| n.to_string_lossy().into_owned())
@@ -74,23 +83,19 @@ fn collect_vault_docs(vault_path: &Path) -> PyResult<Vec<IndexedDoc>> {
             if name.starts_with('.') {
                 return None;
             }
-            if !vault_boundary_ok(&vault_root, path) {
-                return None;
-            }
             let ext = path.extension()?.to_str()?.to_lowercase();
             if !INDEX_EXTENSIONS.iter().any(|e| *e == ext) {
                 return None;
             }
-            let meta = fs::metadata(path).ok()?;
-            let mtime = meta
-                .modified()
-                .ok()?
-                .duration_since(std::time::UNIX_EPOCH)
-                .ok()?
-                .as_secs_f64();
+            let mtime = fs::metadata(path)
+                .ok()
+                .and_then(|m| m.modified().ok())
+                .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+                .map(|d| d.as_secs_f64())
+                .unwrap_or(0.0);
             let content = extract_text(path).unwrap_or_default();
             Some(IndexedDoc {
-                path: path.to_string_lossy().into_owned(),
+                path: clean_path_str(path),
                 vault: vault_name.clone(),
                 filename: name.to_owned(),
                 content,
