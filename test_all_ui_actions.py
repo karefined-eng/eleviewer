@@ -95,7 +95,7 @@ def test_all_menu_actions_and_toolbar_buttons(main_window, monkeypatch):
     main_window.show_find()
     main_window.show_replace()
     main_window.open_vault_search()
-    main_window._on_settings_saved()
+    main_window.open_settings()
     main_window.open_quick_switcher()
     main_window._new_session()
     assert main_window.tabs.count() == 1  # Session cleared to welcome/blank tab

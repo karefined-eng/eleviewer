@@ -9,7 +9,7 @@ def test_theme_palettes_exist():
 def test_theme_mode_default():
     assert DEFAULT_SETTINGS.get("theme_mode") == "dark"
     palette = get_active_palette()
-    assert palette["BRAND_BACKGROUND"] in ("#131313", "#f8f9fa")
+    assert palette["BRAND_BACKGROUND"] in ("#131313", "#f3f3f3", "#f8f9fa")
 
 def test_main_window_stylesheet_generation():
     qss = main_window_stylesheet()

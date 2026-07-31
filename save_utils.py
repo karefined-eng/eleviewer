@@ -29,7 +29,12 @@ def atomic_write(file_path, content):
                 break
             except (PermissionError, OSError):
                 if attempt == 4:
-                    raise
+                    try:
+                        with open(path, mode, **kwargs) as f:
+                            f.write(content)
+                        break
+                    except Exception:
+                        raise
                 time.sleep(0.05 * (attempt + 1))
     except Exception:
         if os.path.exists(tmp_path):
