@@ -1,0 +1,189 @@
+{
+    "meta": {
+        "version": "1.0",
+        "stand": "2026-01-21",
+        "quelle": "FASSADENFIX Katalog 2025 - Preise und Rabatte",
+        "hinweis": "Pauschalfestpreise inkl. aller Nebenkosten (z.B. Hebebühnen)"
+    },
+    "preisstufen": {
+        "reinigung": {
+            "label": "FassadenFix Systemreinigung nach Fläche",
+            "einheit": "€/m²",
+            "hinweis": "Pauschalfestpreis inkl. aller Nebenkosten, Hebebühnen sind bereits enthalten",
+            "stufen": [
+                {
+                    "von_m2": 0,
+                    "bis_m2": 499,
+                    "preis": 11.50,
+                    "artikelId": "R001",
+                    "bezeichnung": "FassadenFix Systemreinigung bis 499 m²",
+                    "hinweis": "Kleinaufträge mit höherem Fixkostenanteil"
+                },
+                {
+                    "von_m2": 500,
+                    "bis_m2": 999,
+                    "preis": 10.50,
+                    "artikelId": "R002",
+                    "bezeichnung": "FassadenFix Systemreinigung 500 - 999 m²"
+                },
+                {
+                    "von_m2": 1000,
+                    "bis_m2": 2499,
+                    "preis": 9.75,
+                    "artikelId": "R003",
+                    "bezeichnung": "FassadenFix Systemreinigung 1.000 - 2.499 m²"
+                },
+                {
+                    "von_m2": 2500,
+                    "bis_m2": 4999,
+                    "preis": 9.25,
+                    "artikelId": "R004",
+                    "bezeichnung": "FassadenFix Systemreinigung 2.500 - 4.999 m²"
+                },
+                {
+                    "von_m2": 5000,
+                    "bis_m2": 999999,
+                    "preis": 8.75,
+                    "artikelId": "R005",
+                    "bezeichnung": "FassadenFix Systemreinigung ab 5.000 m²",
+                    "hinweis": "Bestpreis, kann bei sehr großen Volumina bis 8,50€/m² sinken"
+                }
+            ],
+            "sonderkonditionen": {
+                "wohnungsunternehmen": {
+                    "label": "Wohnungsunternehmen Sonderpreis",
+                    "minPreis": 7.99,
+                    "hinweis": "In Kombination mit Frühbucher-Rabatt möglich"
+                }
+            }
+        },
+        "technik": {
+            "label": "Technik-Pauschalen",
+            "einheit": "€/Einheit",
+            "hinweis": "Bei Pauschalfestpreis bereits in m²-Preis enthalten, nur bei Sonderanforderungen separat",
+            "preise": {
+                "T001": {
+                    "bezeichnung": "Hubarbeitsbühne Tagespauschale (Standard bis 30m)",
+                    "preis": 390.00,
+                    "einheit": "Tag(e)",
+                    "hinweis": "Im Pauschalfestpreis enthalten"
+                },
+                "T002": {
+                    "bezeichnung": "Sonderbühne Tagespauschale (über 30m)",
+                    "preis": 790.00,
+                    "einheit": "Tag(e)",
+                    "hinweis": "Im Pauschalfestpreis enthalten"
+                },
+                "T003": {
+                    "bezeichnung": "Spechtloch klein ausbessern",
+                    "preis": 75.00,
+                    "einheit": "Stk"
+                },
+                "T004": {
+                    "bezeichnung": "Spechtloch groß ausbessern",
+                    "preis": 150.00,
+                    "einheit": "Stk"
+                },
+                "T005": {
+                    "bezeichnung": "Kletterer-Einsatz",
+                    "preis": 0.00,
+                    "einheit": "Tag(e)",
+                    "hinweis": "Preis auf Anfrage"
+                }
+            }
+        },
+        "nebenkosten": {
+            "label": "Nebenkosten-Pauschalen",
+            "einheit": "€/Einheit",
+            "hinweis": "Bei Pauschalfestpreis bereits enthalten, nur bei Sonderanforderungen separat",
+            "preise": {
+                "N001": {
+                    "bezeichnung": "Baustelleneinrichtung",
+                    "preis": 100.00,
+                    "einheit": "Stk",
+                    "hinweis": "Im Pauschalfestpreis enthalten"
+                },
+                "N002": {
+                    "bezeichnung": "Übernachtungspauschale 4 Mitarbeiter/Tag",
+                    "preis": 300.00,
+                    "einheit": "Tag(e)",
+                    "hinweis": "75€ pro Mitarbeiter/Tag - KANN ENTFALLEN bei lokalen Objekten"
+                }
+            }
+        },
+        "rabatte": {
+            "label": "Rabatte und Aktionen",
+            "aktionen": {
+                "fruehbucher_2025": {
+                    "label": "Frühbucher-Rabatt 2025",
+                    "staffelung": [
+                        {
+                            "bis": "2024-12-31",
+                            "prozent": 6.0,
+                            "beispielPreis": 8.23,
+                            "hinweis": "Bester Rabatt, Beauftragung bis 31.12.2024"
+                        },
+                        {
+                            "bis": "2025-01-31",
+                            "prozent": 4.5,
+                            "beispielPreis": 8.36,
+                            "hinweis": "Beauftragung bis 31.01.2025"
+                        },
+                        {
+                            "bis": "2025-02-28",
+                            "prozent": 3.0,
+                            "beispielPreis": 8.49,
+                            "hinweis": "Beauftragung bis 28.02.2025"
+                        },
+                        {
+                            "bis": "2025-03-31",
+                            "prozent": 1.5,
+                            "beispielPreis": 8.62,
+                            "hinweis": "Beauftragung bis 31.03.2025"
+                        }
+                    ]
+                },
+                "fruehbucher_2026": {
+                    "label": "Frühbucher-Rabatt 2026",
+                    "staffelung": [
+                        {
+                            "bis": "2025-12-31",
+                            "prozent": 6.0,
+                            "hinweis": "Beauftragung bis 31.12.2025"
+                        },
+                        {
+                            "bis": "2026-01-31",
+                            "prozent": 4.5,
+                            "hinweis": "Beauftragung bis 31.01.2026"
+                        },
+                        {
+                            "bis": "2026-02-28",
+                            "prozent": 3.0,
+                            "hinweis": "Beauftragung bis 28.02.2026"
+                        },
+                        {
+                            "bis": "2026-03-31",
+                            "prozent": 1.5,
+                            "hinweis": "Beauftragung bis 31.03.2026"
+                        }
+                    ]
+                },
+                "mengenrabatt": {
+                    "label": "Mengenrabatt",
+                    "hinweis": "Bereits in der m²-Staffelung berücksichtigt"
+                }
+            }
+        }
+    },
+    "garantien": {
+        "pauschalfestpreis": {
+            "label": "Pauschalfestpreis-Garantie",
+            "beschreibung": "Keine versteckten Kosten. Rechnung niemals höher als Auftragsbestätigung."
+        },
+        "ergebnis": {
+            "label": "Ergebnisgarantie",
+            "dauer_jahre": 5,
+            "beschreibung": "5 Jahre Algenfreiheit garantiert"
+        }
+    }
+}

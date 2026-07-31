@@ -1,0 +1,89 @@
+graph TB
+    subgraph "Skill & Agent Hub v2.1"
+        direction TB
+        API[REST API Server<br/>Port 5000]
+        REG[(Registry<br/>SQLite)]
+        DISC[Discovery<br/>Service]
+        ORCH[Orchestrator<br/>Engine]
+        
+        API --> REG
+        API --> DISC
+        API --> ORCH
+        DISC --> REG
+        ORCH --> DISC
+    end
+
+    subgraph "Native Skills"
+        NS1[text_summarizer]
+        NS2[web_scraper]
+        NS3[file_reader]
+        NS4[data_analyzer]
+    end
+
+    subgraph "Native Agents"
+        NA1[research_agent]
+        NA2[content_creator]
+    end
+
+    subgraph "Original 5 Plattformen - Bidirektional"
+        direction LR
+        AG[Antigravity]
+        CC[Claude Cowork]
+        CCD[Claude Code]
+        MAN[Manus 1.6]
+        GPT[ChatGPT Codex]
+    end
+
+    subgraph "Importierte Skills - Original 5"
+        IS1[antigravity_execute_workflow]
+        IS2[claude_chat_completion]
+        IS3[claude_code_analyze]
+        IS4[manus_shell_execute]
+        IS5[openai_chat_completion]
+        IS6[openai_dalle_generate]
+    end
+
+    subgraph "Zusätzliche 8 Plattformen - Bidirektional"
+        direction LR
+        M365[Microsoft 365<br/>Copilot]
+        GEM[Google Gemini]
+        NLM[NotebookLM]
+        AIS[AI Studio]
+        PPL[Perplexity]
+        ABA[Abacus AI]
+        HUB[HubSpot]
+        BRZ[HubSpot Breeze]
+    end
+
+    subgraph "Importierte Skills - Zusätzliche 8"
+        IS7[microsoft365_graph_api]
+        IS8[gemini_multimodal]
+        IS9[perplexity_web_search]
+        IS10[abacus_deep_agent]
+        IS11[hubspot_crm_operations]
+    end
+
+    REG --> NS1 & NS2 & NS3 & NS4
+    REG --> NA1 & NA2
+    REG --> IS1 & IS2 & IS3 & IS4 & IS5 & IS6
+    REG --> IS7 & IS8 & IS9 & IS10 & IS11
+
+    AG <-->|Export/Import| API
+    CC <-->|Export/Import| API
+    CCD <-->|Export/Import| API
+    MAN <-->|Export/Import| API
+    GPT <-->|Export/Import| API
+
+    M365 <-->|Export/Import| API
+    GEM <-->|Export/Import| API
+    NLM <-->|Export/Import| API
+    AIS <-->|Export/Import| API
+    PPL <-->|Export/Import| API
+    ABA <-->|Export/Import| API
+    HUB <-->|Export/Import| API
+    BRZ <-->|Export/Import| API
+
+    style API fill:#4CAF50,color:white
+    style REG fill:#2196F3,color:white
+    style DISC fill:#FF9800,color:white
+    style ORCH fill:#9C27B0,color:white

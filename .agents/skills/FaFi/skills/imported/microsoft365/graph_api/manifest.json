@@ -1,0 +1,56 @@
+{
+  "manifest_version": "1.0",
+  "type": "skill",
+  "name": "microsoft365_graph_api",
+  "version": "1.0.0",
+  "description": "Führt Microsoft 365 Operationen über die Graph API durch (E-Mail, Kalender, OneDrive, Teams).",
+  "author": "Skill Hub (Imported)",
+  "tags": ["microsoft", "m365", "outlook", "teams", "onedrive", "calendar", "imported"],
+  "capabilities": ["email", "calendar", "file_management", "team_communication"],
+  "implementation": {
+    "type": "remote",
+    "language": "python",
+    "entrypoint": "main.py",
+    "remote_config": {
+      "service": "microsoft_graph",
+      "api_version": "v1.0",
+      "auth_type": "oauth2"
+    }
+  },
+  "interface": {
+    "inputs": [
+      {
+        "name": "operation",
+        "type": "string",
+        "description": "Graph API Operation",
+        "required": true,
+        "enum": ["send_email", "create_event", "search_files", "send_teams_message", "get_calendar"]
+      },
+      {
+        "name": "data",
+        "type": "object",
+        "description": "Daten für die Operation",
+        "required": true
+      }
+    ],
+    "outputs": [
+      {
+        "name": "result",
+        "type": "object",
+        "description": "Ergebnis der Operation"
+      },
+      {
+        "name": "status",
+        "type": "string",
+        "description": "Ausführungsstatus"
+      }
+    ]
+  },
+  "metadata": {
+    "source_platform": "Microsoft 365",
+    "imported": true,
+    "requires_auth": true,
+    "scopes": ["Mail.Send", "Calendars.ReadWrite", "Files.Read", "ChannelMessage.Send"],
+    "created_at": "2026-01-23T12:00:00Z"
+  }
+}

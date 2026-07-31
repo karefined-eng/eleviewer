@@ -1,0 +1,997 @@
+{
+  "catalog": {
+    "actions": [
+      {
+        "action_id": "openai_dalle_generate",
+        "action_type": "skill",
+        "category": "Media",
+        "description": "Generiert Bilder mit DALL-E basierend auf einer Textbeschreibung.",
+        "display_name": "Openai Dalle Generate",
+        "execution": {
+          "handler": "main.py",
+          "type": "openai_api"
+        },
+        "inputs": [
+          {
+            "default": null,
+            "description": "Bildbeschreibung f\u00fcr die Generierung",
+            "label": "Prompt",
+            "name": "prompt",
+            "required": true,
+            "type": "text"
+          },
+          {
+            "default": "dall-e-3",
+            "description": "DALL-E Modell (dall-e-3, dall-e-2)",
+            "label": "Model",
+            "name": "model",
+            "required": false,
+            "type": "text"
+          },
+          {
+            "default": "1024x1024",
+            "description": "Bildgr\u00f6\u00dfe (1024x1024, 1792x1024, 1024x1792)",
+            "label": "Size",
+            "name": "size",
+            "required": false,
+            "type": "text"
+          },
+          {
+            "default": "standard",
+            "description": "Qualit\u00e4t (standard, hd)",
+            "label": "Quality",
+            "name": "quality",
+            "required": false,
+            "type": "text"
+          },
+          {
+            "default": 1,
+            "description": "Anzahl der zu generierenden Bilder",
+            "label": "N",
+            "name": "n",
+            "required": false,
+            "type": "number"
+          }
+        ],
+        "outputs": [
+          {
+            "description": "URLs der generierten Bilder",
+            "label": "Images",
+            "name": "images",
+            "type": "list"
+          },
+          {
+            "description": "\u00dcberarbeiteter Prompt (bei DALL-E 3)",
+            "label": "Revised Prompt",
+            "name": "revised_prompt",
+            "type": "text"
+          }
+        ]
+      },
+      {
+        "action_id": "openai_chat_completion",
+        "action_type": "skill",
+        "category": "General",
+        "description": "F\u00fchrt eine Chat-Completion mit GPT-Modellen durch und gibt die Antwort zur\u00fcck.",
+        "display_name": "Openai Chat Completion",
+        "execution": {
+          "handler": "main.py",
+          "type": "openai_api"
+        },
+        "inputs": [
+          {
+            "default": null,
+            "description": "Chat-Nachrichten im Format [{role: 'user'|'assistant'|'system', content: 'text'}]",
+            "label": "Messages",
+            "name": "messages",
+            "required": true,
+            "type": "list"
+          },
+          {
+            "default": "gpt-4o",
+            "description": "GPT-Modell (gpt-4o, gpt-4-turbo, gpt-3.5-turbo)",
+            "label": "Model",
+            "name": "model",
+            "required": false,
+            "type": "text"
+          },
+          {
+            "default": 0.7,
+            "description": "Temperatur f\u00fcr die Generierung (0-2)",
+            "label": "Temperature",
+            "name": "temperature",
+            "required": false,
+            "type": "number"
+          },
+          {
+            "default": null,
+            "description": "Maximale Token-Anzahl f\u00fcr die Antwort",
+            "label": "Max Tokens",
+            "name": "max_tokens",
+            "required": false,
+            "type": "number"
+          }
+        ],
+        "outputs": [
+          {
+            "description": "GPT-Antwort",
+            "label": "Response",
+            "name": "response",
+            "type": "text"
+          },
+          {
+            "description": "Token-Nutzung (prompt_tokens, completion_tokens, total_tokens)",
+            "label": "Usage",
+            "name": "usage",
+            "type": "json"
+          },
+          {
+            "description": "Grund f\u00fcr das Beenden",
+            "label": "Finish Reason",
+            "name": "finish_reason",
+            "type": "text"
+          }
+        ]
+      },
+      {
+        "action_id": "manus_shell_execute",
+        "action_type": "skill",
+        "category": "General",
+        "description": "F\u00fchrt Shell-Befehle in der Manus-Sandbox aus und gibt die Ausgabe zur\u00fcck.",
+        "display_name": "Manus Shell Execute",
+        "execution": {
+          "handler": "main.py",
+          "type": "manus_api"
+        },
+        "inputs": [
+          {
+            "default": null,
+            "description": "Shell-Befehl zur Ausf\u00fchrung",
+            "label": "Command",
+            "name": "command",
+            "required": true,
+            "type": "text"
+          },
+          {
+            "default": "default",
+            "description": "Session-ID f\u00fcr die Shell",
+            "label": "Session",
+            "name": "session",
+            "required": false,
+            "type": "text"
+          },
+          {
+            "default": 30,
+            "description": "Timeout in Sekunden",
+            "label": "Timeout",
+            "name": "timeout",
+            "required": false,
+            "type": "number"
+          },
+          {
+            "default": null,
+            "description": "Arbeitsverzeichnis",
+            "label": "Working Dir",
+            "name": "working_dir",
+            "required": false,
+            "type": "text"
+          }
+        ],
+        "outputs": [
+          {
+            "description": "Befehlsausgabe (stdout + stderr)",
+            "label": "Output",
+            "name": "output",
+            "type": "text"
+          },
+          {
+            "description": "Exit-Code des Befehls",
+            "label": "Exit Code",
+            "name": "exit_code",
+            "type": "number"
+          },
+          {
+            "description": "War die Ausf\u00fchrung erfolgreich?",
+            "label": "Success",
+            "name": "success",
+            "type": "boolean"
+          }
+        ]
+      },
+      {
+        "action_id": "claude_code_analyze",
+        "action_type": "skill",
+        "category": "Development",
+        "description": "Analysiert Code mit Claude Code und identifiziert Probleme, Verbesserungen und Best Practices.",
+        "display_name": "Claude Code Analyze",
+        "execution": {
+          "handler": "main.py",
+          "type": "claude_code_cli"
+        },
+        "inputs": [
+          {
+            "default": null,
+            "description": "Code zur Analyse",
+            "label": "Code",
+            "name": "code",
+            "required": true,
+            "type": "text"
+          },
+          {
+            "default": null,
+            "description": "Programmiersprache (python, javascript, typescript, etc.)",
+            "label": "Language",
+            "name": "language",
+            "required": false,
+            "type": "text"
+          },
+          {
+            "default": "all",
+            "description": "Analysefokus: bugs, security, performance, style, all",
+            "label": "Focus",
+            "name": "focus",
+            "required": false,
+            "type": "text"
+          }
+        ],
+        "outputs": [
+          {
+            "description": "Detaillierte Analyse des Codes",
+            "label": "Analysis",
+            "name": "analysis",
+            "type": "text"
+          },
+          {
+            "description": "Liste der gefundenen Probleme",
+            "label": "Issues",
+            "name": "issues",
+            "type": "list"
+          },
+          {
+            "description": "Verbesserungsvorschl\u00e4ge",
+            "label": "Suggestions",
+            "name": "suggestions",
+            "type": "list"
+          }
+        ]
+      },
+      {
+        "action_id": "claude_chat_completion",
+        "action_type": "skill",
+        "category": "General",
+        "description": "F\u00fchrt eine Chat-Completion mit Claude durch und gibt die Antwort zur\u00fcck.",
+        "display_name": "Claude Chat Completion",
+        "execution": {
+          "handler": "main.py",
+          "type": "anthropic_api"
+        },
+        "inputs": [
+          {
+            "default": null,
+            "description": "Chat-Nachrichten im Format [{role: 'user'|'assistant', content: 'text'}]",
+            "label": "Messages",
+            "name": "messages",
+            "required": true,
+            "type": "list"
+          },
+          {
+            "default": "claude-3-sonnet-20240229",
+            "description": "Claude-Modell (claude-3-opus, claude-3-sonnet, claude-3-haiku)",
+            "label": "Model",
+            "name": "model",
+            "required": false,
+            "type": "text"
+          },
+          {
+            "default": 4096,
+            "description": "Maximale Token-Anzahl f\u00fcr die Antwort",
+            "label": "Max Tokens",
+            "name": "max_tokens",
+            "required": false,
+            "type": "number"
+          },
+          {
+            "default": 0.7,
+            "description": "Temperatur f\u00fcr die Generierung (0-1)",
+            "label": "Temperature",
+            "name": "temperature",
+            "required": false,
+            "type": "number"
+          },
+          {
+            "default": null,
+            "description": "System-Prompt",
+            "label": "System",
+            "name": "system",
+            "required": false,
+            "type": "text"
+          }
+        ],
+        "outputs": [
+          {
+            "description": "Claude-Antwort",
+            "label": "Response",
+            "name": "response",
+            "type": "text"
+          },
+          {
+            "description": "Token-Nutzung (input_tokens, output_tokens)",
+            "label": "Usage",
+            "name": "usage",
+            "type": "json"
+          },
+          {
+            "description": "Grund f\u00fcr das Stoppen",
+            "label": "Stop Reason",
+            "name": "stop_reason",
+            "type": "text"
+          }
+        ]
+      },
+      {
+        "action_id": "antigravity_execute_workflow",
+        "action_type": "skill",
+        "category": "General",
+        "description": "F\u00fchrt einen Antigravity-Workflow aus und gibt das Ergebnis zur\u00fcck.",
+        "display_name": "Antigravity Execute Workflow",
+        "execution": {
+          "handler": "main.py",
+          "type": "antigravity_api"
+        },
+        "inputs": [
+          {
+            "default": null,
+            "description": "ID des auszuf\u00fchrenden Workflows",
+            "label": "Workflow Id",
+            "name": "workflow_id",
+            "required": true,
+            "type": "text"
+          },
+          {
+            "default": null,
+            "description": "Eingabeparameter f\u00fcr den Workflow",
+            "label": "Inputs",
+            "name": "inputs",
+            "required": true,
+            "type": "json"
+          },
+          {
+            "default": false,
+            "description": "Asynchrone Ausf\u00fchrung",
+            "label": "Async Mode",
+            "name": "async_mode",
+            "required": false,
+            "type": "boolean"
+          }
+        ],
+        "outputs": [
+          {
+            "description": "Workflow-Ergebnis",
+            "label": "Result",
+            "name": "result",
+            "type": "json"
+          },
+          {
+            "description": "Ausf\u00fchrungs-ID",
+            "label": "Execution Id",
+            "name": "execution_id",
+            "type": "text"
+          },
+          {
+            "description": "Ausf\u00fchrungsstatus",
+            "label": "Status",
+            "name": "status",
+            "type": "text"
+          }
+        ]
+      },
+      {
+        "action_id": "abacus_deep_agent",
+        "action_type": "skill",
+        "category": "General",
+        "description": "Nutzt Abacus AI Deep Agent f\u00fcr autonome, mehrstufige Aufgabenausf\u00fchrung.",
+        "display_name": "Abacus Deep Agent",
+        "execution": {
+          "handler": "main.py",
+          "type": "python"
+        },
+        "inputs": [
+          {
+            "default": null,
+            "description": "Aufgabenbeschreibung f\u00fcr den Deep Agent",
+            "label": "Task",
+            "name": "task",
+            "required": true,
+            "type": "text"
+          },
+          {
+            "default": null,
+            "description": "Zus\u00e4tzlicher Kontext f\u00fcr die Aufgabe",
+            "label": "Context",
+            "name": "context",
+            "required": false,
+            "type": "json"
+          },
+          {
+            "default": 10,
+            "description": "Maximale Anzahl von Schritten",
+            "label": "Max Steps",
+            "name": "max_steps",
+            "required": false,
+            "type": "number"
+          },
+          {
+            "default": null,
+            "description": "Liste der erlaubten Tools",
+            "label": "Tools",
+            "name": "tools",
+            "required": false,
+            "type": "list"
+          }
+        ],
+        "outputs": [
+          {
+            "description": "Ergebnis der Aufgabenausf\u00fchrung",
+            "label": "Result",
+            "name": "result",
+            "type": "json"
+          },
+          {
+            "description": "Liste der ausgef\u00fchrten Schritte",
+            "label": "Steps",
+            "name": "steps",
+            "type": "list"
+          },
+          {
+            "description": "Ausf\u00fchrungsstatus (completed, failed, timeout)",
+            "label": "Status",
+            "name": "status",
+            "type": "text"
+          }
+        ]
+      },
+      {
+        "action_id": "microsoft365_graph_api",
+        "action_type": "skill",
+        "category": "General",
+        "description": "F\u00fchrt Microsoft 365 Operationen \u00fcber die Graph API durch (E-Mail, Kalender, OneDrive, Teams).",
+        "display_name": "Microsoft365 Graph Api",
+        "execution": {
+          "handler": "main.py",
+          "type": "python"
+        },
+        "inputs": [
+          {
+            "default": null,
+            "description": "Graph API Operation",
+            "label": "Operation",
+            "name": "operation",
+            "required": true,
+            "type": "text"
+          },
+          {
+            "default": null,
+            "description": "Daten f\u00fcr die Operation",
+            "label": "Data",
+            "name": "data",
+            "required": true,
+            "type": "json"
+          }
+        ],
+        "outputs": [
+          {
+            "description": "Ergebnis der Operation",
+            "label": "Result",
+            "name": "result",
+            "type": "json"
+          },
+          {
+            "description": "Ausf\u00fchrungsstatus",
+            "label": "Status",
+            "name": "status",
+            "type": "text"
+          }
+        ]
+      },
+      {
+        "action_id": "gemini_multimodal",
+        "action_type": "skill",
+        "category": "General",
+        "description": "Nutzt Google Gemini f\u00fcr multimodale Verarbeitung (Text, Bild, Video, Audio).",
+        "display_name": "Gemini Multimodal",
+        "execution": {
+          "handler": "main.py",
+          "type": "python"
+        },
+        "inputs": [
+          {
+            "default": null,
+            "description": "Textanweisung oder Frage",
+            "label": "Prompt",
+            "name": "prompt",
+            "required": true,
+            "type": "text"
+          },
+          {
+            "default": "text",
+            "description": "Art des Mediums (text, image, video, audio)",
+            "label": "Media Type",
+            "name": "media_type",
+            "required": false,
+            "type": "text"
+          },
+          {
+            "default": null,
+            "description": "URL oder Base64 des Mediums (f\u00fcr image/video/audio)",
+            "label": "Media Url",
+            "name": "media_url",
+            "required": false,
+            "type": "text"
+          }
+        ],
+        "outputs": [
+          {
+            "description": "Gemini-Antwort",
+            "label": "Response",
+            "name": "response",
+            "type": "text"
+          },
+          {
+            "description": "Zus\u00e4tzliche Metadaten (Token-Nutzung, etc.)",
+            "label": "Metadata",
+            "name": "metadata",
+            "type": "json"
+          }
+        ]
+      },
+      {
+        "action_id": "hubspot_crm_operations",
+        "action_type": "skill",
+        "category": "General",
+        "description": "F\u00fchrt CRM-Operationen in HubSpot durch (Kontakte, Unternehmen, Deals). Nutzt den HubSpot MCP-Server.",
+        "display_name": "Hubspot Crm Operations",
+        "execution": {
+          "handler": "main.py",
+          "type": "mcp"
+        },
+        "inputs": [
+          {
+            "default": null,
+            "description": "CRM-Operation (create_contact, search_contacts, create_company, create_deal, update_contact)",
+            "label": "Operation",
+            "name": "operation",
+            "required": true,
+            "type": "text"
+          },
+          {
+            "default": null,
+            "description": "Daten f\u00fcr die Operation (abh\u00e4ngig von der gew\u00e4hlten Operation)",
+            "label": "Data",
+            "name": "data",
+            "required": true,
+            "type": "json"
+          }
+        ],
+        "outputs": [
+          {
+            "description": "Ergebnis der CRM-Operation",
+            "label": "Result",
+            "name": "result",
+            "type": "json"
+          },
+          {
+            "description": "Ausf\u00fchrungsstatus",
+            "label": "Status",
+            "name": "status",
+            "type": "text"
+          }
+        ]
+      },
+      {
+        "action_id": "perplexity_web_search",
+        "action_type": "skill",
+        "category": "Web & API",
+        "description": "F\u00fchrt eine Echtzeit-Websuche mit Perplexity AI durch und gibt Ergebnisse mit Quellenangaben zur\u00fcck.",
+        "display_name": "Perplexity Web Search",
+        "execution": {
+          "handler": "main.py",
+          "type": "python"
+        },
+        "inputs": [
+          {
+            "default": null,
+            "description": "Suchanfrage",
+            "label": "Query",
+            "name": "query",
+            "required": true,
+            "type": "text"
+          },
+          {
+            "default": "web",
+            "description": "Suchfokus (web, academic, news, youtube, reddit)",
+            "label": "Focus",
+            "name": "focus",
+            "required": false,
+            "type": "text"
+          }
+        ],
+        "outputs": [
+          {
+            "description": "Zusammengefasste Antwort",
+            "label": "Answer",
+            "name": "answer",
+            "type": "text"
+          },
+          {
+            "description": "Liste der Quellen mit URLs",
+            "label": "Citations",
+            "name": "citations",
+            "type": "list"
+          }
+        ]
+      },
+      {
+        "action_id": "data_analyzer",
+        "action_type": "skill",
+        "category": "Data Management",
+        "description": "Analysiert strukturierte Daten und erstellt statistische Zusammenfassungen.",
+        "display_name": "Data Analyzer",
+        "execution": {
+          "handler": "main.py",
+          "type": "python"
+        },
+        "inputs": [
+          {
+            "default": null,
+            "description": "Die zu analysierenden Daten (Liste von Dictionaries oder Pfad zu CSV)",
+            "label": "Data",
+            "name": "data",
+            "required": true,
+            "type": "json"
+          },
+          {
+            "default": "summary",
+            "description": "Art der Analyse",
+            "label": "Analysis Type",
+            "name": "analysis_type",
+            "required": false,
+            "type": "text"
+          },
+          {
+            "default": null,
+            "description": "Spezifische Spalten f\u00fcr die Analyse",
+            "label": "Columns",
+            "name": "columns",
+            "required": false,
+            "type": "list"
+          }
+        ],
+        "outputs": [
+          {
+            "description": "Analyseergebnisse",
+            "label": "Analysis",
+            "name": "analysis",
+            "type": "json"
+          },
+          {
+            "description": "Automatisch generierte Erkenntnisse",
+            "label": "Insights",
+            "name": "insights",
+            "type": "list"
+          },
+          {
+            "description": "Statistische Kennzahlen",
+            "label": "Statistics",
+            "name": "statistics",
+            "type": "json"
+          }
+        ]
+      },
+      {
+        "action_id": "file_reader",
+        "action_type": "skill",
+        "category": "File Operations",
+        "description": "Liest verschiedene Dateiformate und extrahiert deren Inhalt als Text.",
+        "display_name": "File Reader",
+        "execution": {
+          "handler": "main.py",
+          "type": "python"
+        },
+        "inputs": [
+          {
+            "default": null,
+            "description": "Pfad zur zu lesenden Datei",
+            "label": "File Path",
+            "name": "file_path",
+            "required": true,
+            "type": "text"
+          },
+          {
+            "default": "utf-8",
+            "description": "Zeichenkodierung f\u00fcr Textdateien",
+            "label": "Encoding",
+            "name": "encoding",
+            "required": false,
+            "type": "text"
+          }
+        ],
+        "outputs": [
+          {
+            "description": "Extrahierter Textinhalt",
+            "label": "Content",
+            "name": "content",
+            "type": "text"
+          },
+          {
+            "description": "Erkannter Dateityp",
+            "label": "File Type",
+            "name": "file_type",
+            "type": "text"
+          },
+          {
+            "description": "Datei-Metadaten (Gr\u00f6\u00dfe, \u00c4nderungsdatum, etc.)",
+            "label": "Metadata",
+            "name": "metadata",
+            "type": "json"
+          }
+        ]
+      },
+      {
+        "action_id": "web_scraper",
+        "action_type": "skill",
+        "category": "Web & API",
+        "description": "Extrahiert Inhalte von Webseiten. Unterst\u00fctzt Text, Links und strukturierte Daten.",
+        "display_name": "Web Scraper",
+        "execution": {
+          "handler": "main.py",
+          "type": "python"
+        },
+        "inputs": [
+          {
+            "default": null,
+            "description": "Die URL der zu scrapenden Webseite",
+            "label": "Url",
+            "name": "url",
+            "required": true,
+            "type": "text"
+          },
+          {
+            "default": "text",
+            "description": "Art der zu extrahierenden Daten",
+            "label": "Extract Type",
+            "name": "extract_type",
+            "required": false,
+            "type": "text"
+          },
+          {
+            "default": null,
+            "description": "Optionaler CSS-Selektor f\u00fcr spezifische Elemente",
+            "label": "Selector",
+            "name": "selector",
+            "required": false,
+            "type": "text"
+          }
+        ],
+        "outputs": [
+          {
+            "description": "Extrahierter Textinhalt",
+            "label": "Content",
+            "name": "content",
+            "type": "text"
+          },
+          {
+            "description": "Liste der gefundenen Links",
+            "label": "Links",
+            "name": "links",
+            "type": "list"
+          },
+          {
+            "description": "Liste der gefundenen Bild-URLs",
+            "label": "Images",
+            "name": "images",
+            "type": "list"
+          },
+          {
+            "description": "Seitentitel",
+            "label": "Title",
+            "name": "title",
+            "type": "text"
+          }
+        ]
+      },
+      {
+        "action_id": "text_summarizer",
+        "action_type": "skill",
+        "category": "Text Processing",
+        "description": "Fasst lange Texte auf eine gew\u00fcnschte L\u00e4nge zusammen. Unterst\u00fctzt verschiedene Zusammenfassungsstile.",
+        "display_name": "Text Summarizer",
+        "execution": {
+          "handler": "main.py",
+          "type": "python"
+        },
+        "inputs": [
+          {
+            "default": null,
+            "description": "Der zu k\u00fcrzende Quelltext",
+            "label": "Text",
+            "name": "text",
+            "required": true,
+            "type": "text"
+          },
+          {
+            "default": 150,
+            "description": "Maximale L\u00e4nge der Zusammenfassung in W\u00f6rtern",
+            "label": "Max Length",
+            "name": "max_length",
+            "required": false,
+            "type": "number"
+          },
+          {
+            "default": "neutral",
+            "description": "Stil der Zusammenfassung",
+            "label": "Style",
+            "name": "style",
+            "required": false,
+            "type": "text"
+          }
+        ],
+        "outputs": [
+          {
+            "description": "Der zusammengefasste Text",
+            "label": "Summary",
+            "name": "summary",
+            "type": "text"
+          },
+          {
+            "description": "Wortanzahl des Originaltexts",
+            "label": "Original Length",
+            "name": "original_length",
+            "type": "number"
+          },
+          {
+            "description": "Wortanzahl der Zusammenfassung",
+            "label": "Summary Length",
+            "name": "summary_length",
+            "type": "number"
+          }
+        ]
+      }
+    ],
+    "platform": "antigravity",
+    "version": "1.0",
+    "workflows": [
+      {
+        "category": "Orchestration",
+        "description": "Erstellt strukturierte Inhalte basierend auf Quelldaten. Kombiniert Datenanalyse, Recherche und Texterstellung.",
+        "display_name": "Content Creator",
+        "inputs": [
+          {
+            "description": "Art des zu erstellenden Inhalts",
+            "label": "Content Type",
+            "name": "content_type",
+            "required": true,
+            "type": "text"
+          },
+          {
+            "description": "Thema oder Titel des Inhalts",
+            "label": "Topic",
+            "name": "topic",
+            "required": true,
+            "type": "text"
+          },
+          {
+            "description": "Quelldaten f\u00fcr den Inhalt (Text, Daten, URLs)",
+            "label": "Source Data",
+            "name": "source_data",
+            "required": false,
+            "type": "json"
+          },
+          {
+            "description": "Schreibstil",
+            "label": "Style",
+            "name": "style",
+            "required": false,
+            "type": "text"
+          },
+          {
+            "description": "Gew\u00fcnschte L\u00e4nge",
+            "label": "Length",
+            "name": "length",
+            "required": false,
+            "type": "text"
+          }
+        ],
+        "orchestration": {
+          "capabilities": [
+            "content_creation",
+            "text_generation",
+            "data_synthesis"
+          ],
+          "strategy": "dynamic"
+        },
+        "outputs": [
+          {
+            "description": "Der erstellte Inhalt",
+            "label": "Content",
+            "name": "content",
+            "type": "text"
+          },
+          {
+            "description": "Metadaten zum erstellten Inhalt",
+            "label": "Metadata",
+            "name": "metadata",
+            "type": "json"
+          },
+          {
+            "description": "Vorschl\u00e4ge f\u00fcr Verbesserungen oder Erweiterungen",
+            "label": "Suggestions",
+            "name": "suggestions",
+            "type": "list"
+          }
+        ],
+        "workflow_id": "content_creator",
+        "workflow_type": "agent"
+      },
+      {
+        "category": "Orchestration",
+        "description": "F\u00fchrt umfassende Recherchen zu einem Thema durch. Kombiniert Web-Scraping, Textanalyse und Zusammenfassung.",
+        "display_name": "Research Agent",
+        "inputs": [
+          {
+            "description": "Das zu recherchierende Thema",
+            "label": "Topic",
+            "name": "topic",
+            "required": true,
+            "type": "text"
+          },
+          {
+            "description": "Tiefe der Recherche",
+            "label": "Depth",
+            "name": "depth",
+            "required": false,
+            "type": "text"
+          },
+          {
+            "description": "Optionale Liste von URLs als Quellen",
+            "label": "Sources",
+            "name": "sources",
+            "required": false,
+            "type": "list"
+          }
+        ],
+        "orchestration": {
+          "capabilities": [
+            "research",
+            "information_gathering",
+            "synthesis"
+          ],
+          "strategy": "dynamic"
+        },
+        "outputs": [
+          {
+            "description": "Zusammengefasster Recherchebericht",
+            "label": "Report",
+            "name": "report",
+            "type": "text"
+          },
+          {
+            "description": "Liste der verwendeten Quellen",
+            "label": "Sources Used",
+            "name": "sources_used",
+            "type": "list"
+          },
+          {
+            "description": "Wichtigste Erkenntnisse",
+            "label": "Key Findings",
+            "name": "key_findings",
+            "type": "list"
+          }
+        ],
+        "workflow_id": "research_agent",
+        "workflow_type": "agent"
+      }
+    ]
+  },
+  "platform": "antigravity",
+  "status": "success"
+}

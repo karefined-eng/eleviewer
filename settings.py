@@ -2,9 +2,13 @@ import json
 import os
 
 from paths import SETTINGS_FILE_PATH
+from save_utils import atomic_write
 from theme import ICON_SIZE_MARKDOWN
 
-DEFAULT_WEB_TABS = [{"title": "Google", "url": "https://www.google.com"}]
+DEFAULT_WEB_TABS = [
+    {"title": "EleViewer", "url": "https://eleviewer.vercel.app"},
+    {"title": "Google", "url": "https://www.google.com"}
+]
 
 DEFAULT_SETTINGS = {
     "autosave_enabled": True,
@@ -19,6 +23,18 @@ DEFAULT_SETTINGS = {
     "markdown_icon_size": ICON_SIZE_MARKDOWN,
     "pdf_fit_mode": "width",
     "pdf_render_quality": "high",
+    "launch_behavior": "remembered",
+    "window_geometry": None,
+    "draft_autosave_enabled": True,
+    "draft_autosave_interval_seconds": 60,
+    "theme_mode": "dark",
+    "theme_accent": "blue",
+    "tts_voice_id": None,
+    "tts_read_mode": "page",
+    "onboarding_completed": False,
+    "last_run_version": "0.0.0",
+    "file_search_scope": "active_vault",
+    "toolbar_order": ["new", "vault", "bookmarks", "open", "save", "tts", "web", "settings"],
 }
 
 
@@ -50,9 +66,9 @@ def load_settings():
         return DEFAULT_SETTINGS.copy()
 
 
+# FIX: atomic write prevents 0-byte corruption on crash
 def save_settings(settings):
-    with open(SETTINGS_FILE_PATH, "w", encoding="utf-8") as f:
-        json.dump(settings, f, indent=4)
+    atomic_write(SETTINGS_FILE_PATH, json.dumps(settings, indent=4))
 
 
 def get_vault_paths():

@@ -1,0 +1,70 @@
+{
+  "name": "openai_dalle_generate",
+  "version": "1.0.0",
+  "type": "skill",
+  "description": "Generiert Bilder mit DALL-E basierend auf einer Textbeschreibung.",
+  "author": "Skill-Agent-Hub",
+  "tags": ["openai", "dalle", "image", "generation", "imported"],
+  "capabilities": ["image_generation", "creative"],
+  "implementation": {
+    "type": "remote",
+    "language": "openai_api",
+    "entrypoint": "main.py"
+  },
+  "interface": {
+    "inputs": [
+      {
+        "name": "prompt",
+        "type": "string",
+        "description": "Bildbeschreibung für die Generierung",
+        "required": true
+      },
+      {
+        "name": "model",
+        "type": "string",
+        "description": "DALL-E Modell (dall-e-3, dall-e-2)",
+        "required": false,
+        "default": "dall-e-3"
+      },
+      {
+        "name": "size",
+        "type": "string",
+        "description": "Bildgröße (1024x1024, 1792x1024, 1024x1792)",
+        "required": false,
+        "default": "1024x1024"
+      },
+      {
+        "name": "quality",
+        "type": "string",
+        "description": "Qualität (standard, hd)",
+        "required": false,
+        "default": "standard"
+      },
+      {
+        "name": "n",
+        "type": "number",
+        "description": "Anzahl der zu generierenden Bilder",
+        "required": false,
+        "default": 1
+      }
+    ],
+    "outputs": [
+      {
+        "name": "images",
+        "type": "array",
+        "description": "URLs der generierten Bilder"
+      },
+      {
+        "name": "revised_prompt",
+        "type": "string",
+        "description": "Überarbeiteter Prompt (bei DALL-E 3)"
+      }
+    ]
+  },
+  "dependencies": [],
+  "metadata": {
+    "source_platform": "openai",
+    "bidirectional": true,
+    "import_date": "2026-01-23"
+  }
+}

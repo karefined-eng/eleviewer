@@ -16,7 +16,7 @@ from settings import (
 )
 from theme import (
     compact_toolbar_stylesheet, ICON_SIZE_COMPACT, ICON_SIZE_VAULT_TREE,
-    BRAND_PANEL, BRAND_PANEL_2, BRAND_PRIMARY, BRAND_BORDER, BRAND_ACCENT, BRAND_BACKGROUND
+    get_active_palette, get_brand_accent
 )
 
 SUPPORTED_EXTENSIONS = {".md", ".txt", ".pdf", ".docx", ".xlsx", ".csv"}
@@ -24,6 +24,8 @@ SUPPORTED_EXTENSIONS = {".md", ".txt", ".pdf", ".docx", ".xlsx", ".csv"}
 
 class VaultExplorer(QWidget):
     file_opened = Signal(str)
+    file_activated = Signal(str)
+    search_requested = Signal(str)
     vaults_changed = Signal()
 
     def __init__(self, parent=None):
@@ -42,8 +44,9 @@ class VaultExplorer(QWidget):
         icon_qsize = QSize(icon_sz, icon_sz)
 
         self.vault_selector = QComboBox()
+        p = get_active_palette()
         self.vault_selector.setStyleSheet(
-            f"QComboBox {{ background: {BRAND_PANEL_2}; color: {BRAND_PRIMARY}; border: 1px solid {BRAND_BORDER}; padding: 4px; }}"
+            f"QComboBox {{ background: {p['BRAND_PANEL_2']}; color: {p['BRAND_PRIMARY']}; border: 1px solid {p['BRAND_BORDER']}; padding: 4px; }} QComboBox QAbstractItemView {{ background: {p['BRAND_PANEL']}; color: {p['BRAND_PRIMARY']}; border: 1px solid {p['BRAND_BORDER']}; selection-background-color: {get_brand_accent()}; selection-color: {p['BRAND_BACKGROUND']}; }}"
         )
         self.vault_selector.currentIndexChanged.connect(self._on_vault_selected)
 
@@ -54,7 +57,25 @@ class VaultExplorer(QWidget):
         self.btn_add.setStyleSheet(compact_toolbar_stylesheet())
         self.btn_add.setAutoRaise(True)
 
+        self.btn_refresh = QToolButton()
+        self.btn_refresh.setIconSize(icon_qsize)
+        self.btn_refresh.setIcon(icon("rotate-cw", size=icon_sz))
+        self.btn_refresh.setToolTip("Refresh vault")
+        self.btn_refresh.setStyleSheet(compact_toolbar_stylesheet())
+        self.btn_refresh.setAutoRaise(True)
+        self.btn_refresh.clicked.connect(self.refresh_active_vault)
+
+        self.btn_search = QToolButton()
+        self.btn_search.setIconSize(icon_qsize)
+        self.btn_search.setIcon(icon("search", size=icon_sz))
+        self.btn_search.setToolTip("Search vault")
+        self.btn_search.setStyleSheet(compact_toolbar_stylesheet())
+        self.btn_search.setAutoRaise(True)
+        self.btn_search.clicked.connect(self._emit_search)
+
         header_row.addWidget(self.vault_selector, stretch=1)
+        header_row.addWidget(self.btn_search)
+        header_row.addWidget(self.btn_refresh)
         header_row.addWidget(self.btn_add)
 
         self.tree = QTreeWidget()
@@ -62,19 +83,22 @@ class VaultExplorer(QWidget):
         self.tree.setHeaderHidden(True)
         self.tree.setAnimated(True)
         self.tree.setIndentation(16)
+        p = get_active_palette()
         self.tree.setStyleSheet(f"""
             QTreeWidget {{
-                background: {BRAND_PANEL};
-                color: {BRAND_PRIMARY};
+                background: {p['BRAND_PANEL']};
+                color: {p['BRAND_PRIMARY']};
                 border: none;
                 font-size: 13px;
+                outline: none;
             }}
-            QTreeWidget::item {{ padding: 4px 2px; }}
-            QTreeWidget::item:selected {{ background: {BRAND_ACCENT}; color: {BRAND_BACKGROUND}; }}
-            QTreeWidget::item:hover {{ background: {BRAND_PANEL_2}; }}
+            QTreeWidget::item {{ padding: 5px 6px; border-left: 2px solid transparent; }}
+            QTreeWidget::item:selected {{ background: {p['BRAND_PANEL_2']}; border-left: 2px solid {get_brand_accent()}; color: #ffffff; font-weight: bold; }}
+            QTreeWidget::item:hover:!selected {{ background: {p['BRAND_PANEL_2']}; }}
         """)
         self.tree.itemExpanded.connect(self._on_item_expanded)
         self.tree.itemDoubleClicked.connect(self._on_item_double_clicked)
+        self.tree.itemSelectionChanged.connect(self._on_tree_selection_changed)
 
         layout.addLayout(header_row)
         layout.addWidget(self.tree)
@@ -136,12 +160,25 @@ class VaultExplorer(QWidget):
         set_active_vault_index(index)
         self._load_vault_tree(self._vault_paths[index])
 
+    def refresh_active_vault(self):
+        idx = self.vault_selector.currentIndex()
+        if idx >= 0:
+            self._on_vault_selected(idx)
+
+    def _emit_search(self):
+        vault_path = self.vault_selector.currentData()
+        if vault_path:
+            self.search_requested.emit(vault_path)
+
     def _load_vault_tree(self, path):
         self.tree.clear()
         root = Path(path)
         root_item = QTreeWidgetItem([root.name or str(root)])
         root_item.setData(0, Qt.UserRole, str(root))
         root_item.setData(0, Qt.UserRole + 1, "dir")
+        from icons import icon
+        from theme import ICON_SIZE_COMPACT
+        root_item.setIcon(0, icon("folder", size=ICON_SIZE_COMPACT, color="#888888"))
         self.tree.addTopLevelItem(root_item)
         self._populate_dir(root_item, str(root))
         root_item.setExpanded(True)
@@ -151,19 +188,42 @@ class VaultExplorer(QWidget):
             return True
         return Path(name).suffix.lower() in SUPPORTED_EXTENSIONS
 
+    # SECURITY: canonicalize paths to prevent symlink traversal
     def _populate_dir(self, parent_item, dir_path):
         try:
             entries = sorted(os.scandir(dir_path), key=lambda e: (not e.is_dir(), e.name.lower()))
         except PermissionError:
             return
 
+        vault_root_resolved = None
+        if self._vault_paths and 0 <= self._active_index < len(self._vault_paths):
+            try:
+                vault_root_resolved = Path(self._vault_paths[self._active_index]).resolve()
+            except Exception:
+                vault_root_resolved = None
+
+        from icons import icon
+        from file_icons import file_type_icon
+        from theme import ICON_SIZE_COMPACT
+        
+        SYSTEM_IGNORED_FILES = {"desktop.ini", "_desktop.ini", "thumbs.db", ".ds_store", "$recycle.bin"}
         for entry in entries:
-            if entry.name.startswith("."):
+            name_lower = entry.name.lower()
+            if entry.name.startswith(".") or name_lower in SYSTEM_IGNORED_FILES or name_lower.startswith("_desktop.ini"):
                 continue
+            if vault_root_resolved:
+                try:
+                    resolved_entry = Path(entry.path).resolve()
+                    if not str(resolved_entry).startswith(str(vault_root_resolved)):
+                        continue
+                except Exception:
+                    continue
+
             if entry.is_dir():
                 child = QTreeWidgetItem([entry.name])
                 child.setData(0, Qt.UserRole, entry.path)
                 child.setData(0, Qt.UserRole + 1, "dir")
+                child.setIcon(0, icon("folder", size=ICON_SIZE_COMPACT, color="#888888"))
                 parent_item.addChild(child)
                 placeholder = QTreeWidgetItem(["…"])
                 placeholder.setData(0, Qt.UserRole + 1, "placeholder")
@@ -172,6 +232,8 @@ class VaultExplorer(QWidget):
                 child = QTreeWidgetItem([entry.name])
                 child.setData(0, Qt.UserRole, entry.path)
                 child.setData(0, Qt.UserRole + 1, "file")
+                ext = Path(entry.name).suffix
+                child.setIcon(0, file_type_icon(ext, size=ICON_SIZE_COMPACT))
                 parent_item.addChild(child)
 
     def _on_item_expanded(self, item):
@@ -191,3 +253,31 @@ class VaultExplorer(QWidget):
             path = item.data(0, Qt.UserRole)
             if path:
                 self.file_opened.emit(path)
+
+    def _on_tree_selection_changed(self):
+        from file_icons import file_type_icon
+        from icons import icon
+        from theme import ICON_SIZE_COMPACT
+        if getattr(self, "_last_selected_tree_item", None):
+            old = self._last_selected_tree_item
+            try:
+                if old.data(0, Qt.UserRole + 1) == "file":
+                    ext = Path(old.text(0)).suffix
+                    old.setIcon(0, file_type_icon(ext, size=ICON_SIZE_COMPACT, active=False))
+                elif old.data(0, Qt.UserRole + 1) == "dir":
+                    old.setIcon(0, icon("folder", size=ICON_SIZE_COMPACT, color="#888888"))
+            except RuntimeError:
+                pass
+
+        selected = self.tree.selectedItems()
+        if selected:
+            new_item = selected[0]
+            self._last_selected_tree_item = new_item
+            if new_item.data(0, Qt.UserRole + 1) == "file":
+                ext = Path(new_item.text(0)).suffix
+                new_item.setIcon(0, file_type_icon(ext, size=ICON_SIZE_COMPACT, active=True))
+            elif new_item.data(0, Qt.UserRole + 1) == "dir":
+                new_item.setIcon(0, icon("folder", size=ICON_SIZE_COMPACT, color="#6cb6ff"))
+        else:
+            self._last_selected_tree_item = None
+
