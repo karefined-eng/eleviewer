@@ -314,9 +314,9 @@ class CsvViewer(QWidget):
         self.table.setModel(self.model)
         self.table.setStyleSheet(f"""
             QTableView {{
-                background-color: {BRAND_PANEL};
-                color: {BRAND_PRIMARY};
-                gridline-color: {BRAND_BORDER};
+                background-color: {p['BRAND_PANEL']};
+                color: {p['BRAND_PRIMARY']};
+                gridline-color: {p['BRAND_BORDER']};
                 border: none;
                 font-family: 'Consolas', 'Courier New', monospace;
                 font-size: 13px;
@@ -324,13 +324,13 @@ class CsvViewer(QWidget):
             QTableView::item {{ padding: 6px; }}
             QTableView::item:selected {{
                 background-color: {get_brand_accent()};
-                color: {BRAND_BACKGROUND};
+                color: {p['BRAND_BACKGROUND']};
             }}
             QHeaderView::section {{
-                background-color: {BRAND_PANEL_2};
-                color: {BRAND_MUTED_FG};
+                background-color: {p['BRAND_PANEL_2']};
+                color: {p['BRAND_MUTED_FG']};
                 padding: 6px;
-                border: 1px solid {BRAND_BORDER};
+                border: 1px solid {p['BRAND_BORDER']};
                 font-weight: bold;
                 font-size: 11px;
             }}
