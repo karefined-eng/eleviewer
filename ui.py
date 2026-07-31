@@ -1773,6 +1773,8 @@ class MainWindow(QMainWindow):
             self.open_web_tab()
 
     def open_web_tab(self):
+        from PySide6.QtWidgets import QDockWidget, QWidget, QLabel, QToolButton, QHBoxLayout, QMessageBox
+        from theme import get_active_palette, compact_toolbar_stylesheet
         global WEB_AVAILABLE
         if not WEB_AVAILABLE:
             QMessageBox.warning(self, "Missing Module", "QtWebEngine not installed.")
@@ -1810,8 +1812,6 @@ class MainWindow(QMainWindow):
         if self.tabs.count() == 0:
             self.editor_splitter.hide()
 
-        # Custom title bar with larger icons and Maximize support
-        from theme import get_active_palette, compact_toolbar_stylesheet
         p = get_active_palette()
         title_bar = QWidget()
         title_bar.setStyleSheet(f"background: {p['BRAND_PANEL']}; border-bottom: 1px solid {p['BRAND_BORDER']};")
