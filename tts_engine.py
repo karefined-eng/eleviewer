@@ -145,7 +145,12 @@ class TtsEngine:
 
     async def _speak_edge(self, text, voice_id):
         """Generate online audio and play via native Windows API synchronously."""
-        communicate = edge_tts.Communicate(text, voice_id)
+        from settings import load_settings
+        rate = load_settings().get("tts_rate", 200)
+        rate_pct = int((rate - 200) / 200 * 100)
+        rate_str = f"{rate_pct:+d}%"
+        
+        communicate = edge_tts.Communicate(text, voice_id, rate=rate_str)
         
         # Download audio with timeout to trigger fallback if connection drops
         await asyncio.wait_for(communicate.save(str(self._audio_file)), timeout=10.0)
@@ -169,6 +174,13 @@ class TtsEngine:
                 self._pyttsx3_engine.setProperty("voice", voice_id)
             except Exception:
                 pass
+                
+        from settings import load_settings
+        rate = load_settings().get("tts_rate", 200)
+        try:
+            self._pyttsx3_engine.setProperty("rate", rate)
+        except Exception:
+            pass
         
         self._pyttsx3_engine.say(text)
         # This blocks until finished or interrupted by self._pyttsx3_engine.stop()

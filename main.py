@@ -92,6 +92,11 @@ def global_exception_handler(exc_type, exc_value, exc_traceback):
 
 sys.excepthook = global_exception_handler
 
+# Hardware acceleration toggle must be applied before QApplication starts
+settings = load_settings()
+if not settings.get("hardware_acceleration_enabled", True):
+    os.environ["QTWEBENGINE_CHROMIUM_FLAGS"] = "--disable-gpu"
+
 app = QApplication(sys.argv)
 
 # Attempt to lock single instance
@@ -127,21 +132,7 @@ if len(sys.argv) > 1:
 window.show()
 
 if not settings.get("onboarding_completed", False):
-    from onboarding import OnboardingDialog
-    from settings import save_settings
-    from pathlib import Path
-    
-    dlg = OnboardingDialog(window)
-    dlg.exec()
-    
-    settings["onboarding_completed"] = True
-    settings["last_run_version"] = APP_VERSION
-    save_settings(settings)
-    
-    from paths import BASE_DIR
-    welcome_file = BASE_DIR / "getting_started" / "Welcome to EleViewer.md"
-    if welcome_file.exists():
-        window.open_file(str(welcome_file))
+    window.start_onboarding()
 else:
     # Check for updates to show What's New
     last_ver = settings.get("last_run_version", "0.0.0")

@@ -221,6 +221,11 @@ _active_worker: VaultIndexWorker | None = None
 def schedule_vault_index(vault_paths: list[str]) -> None:
     """Start background indexing for one or more vault paths."""
     global _active_worker
+    
+    from settings import load_settings
+    if not load_settings().get("vault_auto_index", True):
+        return
+        
     paths = [p for p in vault_paths if p and os.path.isdir(p)]
     if not paths:
         return
