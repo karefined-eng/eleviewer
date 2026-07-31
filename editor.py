@@ -113,6 +113,34 @@ class EditorTab(QWidget):
     def _is_html(self):
         return self.file_path and self.file_path.lower().endswith((".html", ".htm"))
 
+    def set_bookmark_callback(self, callback):
+        self._bookmark_callback = callback
+
+    def _bookmark_payload(self):
+        import os
+        name = os.path.basename(self.file_path) if self.file_path else "document"
+        scroll_y = float(self.editor.verticalScrollBar().value())
+        return {
+            "page_number": 0,
+            "scroll_position_y": scroll_y,
+            "label": f"Position in {name}",
+        }
+
+    def _add_bookmark_here(self):
+        if getattr(self, "_bookmark_callback", None):
+            self._bookmark_callback(self._bookmark_payload())
+
+    def go_to_bookmark(self, page_number=0, scroll_position_y=0.0):
+        self.editor.verticalScrollBar().setValue(int(scroll_position_y))
+
+    def read_current_page(self, voice_id=None):
+        """Duck-typed method for TTS engine. Reads selection or full text."""
+        cursor = self.editor.textCursor()
+        text = cursor.selectedText()
+        if not text:
+            text = self.editor.toPlainText()
+        return text
+
     # ── Actions ──────────────────────────────────────────────────
 
     def _on_heading_clicked(self, level):

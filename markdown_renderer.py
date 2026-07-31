@@ -6,12 +6,17 @@ from PySide6.QtCore import Signal, Qt, QEvent, QTimer, QSize, QObject
 from PySide6.QtGui import QMouseEvent, QAction, QTextDocument
 import markdown
 import re
+try:
+    import bleach
+    BLEACH_AVAILABLE = True
+except ImportError:
+    BLEACH_AVAILABLE = False
 
 from icons import icon
-from markdown_utils import markdown_to_simple, simple_to_markdown
+from markdown_utils import markdown_to_simple, simple_to_markdown, preprocess_markdown
 from settings import load_settings, save_settings
 from theme import (
-    markdown_editor_stylesheet, MARKDOWN_PREVIEW_CSS, compact_toolbar_stylesheet,
+    markdown_editor_stylesheet, markdown_preview_css, compact_toolbar_stylesheet,
     resolve_markdown_icon_size, markdown_preview_stylesheet, BRAND_PANEL, BRAND_PRIMARY, BRAND_MUTED_FG
 )
 
@@ -52,11 +57,15 @@ class PreviewEventFilter(QObject):
         return False
 
     def _on_timeout(self):
-        if self._click_count == 2:
-            if self._viewer.is_html:
-                self._viewer.enter_syntax_mode()
-            else:
-                self._viewer.enter_simple_mode()
+        try:
+            if getattr(self, "_viewer", None) and not self._viewer.isHidden():
+                if self._click_count == 2:
+                    if self._viewer.is_html:
+                        self._viewer.enter_syntax_mode()
+                    else:
+                        self._viewer.enter_simple_mode()
+        except (RuntimeError, AttributeError):
+            pass
         self._click_count = 0
 
     def _reset_clicks(self):
@@ -206,6 +215,9 @@ class MarkdownViewer(QWidget):
         self.editor = QPlainTextEdit()
         self.editor.setStyleSheet(markdown_editor_stylesheet())
         self.editor.textChanged.connect(self._on_syntax_changed)
+        
+        from syntax_highlighter import MarkdownHighlighter
+        self.highlighter = MarkdownHighlighter(self.editor.document())
 
         self.stack.addWidget(self.viewer)
         self.stack.addWidget(self.simple_editor)
@@ -367,14 +379,40 @@ class MarkdownViewer(QWidget):
 
     # ── Core Modes ───────────────────────────────────────────────────
 
+    # SECURITY: sanitize HTML output before rendering to prevent XSS
     def _render_markdown(self, text):
         if self.is_html:
             return text
+        processed_text = preprocess_markdown(text)
         html_body = markdown.markdown(
-            text,
-            extensions=["tables", "fenced_code", "nl2br", "sane_lists"],
+            processed_text,
+            extensions=["tables", "fenced_code", "nl2br", "sane_lists", "footnotes", "def_list", "attr_list"],
         )
-        return f"<html><head><style>{MARKDOWN_PREVIEW_CSS}</style></head><body>{html_body}</body></html>"
+        if BLEACH_AVAILABLE:
+            allowed_tags = bleach.sanitizer.ALLOWED_TAGS | {
+                'p', 'pre', 'code', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+                'blockquote', 'ul', 'ol', 'li', 'strong', 'em', 'table',
+                'thead', 'tbody', 'tr', 'th', 'td', 'hr', 'br', 'img',
+                'span', 'div', 'b', 'i', 'u', 's', 'del', 'ins', 'sup', 'sub',
+                'small', 'big', 'dl', 'dt', 'dd'
+            }
+            allowed_attrs = {
+                'a': ['href', 'title', 'id', 'rel'],
+                'img': ['src', 'alt', 'title'],
+                'code': ['class'],
+                'span': ['class', 'style'],
+                'div': ['class', 'style'],
+                'del': ['style'],
+                'li': ['id'],
+                'sup': ['id'],
+            }
+            try:
+                from bleach.css_sanitizer import CSSSanitizer
+                css_san = CSSSanitizer()
+                html_body = bleach.clean(html_body, tags=allowed_tags, attributes=allowed_attrs, css_sanitizer=css_san)
+            except Exception:
+                html_body = bleach.clean(html_body, tags=allowed_tags, attributes=allowed_attrs)
+        return f"<html><head><style>{markdown_preview_css()}</style></head><body>{html_body}</body></html>"
 
     def _sync_from_syntax(self):
         text = self.editor.toPlainText()
@@ -395,17 +433,20 @@ class MarkdownViewer(QWidget):
         self._update_mode_button()
 
     def enter_simple_mode(self):
-        if self.is_html:
-            return
-        if self._mode == MODE_VIEW:
-            self.simple_editor.setPlainText(markdown_to_simple(self.editor.toPlainText()))
-        self._mode = MODE_SIMPLE
-        self.stack.setCurrentIndex(MODE_SIMPLE)
-        self.hint.setVisible(False)
-        if not self.btn_pin.isChecked():
-            self.formatting_widget.setVisible(True)
-            self.btn_toggle.setVisible(True)
-        self._update_mode_button()
+        try:
+            if self.is_html:
+                return
+            if self._mode == MODE_VIEW:
+                self.simple_editor.setPlainText(markdown_to_simple(self.editor.toPlainText()))
+            self._mode = MODE_SIMPLE
+            self.stack.setCurrentIndex(MODE_SIMPLE)
+            self.hint.setVisible(False)
+            if not self.btn_pin.isChecked():
+                self.formatting_widget.setVisible(True)
+                self.btn_toggle.setVisible(True)
+            self._update_mode_button()
+        except RuntimeError:
+            pass
 
     def enter_syntax_mode(self):
         if self._mode == MODE_SIMPLE and not self.is_html:

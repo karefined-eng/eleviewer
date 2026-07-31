@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 from uuid import uuid4
 
 from paths import BOOKMARKS_FILE_PATH
+from save_utils import atomic_write
 
 EMPTY_DATA = {"bookmarks": []}
 
@@ -28,16 +29,15 @@ def _load_raw():
 
 
 def _save_raw(data):
-    BOOKMARKS_FILE_PATH.parent.mkdir(parents=True, exist_ok=True)
-    with open(BOOKMARKS_FILE_PATH, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=4)
+    atomic_write(BOOKMARKS_FILE_PATH, json.dumps(data, indent=4))
+
 
 
 def load_bookmarks(validate=True):
     bookmarks = _load_raw().get("bookmarks", [])
     if not validate:
         return bookmarks
-    valid = [b for b in bookmarks if os.path.exists(b.get("file_path", ""))]
+    valid = [b for b in bookmarks if b.get("file_path", "").startswith("http") or os.path.exists(b.get("file_path", ""))]
     if len(valid) != len(bookmarks):
         _save_raw({"bookmarks": valid})
     return valid

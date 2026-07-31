@@ -1,0 +1,101 @@
+{
+  "page": {
+    "name": "Mein-Bereich",
+    "title": "Mein Bereich",
+    "layout": "Article",
+    "headerLayout": "NoImage"
+  },
+  "sections": [
+    {
+      "order": 1,
+      "template": "OneColumn",
+      "webparts": [
+        {
+          "type": "Text",
+          "content": {
+            "html": "<h1>Willkommen, {{user.displayName}}</h1><p>Dies ist dein persönlicher Bereich im FassadenFix Intranet.</p>"
+          },
+          "description": "Dynamische Begrüßung - Der Platzhalter {{user.displayName}} wird durch den Namen aus dem Microsoft 365 Profil ersetzt"
+        }
+      ]
+    },
+    {
+      "order": 2,
+      "template": "ThreeColumn",
+      "webparts": [
+        {
+          "column": 1,
+          "type": "QuickLinks",
+          "title": "Schnellzugriff",
+          "links": [
+            {
+              "title": "Urlaub beantragen",
+              "url": "/sites/FassadenFix-Intranet/SitePages/Urlaub-beantragen.aspx",
+              "icon": "Calendar",
+              "description": "Urlaubsantrag stellen"
+            },
+            {
+              "title": "Krankmeldung",
+              "url": "/sites/FassadenFix-Intranet/SitePages/Krankmeldung.aspx",
+              "icon": "Health",
+              "description": "Krankmeldung einreichen"
+            }
+          ]
+        },
+        {
+          "column": 2,
+          "type": "QuickLinks",
+          "title": "Meine Ressourcen",
+          "links": [
+            {
+              "title": "Meine Aufgaben",
+              "url": "https://tasks.office.com",
+              "icon": "TaskLogo",
+              "description": "Microsoft To Do / Planner Aufgaben"
+            },
+            {
+              "title": "Meine Dokumente",
+              "url": "https://TENANT-my.sharepoint.com",
+              "icon": "Document",
+              "description": "OneDrive persönliche Dokumente"
+            }
+          ]
+        },
+        {
+          "column": 3,
+          "type": "QuickLinks",
+          "title": "Kalender",
+          "links": [
+            {
+              "title": "Mein Kalender",
+              "url": "https://outlook.office.com/calendar",
+              "icon": "CalendarAgenda",
+              "description": "Outlook Kalender öffnen"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "webpartDefinitions": {
+    "Text": {
+      "id": "275c0095-a77e-4f6d-a2a0-6a7626911518",
+      "instanceId": "",
+      "title": "Text"
+    },
+    "QuickLinks": {
+      "id": "c70391ea-0b10-4ee9-b2b4-006d3fcad0cd",
+      "instanceId": "",
+      "title": "Quicklinks"
+    }
+  },
+  "notes": {
+    "dynamicContent": "Die Begrüßung nutzt das Microsoft Graph API um den Benutzernamen dynamisch anzuzeigen. Dies erfordert ggf. ein SPFx Webpart oder eine Power Apps Integration.",
+    "futureIntegrations": [
+      "Power Automate für Urlaubsanträge",
+      "Power Automate für Krankmeldungen",
+      "Microsoft Planner für Aufgaben",
+      "OneDrive für persönliche Dokumente"
+    ]
+  }
+}

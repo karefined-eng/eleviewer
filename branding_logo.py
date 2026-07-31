@@ -3,7 +3,7 @@
 from PySide6.QtGui import QIcon, QPixmap, QPainter, QColor
 from PySide6.QtCore import Qt, QRect, QRectF
 
-from theme import BRAND_PANEL, BRAND_PRIMARY, BRAND_ACCENT
+from theme import BRAND_PANEL, BRAND_PRIMARY, get_brand_accent
 
 
 def create_eleviewer_icon(size: int = 32) -> QIcon:
@@ -45,7 +45,7 @@ def create_eleviewer_icon(size: int = 32) -> QIcon:
     )
 
     # Middle bar (accent blue)
-    painter.setBrush(QColor(BRAND_ACCENT))
+    painter.setBrush(QColor(get_brand_accent()))
     painter.drawRoundedRect(
         QRectF(scaled(11), scaled(14.5), scaled(10), scaled(3)),
         scaled(1.5), scaled(1.5)

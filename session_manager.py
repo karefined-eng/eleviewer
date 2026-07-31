@@ -1,13 +1,14 @@
 import json
-
 from paths import SESSION_FILE_PATH
+from save_utils import atomic_write
 
 
+# IMPROVEMENT: persist scroll position and PDF zoom across sessions
 def save_session(tabs_info, bookmarks_panel_visible=False):
     """
     Save current session (open tabs) to disk.
 
-    tabs_info: list of dicts with file_path, content (text-only tabs), is_active, is_modified
+    tabs_info: list of dicts with file_path, content, is_active, is_modified, scroll_y, zoom, pdf_page
     """
     try:
         session_data = {
@@ -15,8 +16,8 @@ def save_session(tabs_info, bookmarks_panel_visible=False):
             "version": 2,
             "bookmarks_panel_visible": bookmarks_panel_visible,
         }
-        with open(SESSION_FILE_PATH, "w", encoding="utf-8") as f:
-            json.dump(session_data, f, indent=4)
+        # FIX: atomic write prevents 0-byte corruption on crash
+        atomic_write(SESSION_FILE_PATH, json.dumps(session_data, indent=4))
     except Exception as e:
         print(f"Failed to save session: {e}")
 

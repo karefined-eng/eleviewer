@@ -44,6 +44,7 @@ Thumbs.db
 
 # Project-specific
 Continue.txt   # Personal session notes (not part of the project)
+PROJECT_LOG.md # Personal agent context ledger
 data/          # User data (recent files, session, settings)
 dist/          # Built executables
 build/         # Build artifacts
@@ -60,3 +61,6 @@ node_modules/
 # Vercel
 .vercel/
 .vercel/output/
+PROJECT_LOG.md
+context/                      # Private planning notes & AI session logs — not shipped
+.gitignore

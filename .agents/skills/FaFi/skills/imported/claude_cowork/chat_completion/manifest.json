@@ -1,0 +1,74 @@
+{
+  "name": "claude_chat_completion",
+  "version": "1.0.0",
+  "type": "skill",
+  "description": "Führt eine Chat-Completion mit Claude durch und gibt die Antwort zurück.",
+  "author": "Skill-Agent-Hub",
+  "tags": ["claude", "anthropic", "chat", "llm", "imported"],
+  "capabilities": ["chat", "text_generation", "reasoning"],
+  "implementation": {
+    "type": "remote",
+    "language": "anthropic_api",
+    "entrypoint": "main.py"
+  },
+  "interface": {
+    "inputs": [
+      {
+        "name": "messages",
+        "type": "array",
+        "description": "Chat-Nachrichten im Format [{role: 'user'|'assistant', content: 'text'}]",
+        "required": true
+      },
+      {
+        "name": "model",
+        "type": "string",
+        "description": "Claude-Modell (claude-3-opus, claude-3-sonnet, claude-3-haiku)",
+        "required": false,
+        "default": "claude-3-sonnet-20240229"
+      },
+      {
+        "name": "max_tokens",
+        "type": "number",
+        "description": "Maximale Token-Anzahl für die Antwort",
+        "required": false,
+        "default": 4096
+      },
+      {
+        "name": "temperature",
+        "type": "number",
+        "description": "Temperatur für die Generierung (0-1)",
+        "required": false,
+        "default": 0.7
+      },
+      {
+        "name": "system",
+        "type": "string",
+        "description": "System-Prompt",
+        "required": false
+      }
+    ],
+    "outputs": [
+      {
+        "name": "response",
+        "type": "string",
+        "description": "Claude-Antwort"
+      },
+      {
+        "name": "usage",
+        "type": "object",
+        "description": "Token-Nutzung (input_tokens, output_tokens)"
+      },
+      {
+        "name": "stop_reason",
+        "type": "string",
+        "description": "Grund für das Stoppen"
+      }
+    ]
+  },
+  "dependencies": [],
+  "metadata": {
+    "source_platform": "claude",
+    "bidirectional": true,
+    "import_date": "2026-01-23"
+  }
+}
