@@ -344,6 +344,10 @@ class MainWindow(QMainWindow):
     def _on_tray_activated(self, reason):
         if reason == QSystemTrayIcon.DoubleClick:
             self.show_and_raise()
+        elif reason == QSystemTrayIcon.Trigger:
+            # Show context menu on single left-click
+            from PySide6.QtGui import QCursor
+            self.tray_icon.contextMenu().popup(QCursor.pos())
 
     # FIX: guard prevents ESC double-fire when modal dialog is active
     def handle_escape(self):
