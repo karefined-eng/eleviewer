@@ -27,7 +27,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install maturin
-          pip install ./eleviewer-native
+          cd eleviewer-native; maturin develop --release; cd ..
           pip install nuitka ordered-set zstandard
 
       - name: Extract Version from Tag
@@ -53,6 +53,7 @@ jobs:
             --windows-file-description="Lightweight Document Viewer & Study Workspace" `
             --include-data-dir=icons=icons `
             --include-data-dir=getting_started=getting_started `
+            --include-module=eleviewer_native `
             --disable-console `
             --output-filename=EleViewer.exe `
             main.py
