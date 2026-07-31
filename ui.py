@@ -1811,7 +1811,7 @@ class MainWindow(QMainWindow):
             self.editor_splitter.hide()
 
         # Custom title bar with larger icons and Maximize support
-        from theme import get_active_palette
+        from theme import get_active_palette, compact_toolbar_stylesheet
         p = get_active_palette()
         title_bar = QWidget()
         title_bar.setStyleSheet(f"background: {p['BRAND_PANEL']}; border-bottom: 1px solid {p['BRAND_BORDER']};")
