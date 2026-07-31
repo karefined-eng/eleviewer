@@ -125,6 +125,7 @@ class HtmlViewer(QWidget):
         self.splitter.addWidget(self.viewer)
         layout.addWidget(self.splitter)
         self.set_view_mode(self._mode)
+        self.reload_theme()
 
     def _create_btn(self, icon_name, text, tooltip, callback):
         btn = QToolButton()
@@ -136,6 +137,29 @@ class HtmlViewer(QWidget):
         btn.setToolTip(tooltip)
         btn.clicked.connect(callback)
         return btn
+
+    def reload_theme(self):
+        from theme import get_active_palette, markdown_editor_stylesheet, compact_toolbar_stylesheet
+        from PySide6.QtGui import QPalette, QColor, QFont
+        p = get_active_palette()
+        
+        self.editor.setStyleSheet(markdown_editor_stylesheet())
+        self.viewer.setStyleSheet(f"background: {p['BRAND_BACKGROUND']}; color: {p['BRAND_PRIMARY']}; border: none; padding: 16px;")
+        
+        for btn in (self.btn_preview, self.btn_syntax, self.btn_split, self.btn_push):
+            btn.setStyleSheet(compact_toolbar_stylesheet())
+        self._update_button_states()
+        
+        pal = self.editor.palette()
+        pal.setColor(QPalette.Text, QColor(p['BRAND_PRIMARY']))
+        self.editor.setPalette(pal)
+        
+        syntax_font = QFont("Consolas", 14)
+        self.editor.setFont(syntax_font)
+        
+        if hasattr(self, 'highlighter'):
+            self.highlighter._setup_formats()
+            self.highlighter.rehighlight()
 
     def set_view_mode(self, mode):
         self._mode = mode

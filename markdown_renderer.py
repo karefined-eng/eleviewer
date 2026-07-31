@@ -202,12 +202,8 @@ class MarkdownViewer(QWidget):
         self.simple_editor.setStyleSheet(f"""
             QPlainTextEdit {{
                 background: {BRAND_PANEL};
-                color: {BRAND_PRIMARY};
-                font-size: 15px;
                 padding: 16px;
                 border: none;
-                font-family: 'Segoe UI', sans-serif;
-                line-height: 1.6;
             }}
         """)
         self.simple_editor.textChanged.connect(self._on_simple_changed)
@@ -225,6 +221,8 @@ class MarkdownViewer(QWidget):
 
         layout.addLayout(toolbar)
         layout.addWidget(self.stack)
+
+        self.reload_theme()
 
         if file_path:
             self.load_from_path(file_path)
@@ -421,6 +419,45 @@ class MarkdownViewer(QWidget):
             self.simple_editor.setPlainText(markdown_to_simple(text))
             self.simple_editor.blockSignals(False)
         self.viewer.setHtml(self._render_markdown(text))
+
+    def reload_theme(self):
+        from theme import get_active_palette, markdown_editor_stylesheet, markdown_preview_stylesheet, compact_toolbar_stylesheet
+        from PySide6.QtGui import QPalette, QColor, QFont
+        p = get_active_palette()
+        
+        # Reload stylesheets
+        self.editor.setStyleSheet(markdown_editor_stylesheet())
+        self.simple_editor.setStyleSheet(f"""
+            QPlainTextEdit {{
+                background: {p['BRAND_PANEL']};
+                padding: 16px;
+                border: none;
+            }}
+        """)
+        self.viewer.setStyleSheet(markdown_preview_stylesheet())
+        
+        # Re-apply toolbars
+        for btn in (self.btn_h, self.btn_bullet, self.btn_numbered, self.btn_bold, self.btn_italic, self.btn_underline, self.btn_strike, self.btn_link, self.btn_table, self.btn_clear, self.btn_pin):
+            btn.setStyleSheet(compact_toolbar_stylesheet())
+        self.mode_btn.setStyleSheet(compact_toolbar_stylesheet())
+        
+        # Set native palettes for editors (fixes QSyntaxHighlighter override bugs)
+        pal = self.editor.palette()
+        pal.setColor(QPalette.Text, QColor(p['BRAND_PRIMARY']))
+        self.editor.setPalette(pal)
+        self.simple_editor.setPalette(pal)
+        
+        # Set native fonts
+        syntax_font = QFont("Consolas", 14)
+        self.editor.setFont(syntax_font)
+        
+        simple_font = QFont("Segoe UI", 15)
+        self.simple_editor.setFont(simple_font)
+        
+        # Re-initialize syntax highlighter formats
+        if hasattr(self, 'highlighter'):
+            self.highlighter._setup_formats()
+            self.highlighter.rehighlight()
 
     def enter_view_mode(self):
         self._sync_from_syntax()

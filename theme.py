@@ -168,11 +168,8 @@ def markdown_editor_stylesheet():
     return f"""
         QPlainTextEdit {{
             background: {p['BRAND_BACKGROUND']};
-            color: {p['BRAND_PRIMARY']};
-            font-size: 14px;
             padding: 10px;
             border: none;
-            font-family: 'Consolas', monospace;
         }}
     """
 
