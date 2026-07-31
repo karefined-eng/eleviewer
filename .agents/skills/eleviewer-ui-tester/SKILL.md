@@ -31,20 +31,28 @@ def main_window():
     win.close()
 ```
 
-### B. Execution Coverage Checklist
-Every systematic audit of the desktop app MUST cover all 5 dimensions:
-1. **Reflex Keys & Shortcuts:** Verify `Ctrl+Q` (Quick Switcher), `Alt+V` (Vault Panel), `Ctrl+T` (Web Panel), `Ctrl+Shift+T` (Reopen Closed Tab), `F9` (Read Aloud TTS).
-2. **Side Panels:** Toggle Vault Explorer (`toggle_vault_panel()`), Bookmark Panel (`toggle_bookmarks_panel()`), and Web Panel (`toggle_web_panel()`).
-3. **Document Viewers (8 Formats):** Create sample files and pass them to `create_viewer_widget()`:
+### B. Exhaustive Execution Coverage Checklist
+Every systematic audit of the desktop app MUST rigorously test every single interactive element. Do not skip any button, tab, or menu item:
+1. **Toolbars & Buttons:** Systematically click and test EVERY button on the main toolbar, viewer toolbars, and floating panels. Ensure hover states and tactile feedback (Rule 9) work properly.
+2. **Menu Items & Tabs:** Trigger every dropdown menu action, context menu, and tab state (switching, closing, reopening).
+3. **Reflex Keys & Shortcuts:** Verify `Ctrl+Q` (Quick Switcher), `Alt+V` (Vault Panel), `Ctrl+T` (Web Panel), `Ctrl+Shift+T` (Reopen Closed Tab), `F9` (Read Aloud TTS).
+4. **Side Panels:** Toggle and interact with Vault Explorer (`toggle_vault_panel()`), Bookmark Panel (`toggle_bookmarks_panel()`), and Web Panel (`toggle_web_panel()`).
+5. **Document Viewers (8 Formats):** Create sample files and pass them to `create_viewer_widget()`:
    - Text (`.txt`), Markdown (`.md`), CSV (`.csv`), HTML (`.html`), PDF (`.pdf`), DOCX (`.docx`), XLSX (`.xlsx`), PPTX (`.pptx`).
-4. **Modal Dialog Triggers:** Test `open_settings()`, `open_feedback_dialog()`, `open_getting_started()`, and `open_whats_new()` with `QDialog.exec` mocked to return immediately.
-5. **Session Management:** Verify `_new_session()`, `bookmark_current_tab()`, `save_file()`, and `save_file_as()`.
+6. **Modal Dialog Triggers:** Test `open_settings()`, `open_feedback_dialog()`, `open_getting_started()`, and `open_whats_new()` with `QDialog.exec` mocked to return immediately. Verify click-outside dismissal (Rule 30).
+7. **Session Management:** Verify `_new_session()`, `bookmark_current_tab()`, `save_file()`, and `save_file_as()`.
 
-### C. Critical Gotchas to Check
+### C. Performance & Responsiveness Verification (Ponytail Principles)
+As a core tenet of the "Sovereignty Workstation", the UI must remain fast and consume minimal resources. During the audit:
+- **Zero UI Freezes:** Test for UI stutter or blocking when opening large files, searching the Vault, or invoking TTS. If a freeze is detected, the operation MUST be offloaded to a background `QThread` worker.
+- **Resource Constraints (The Ponytail Check):** Scrutinize memory and dependency usage. Are we loading heavy packages where native stdlib (like `zipfile` for DOCX/PPTX) suffices? If a feature takes >100ms or uses excessive memory, log it as a bug and mandate a "ponytail" refactor.
+- **Thread Interruption:** Verify that background processes (TTS, search) can be immediately aborted without waiting for queues to drain (Rule 6).
+
+### D. Critical Gotchas to Check
 - **Lazy-Scope Import Contamination (Rule 25):** Any lazy-loaded function (like `open_web_tab()`) containing local imports AND `global` statements MUST place all local imports at the VERY TOP of the function scope. Mid-function imports cause Python to treat the symbol as an unbound local throughout the entire method, raising `UnboundLocalError` when accessed above the import line.
 - **Dynamic Theme Palette Access (Rule 2):** PySide6 UI modules (`csv_viewer.py`, `xlsx_viewer.py`) MUST access colors dynamically via `p = get_active_palette()` (e.g., `p['BRAND_PANEL']`) inside initialization methods. Never use module-level static imports or unimported static constants.
 
-### D. Auto-Telemetry Crash Triage (`gh issue list`)
+### E. Auto-Telemetry Crash Triage (`gh issue list`)
 Because EleViewer suppresses terminal stack traces and posts crashes to GitHub via telemetry:
 1. Run `gh issue list --limit 10` to view recent `[Bug] Feedback from App` entries.
 2. View detailed crash tracebacks using `gh issue view <ISSUE_ID>`.
@@ -61,7 +69,7 @@ Because EleViewer suppresses terminal stack traces and posts crashes to GitHub v
 ### A. Location & Scope
 The website repository is located at `c:\Users\kwadw\Documents\eleviewer-site` (or `site/`).
 
-### B. Audit Checklist
+### B. Comprehensive Audit Checklist
 1. **Asset & Download Link Integrity (`lib/links.ts`):** Verify that direct download links point to valid GitHub Release assets (e.g. `https://github.com/karefined-eng/eleviewer/releases/latest/download/EleViewer.exe`).
 2. **SEO & Metadata Verification (`app/layout.tsx`):** Ensure title tags, meta descriptions, OpenGraph images (`og-image.png`), and JSON-LD structured data schemas follow global marketing guidelines.
 3. **Build & Type Health Check:** Run Next.js build validation off-thread:
@@ -69,6 +77,7 @@ The website repository is located at `c:\Users\kwadw\Documents\eleviewer-site` (
    cd site; npm run build
    ```
 4. **Monochrome Design Consistency:** Confirm that website Tailwind styles mirror the desktop application's CSS variables (`BRAND_PRIMARY`, `BRAND_BACKGROUND`, `BRAND_PANEL`, `BRAND_BORDER`).
+5. **Responsiveness & Resource Load:** Run Lighthouse or Next.js analyzer to confirm the site meets fast load times. Audit for unnecessary dependencies and ensure mobile responsiveness holds on all breakpoints.
 
 ---
 
