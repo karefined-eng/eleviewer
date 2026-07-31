@@ -4,7 +4,7 @@ from settings import DEFAULT_SETTINGS
 def test_theme_palettes_exist():
     assert "dark" in THEME_PALETTES
     assert "light" in THEME_PALETTES
-    assert THEME_PALETTES["light"]["BRAND_BACKGROUND"] == "#f8f9fa"
+    assert THEME_PALETTES["light"]["BRAND_BACKGROUND"] == "#f3f3f3"
 
 def test_theme_mode_default():
     assert DEFAULT_SETTINGS.get("theme_mode") == "dark"
