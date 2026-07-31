@@ -240,6 +240,9 @@ class WebPanel(QWidget):
         self.btn_expand.setToolTip("Toggle Web Focus")
         self.btn_expand.clicked.connect(self.expand_requested.emit)
 
+        self.btn_bookmark = None
+        self.btn_history = None
+
         for btn in (self.btn_back, self.btn_forward, self.btn_refresh, self.btn_add, self.btn_expand):
             btn.setStyleSheet(compact_toolbar_stylesheet())
             btn.setAutoRaise(True)
@@ -472,7 +475,7 @@ class WebPanel(QWidget):
         menu = QMenu(self)
         
         # Add back items
-        items = history.backItems(15)
+        items = history.backItems(20)
         for item in reversed(items):
             action = menu.addAction(item.title() or item.url().toString())
             action.triggered.connect(lambda checked=False, i=item: history.goToItem(i))
@@ -488,7 +491,7 @@ class WebPanel(QWidget):
             font.setBold(True)
             current_action.setFont(font)
             
-        forward_items = history.forwardItems(15)
+        forward_items = history.forwardItems(20)
         if forward_items:
             menu.addSeparator()
             for item in forward_items:
@@ -498,7 +501,8 @@ class WebPanel(QWidget):
         if menu.isEmpty():
             menu.addAction("No history").setEnabled(False)
             
-        menu.exec_(self.btn_history.mapToGlobal(self.btn_history.rect().bottomLeft()))
+        anchor = self.btn_history or self.btn_back
+        menu.exec_(anchor.mapToGlobal(anchor.rect().bottomLeft()))
 
     def persist_tabs(self):
         settings = load_settings()
