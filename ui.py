@@ -1999,6 +1999,8 @@ class MainWindow(QMainWindow):
             return
 
         web_panel = WebPanel()
+        web_panel.expand_requested.connect(self.toggle_web_focus)
+        
         self._web_dock = QDockWidget("Web Browser", self)
         self._web_dock.setWidget(web_panel)
         self._web_dock.setMinimumWidth(480)
@@ -2008,6 +2010,18 @@ class MainWindow(QMainWindow):
             | QDockWidget.DockWidgetFloatable
         )
         self.addDockWidget(Qt.RightDockWidgetArea, self._web_dock)
+
+    def toggle_web_focus(self):
+        from icons import icon
+        if self._web_dock and self._web_dock.isVisible():
+            if self.main_splitter.isVisible():
+                self.main_splitter.hide()
+                self._web_dock.widget().btn_expand.setIcon(icon("minimize-2", size=24))
+                self._web_dock.widget().btn_expand.setToolTip("Exit Web Focus")
+            else:
+                self.main_splitter.show()
+                self._web_dock.widget().btn_expand.setIcon(icon("maximize-2", size=24))
+                self._web_dock.widget().btn_expand.setToolTip("Toggle Web Focus")
         
         # Auto-maximize if no editor tabs are open (ponytail)
         if self.tabs.count() == 0:

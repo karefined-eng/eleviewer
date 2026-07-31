@@ -174,7 +174,7 @@ from theme import compact_toolbar_stylesheet, ICON_SIZE_COMPACT
 
 
 class WebPanel(QWidget):
-    tabs_changed = Signal()
+    expand_requested = Signal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -207,7 +207,7 @@ class WebPanel(QWidget):
 
         self.btn_refresh = QToolButton()
         self.btn_refresh.setIconSize(icon_qsize)
-        self.btn_refresh.setIcon(icon("refresh-cw", size=icon_sz))
+        self.btn_refresh.setIcon(icon("rotate-cw", size=icon_sz)) # Using rotate-cw instead of refresh-cw which might not exist
         self.btn_refresh.setToolTip("Reload page (Ctrl+R / F5)")
         self.btn_refresh.clicked.connect(self._reload_current)
 
@@ -228,8 +228,14 @@ class WebPanel(QWidget):
         self.btn_history.setIcon(icon("clock", size=icon_sz))
         self.btn_history.setToolTip("Show browsing history")
         self.btn_history.clicked.connect(self._show_history)
+        
+        self.btn_expand = QToolButton()
+        self.btn_expand.setIconSize(icon_qsize)
+        self.btn_expand.setIcon(icon("maximize-2", size=icon_sz))
+        self.btn_expand.setToolTip("Toggle Web Focus")
+        self.btn_expand.clicked.connect(self.expand_requested.emit)
 
-        for btn in (self.btn_back, self.btn_forward, self.btn_refresh, self.btn_bookmark, self.btn_history, self.btn_add):
+        for btn in (self.btn_back, self.btn_forward, self.btn_refresh, self.btn_bookmark, self.btn_history, self.btn_add, self.btn_expand):
             btn.setStyleSheet(compact_toolbar_stylesheet())
             btn.setAutoRaise(True)
 
@@ -240,6 +246,7 @@ class WebPanel(QWidget):
         nav.addWidget(self.btn_bookmark)
         nav.addWidget(self.btn_history)
         nav.addWidget(self.btn_add)
+        nav.addWidget(self.btn_expand)
 
         self.tabs = QTabWidget()
         self.tabs.setTabsClosable(True)
