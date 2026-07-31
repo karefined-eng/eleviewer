@@ -123,10 +123,14 @@ class SettingsView(QWidget):
         
         # Immediate application hooks
         if key in ("theme_mode", "theme_accent"):
-            self.main_window.apply_theme()
+            if hasattr(self.main_window, "apply_theme"):
+                self.main_window.apply_theme()
+            elif hasattr(self.main_window, "reload_theme"):
+                self.main_window.reload_theme()
         elif key == "vault_show_all_files":
-            self.main_window.vault_panel.set_show_all_files(value)
-            if hasattr(self.main_window.vault_panel, 'restore_from_settings'):
+            if hasattr(self.main_window, "vault_panel") and hasattr(self.main_window.vault_panel, "set_show_all_files"):
+                self.main_window.vault_panel.set_show_all_files(value)
+            if hasattr(self.main_window, "vault_panel") and hasattr(self.main_window.vault_panel, 'restore_from_settings'):
                 self.main_window.vault_panel.restore_from_settings()
         elif key in ("autosave_enabled", "autosave_interval_seconds"):
             if hasattr(self.main_window, 'autosaver'):

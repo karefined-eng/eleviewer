@@ -4,6 +4,7 @@ use rayon::prelude::*;
 use rusqlite::{params, Connection};
 use std::fs;
 use std::path::{Path, PathBuf};
+use walkdir::WalkDir;
 
 const INDEX_EXTENSIONS: &[&str] = &[".md", ".txt", ".csv"];
 
@@ -164,7 +165,7 @@ fn search_documents(
 ) -> PyResult<Py<PyList>> {
     let fts = fts_query(&query);
     if fts.is_empty() {
-        return Ok(PyList::empty(py).into());
+        return Ok(PyList::empty_bound(py).into());
     }
 
     let conn = Connection::open(&db_path)
@@ -204,7 +205,7 @@ fn search_documents(
         })
         .map_err(|e| pyo3::exceptions::PyRuntimeError::new_err(e.to_string()))?;
 
-    let list = PyList::empty(py);
+    let list = PyList::empty_bound(py);
     let mut count = 0usize;
     for row in rows.flatten() {
         let (full_path, vault_name, filename, snippet) = row;
