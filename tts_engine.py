@@ -185,6 +185,8 @@ class TtsEngine:
         return self._edge_voices + self._local_voices
 
     def speak(self, text, voice_id=None):
+        from auditory_cleaner import clean_for_speech
+        text = clean_for_speech(text)
         if not text or not text.strip():
             return
         if EDGE_AVAILABLE or PYTTSX3_AVAILABLE:
