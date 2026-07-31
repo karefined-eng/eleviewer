@@ -25,7 +25,6 @@ from pinned_files import load_pinned_files, save_pinned_file, remove_pinned_file
 from session_manager import load_session, save_session, clear_session
 from quick_switcher import QuickSwitcher
 from settings import load_settings, save_settings, DEFAULT_SETTINGS
-from settings_dialog import SettingsDialog
 from theme import (
     main_window_stylesheet, ICON_SIZE_TOOLBAR, ICON_SIZE_COMPACT,
     BRAND_PRIMARY, BRAND_PANEL_2, compact_toolbar_stylesheet
@@ -230,7 +229,12 @@ class MainWindow(QMainWindow):
         self.create_menu()
         self._setup_global_shortcuts()
         self._restore_vault()
-        self.restore_session()
+        from settings import load_settings
+        settings = load_settings()
+        if settings.get("restore_session_tabs", True):
+            self.restore_session()
+        else:
+            self._new_session()
 
         if self.tabs.count() == 0:
             from settings import load_settings
@@ -653,10 +657,25 @@ class MainWindow(QMainWindow):
         self.vault_panel.set_show_all_files(settings.get("vault_show_all_files", False))
         self.vault_panel.restore_from_settings()
 
+    def start_onboarding(self):
+        from onboarding import InteractiveWelcomeWidget
+        self.onboarding_widget = InteractiveWelcomeWidget(self)
+        self.onboarding_widget.close_requested.connect(self._close_onboarding)
+        idx = self.tabs.addTab(self.onboarding_widget, "Welcome")
+        self.tabs.setCurrentIndex(idx)
+        
+    def _close_onboarding(self):
+        if hasattr(self, "onboarding_widget"):
+            idx = self.tabs.indexOf(self.onboarding_widget)
+            if idx >= 0:
+                self.tabs.removeTab(idx)
+
     def toggle_vault_panel(self):
-        visible = self.vault_panel.isVisible()
-        if visible:
-            self.vault_panel.hide()
+        is_visible = not self.vault_panel.isVisible()
+        self.vault_panel.setVisible(is_visible)
+        if is_visible and hasattr(self, "onboarding_widget"):
+            self.onboarding_widget.check_off("vault")
+        if not is_visible:
             self.main_splitter.setSizes([0, self.width()])
         else:
             self.vault_panel.show()
@@ -1355,27 +1374,19 @@ class MainWindow(QMainWindow):
 
     # FIX: WA_DeleteOnClose=True ensures dialog is freed on close
     def open_settings(self):
-        if getattr(self, '_settings_dialog', None) is None:
-            from settings_dialog import SettingsDialog
-            self._settings_dialog = SettingsDialog(self)
-            self._settings_dialog.finished.connect(
-                lambda: setattr(self, '_settings_dialog', None)
-            )
-            self._settings_dialog.accepted.connect(self._on_settings_saved)
-        self._settings_dialog.show()
-        self._settings_dialog.raise_()
-
-    def _on_settings_saved(self):
-        from theme import main_window_stylesheet
-        self.setStyleSheet(main_window_stylesheet())
-        if hasattr(self, 'autosaver') and self.autosaver:
-            self.autosaver.apply_settings()
-        from settings import load_settings
-        settings = load_settings()
-        if hasattr(self, 'vault_panel') and self.vault_panel:
-            self.vault_panel.set_show_all_files(settings.get("vault_show_all_files", False))
-            self.vault_panel.restore_from_settings()
-        self.show_status_message("Settings saved", 2000)
+        # Check if settings tab is already open
+        for i in range(self.tabs.count()):
+            widget = self.tabs.widget(i)
+            if hasattr(widget, "_is_settings_view"):
+                self.tabs.setCurrentIndex(i)
+                return
+                
+        from settings_view import SettingsView
+        settings_view = SettingsView(self)
+        settings_view._is_settings_view = True
+        
+        idx = self.tabs.addTab(settings_view, "Settings")
+        self.tabs.setCurrentIndex(idx)
 
     def update_menus(self):
         self.update_recent_files_menu()
@@ -1592,6 +1603,8 @@ class MainWindow(QMainWindow):
         self._add_editor_tab(editor, name)
 
     def open_quick_switcher(self):
+        if hasattr(self, "onboarding_widget"):
+            self.onboarding_widget.check_off("quick_switch")
         recent = load_recent_files(validate=True)
         pinned = load_pinned_files(validate=True)
         open_tabs = []
@@ -1836,6 +1849,8 @@ class MainWindow(QMainWindow):
         from PySide6.QtWidgets import QDockWidget, QWidget, QLabel, QToolButton, QHBoxLayout, QMessageBox
         from theme import get_active_palette, compact_toolbar_stylesheet
         global WEB_AVAILABLE
+        if hasattr(self, "onboarding_widget"):
+            self.onboarding_widget.check_off("web")
         if not WEB_AVAILABLE:
             QMessageBox.warning(self, "Missing Module", "QtWebEngine not installed.")
             return
