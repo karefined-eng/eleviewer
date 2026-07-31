@@ -3,8 +3,8 @@ from PySide6.QtWidgets import (
     QSplitter, QMenu, QToolBar, QToolButton, QVBoxLayout, QHBoxLayout, QWidget,
     QDockWidget, QLabel, QSystemTrayIcon, QApplication, QScrollBar,
 )
-from PySide6.QtGui import QAction, QKeySequence, QShortcut, QIcon, QFontMetrics
-from PySide6.QtCore import Qt, QSize, QTimer, Slot, QUrl
+from PySide6.QtGui import QAction, QKeySequence, QShortcut, QIcon, QFontMetrics, QDrag
+from PySide6.QtCore import Qt, QSize, QTimer, Slot, QUrl, Signal, QEvent, QMimeData
 import os
 import sys
 
@@ -24,11 +24,11 @@ from recent_files import load_recent_files, save_recent_file
 from pinned_files import load_pinned_files, save_pinned_file, remove_pinned_file, is_pinned
 from session_manager import load_session, save_session, clear_session
 from quick_switcher import QuickSwitcher
-from settings import load_settings, save_settings
+from settings import load_settings, save_settings, DEFAULT_SETTINGS
 from settings_dialog import SettingsDialog
 from theme import (
     main_window_stylesheet, ICON_SIZE_TOOLBAR, ICON_SIZE_COMPACT,
-    BRAND_PRIMARY, BRAND_PANEL_2
+    BRAND_PRIMARY, BRAND_PANEL_2, compact_toolbar_stylesheet
 )
 from save_utils import atomic_write
 from icons import icon
@@ -65,8 +65,7 @@ def _tab_icon_for(path_or_name, active=False):
     return file_type_icon(ext or ".txt", size=18, active=active)
 
 
-from PySide6.QtCore import Signal, QEvent, QMimeData
-from PySide6.QtGui import QDrag
+
 
 class DraggableToolBar(QToolBar):
     order_changed = Signal(list)
@@ -93,6 +92,9 @@ class DraggableToolBar(QToolBar):
     def get_order(self):
         return [self._action_ids[a] for a in self.actions() if a in self._action_ids]
 
+    def registered_action_ids(self):
+        return list(self._id_actions.keys())
+
     def eventFilter(self, obj, event):
         if isinstance(obj, QToolButton):
             if event.type() == QEvent.MouseButtonPress and event.button() == Qt.LeftButton:
@@ -114,8 +116,13 @@ class DraggableToolBar(QToolBar):
         drag.setMimeData(mime)
         drag.setPixmap(widget.grab())
         drag.exec(Qt.MoveAction)
+        self._drag_action = None
         
     def dragEnterEvent(self, event):
+        if event.mimeData().hasText() and event.mimeData().text() in self._id_actions:
+            event.acceptProposedAction()
+
+    def dragMoveEvent(self, event):
         if event.mimeData().hasText() and event.mimeData().text() in self._id_actions:
             event.acceptProposedAction()
             
@@ -129,10 +136,6 @@ class DraggableToolBar(QToolBar):
                 self.insertAction(target_action, self._drag_action)
             else:
                 self.addAction(self._drag_action)
-                
-            widget = self.widgetForAction(self._drag_action)
-            if widget:
-                widget.installEventFilter(self)
                 
             self.order_changed.emit(self.get_order())
             
@@ -507,7 +510,9 @@ class MainWindow(QMainWindow):
         self.toolbar.register_action("settings", settings_btn)
 
         settings_data = load_settings()
-        toolbar_order = settings_data.get("toolbar_order", ["new", "vault", "bookmarks", "open", "save", "tts", "web", "settings"])
+        toolbar_order = settings_data.get("toolbar_order")
+        if not isinstance(toolbar_order, list):
+            toolbar_order = DEFAULT_SETTINGS["toolbar_order"]
 
         # Add actions in the saved order
         for action_id in toolbar_order:
@@ -516,7 +521,7 @@ class MainWindow(QMainWindow):
             self.toolbar.add_action_by_id(action_id)
             
         # Add any remaining actions that are registered but missing from the saved order
-        for action_id in self.toolbar._id_actions:
+        for action_id in self.toolbar.registered_action_ids():
             if action_id not in toolbar_order:
                 if action_id == "web" and not WEB_AVAILABLE:
                     continue
