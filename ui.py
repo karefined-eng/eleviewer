@@ -65,6 +65,80 @@ def _tab_icon_for(path_or_name, active=False):
     return file_type_icon(ext or ".txt", size=18, active=active)
 
 
+from PySide6.QtCore import Signal, QEvent, QMimeData
+from PySide6.QtGui import QDrag
+
+class DraggableToolBar(QToolBar):
+    order_changed = Signal(list)
+
+    def __init__(self, title, parent=None):
+        super().__init__(title, parent)
+        self.setAcceptDrops(True)
+        self._drag_action = None
+        self._action_ids = {} # action -> id string
+        self._id_actions = {} # id string -> action
+
+    def register_action(self, action_id, action):
+        self._action_ids[action] = action_id
+        self._id_actions[action_id] = action
+        
+    def add_action_by_id(self, action_id):
+        action = self._id_actions.get(action_id)
+        if action:
+            self.addAction(action)
+            widget = self.widgetForAction(action)
+            if widget:
+                widget.installEventFilter(self)
+
+    def get_order(self):
+        return [self._action_ids[a] for a in self.actions() if a in self._action_ids]
+
+    def eventFilter(self, obj, event):
+        if isinstance(obj, QToolButton):
+            if event.type() == QEvent.MouseButtonPress and event.button() == Qt.LeftButton:
+                self._drag_start_pos = event.pos()
+                return False
+            elif event.type() == QEvent.MouseMove and (event.buttons() & Qt.LeftButton):
+                if hasattr(self, '_drag_start_pos') and (event.pos() - self._drag_start_pos).manhattanLength() > QApplication.startDragDistance():
+                    action = obj.defaultAction()
+                    if action:
+                        self._start_drag(action, obj)
+                        return True
+        return super().eventFilter(obj, event)
+
+    def _start_drag(self, action, widget):
+        self._drag_action = action
+        drag = QDrag(self)
+        mime = QMimeData()
+        mime.setText(self._action_ids.get(action, ""))
+        drag.setMimeData(mime)
+        drag.setPixmap(widget.grab())
+        drag.exec(Qt.MoveAction)
+        
+    def dragEnterEvent(self, event):
+        if event.mimeData().hasText() and event.mimeData().text() in self._id_actions:
+            event.acceptProposedAction()
+            
+    def dropEvent(self, event):
+        drop_pos = event.pos()
+        target_action = self.actionAt(drop_pos)
+        
+        if self._drag_action and self._drag_action != target_action:
+            self.removeAction(self._drag_action)
+            if target_action:
+                self.insertAction(target_action, self._drag_action)
+            else:
+                self.addAction(self._drag_action)
+                
+            widget = self.widgetForAction(self._drag_action)
+            if widget:
+                widget.installEventFilter(self)
+                
+            self.order_changed.emit(self.get_order())
+            
+        event.acceptProposedAction()
+
+
 class MainWindow(QMainWindow):
 
     FILE_FILTER = (
@@ -375,66 +449,85 @@ class MainWindow(QMainWindow):
             )
 
     def _build_toolbar(self):
-        self.toolbar = QToolBar("Main Toolbar")
+        self.toolbar = DraggableToolBar("Main Toolbar")
         self.toolbar.setMovable(False)
         self.toolbar.setIconSize(QSize(ICON_SIZE_TOOLBAR, ICON_SIZE_TOOLBAR))
         self.toolbar.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
         self.addToolBar(self.toolbar)
 
-
-
-
-
         new_file_action = QAction(icon("file-plus", size=ICON_SIZE_TOOLBAR), "New File", self)
         new_file_action.setToolTip("New File")
         new_file_action.triggered.connect(self._show_new_file_menu_from_toolbar)
-        self.toolbar.addAction(new_file_action)
+        self.toolbar.register_action("new", new_file_action)
 
         vault_btn = QAction(icon("panel-left", size=ICON_SIZE_TOOLBAR), "Toggle Vault", self)
         vault_btn.setToolTip("Toggle Vault (Alt+V)")
         vault_btn.setShortcut("Alt+V")
         vault_btn.setShortcutContext(Qt.WidgetShortcut)
         vault_btn.triggered.connect(self.toggle_vault_panel)
-        self.toolbar.addAction(vault_btn)
+        self.toolbar.register_action("vault", vault_btn)
 
         bookmark_btn = QAction(icon("bookmark", size=ICON_SIZE_TOOLBAR), "Bookmarks", self)
         bookmark_btn.setToolTip("Toggle Bookmarks Panel (Ctrl+Alt+B)")
         bookmark_btn.setShortcut("Ctrl+Alt+B")
         bookmark_btn.setShortcutContext(Qt.WidgetShortcut)
         bookmark_btn.triggered.connect(self.toggle_bookmarks_panel)
-        self.toolbar.addAction(bookmark_btn)
+        self.toolbar.register_action("bookmarks", bookmark_btn)
 
         open_btn = QAction(icon("folder-open", size=ICON_SIZE_TOOLBAR), "Open", self)
         open_btn.setToolTip("Open File (Ctrl+O)")
         open_btn.setShortcut("Ctrl+O")
         open_btn.setShortcutContext(Qt.WidgetShortcut)
         open_btn.triggered.connect(self.open_file)
-        self.toolbar.addAction(open_btn)
+        self.toolbar.register_action("open", open_btn)
 
         save_btn = QAction(icon("save", size=ICON_SIZE_TOOLBAR), "Save", self)
         save_btn.setToolTip("Save File (Ctrl+S)")
         save_btn.setShortcut("Ctrl+S")
         save_btn.setShortcutContext(Qt.WidgetShortcut)
         save_btn.triggered.connect(self.save_file)
-        self.toolbar.addAction(save_btn)
+        self.toolbar.register_action("save", save_btn)
         
         tts_btn = QAction(icon("volume-2", size=ICON_SIZE_TOOLBAR), "Read Aloud", self)
         tts_btn.setToolTip("Read Aloud / Toggle TTS (F9)")
         tts_btn.setShortcut("F9")
         tts_btn.setShortcutContext(Qt.WidgetShortcut)
         tts_btn.triggered.connect(self.toggle_tts_bar)
-        self.toolbar.addAction(tts_btn)
+        self.toolbar.register_action("tts", tts_btn)
 
         if WEB_AVAILABLE:
             web_btn = QAction(icon("globe", size=ICON_SIZE_TOOLBAR), "Web Panel", self)
             web_btn.setToolTip("Open Web Browser Panel / New Web Tab (Ctrl+T)")
             web_btn.triggered.connect(self.open_web_tab)
-            self.toolbar.addAction(web_btn)
+            self.toolbar.register_action("web", web_btn)
 
         settings_btn = QAction(icon("settings", size=ICON_SIZE_TOOLBAR), "Settings", self)
         settings_btn.setToolTip("Settings")
         settings_btn.triggered.connect(self.open_settings)
-        self.toolbar.addAction(settings_btn)
+        self.toolbar.register_action("settings", settings_btn)
+
+        settings_data = load_settings()
+        toolbar_order = settings_data.get("toolbar_order", ["new", "vault", "bookmarks", "open", "save", "tts", "web", "settings"])
+
+        # Add actions in the saved order
+        for action_id in toolbar_order:
+            if action_id == "web" and not WEB_AVAILABLE:
+                continue
+            self.toolbar.add_action_by_id(action_id)
+            
+        # Add any remaining actions that are registered but missing from the saved order
+        for action_id in self.toolbar._id_actions:
+            if action_id not in toolbar_order:
+                if action_id == "web" and not WEB_AVAILABLE:
+                    continue
+                self.toolbar.add_action_by_id(action_id)
+
+        # Connect the signal to save the order when changed
+        def save_order(new_order):
+            s = load_settings()
+            s["toolbar_order"] = new_order
+            save_settings(s)
+        self.toolbar.order_changed.connect(save_order)
 
     def _add_menu_action(self, menu, text, slot, shortcut=None):
         action = QAction(text, self)
