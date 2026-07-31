@@ -44,9 +44,11 @@ Every systematic audit of the desktop app MUST rigorously test every single inte
 
 ### C. Performance & Responsiveness Verification (Ponytail Principles)
 As a core tenet of the "Sovereignty Workstation", the UI must remain fast and consume minimal resources. During the audit:
-- **Zero UI Freezes:** Test for UI stutter or blocking when opening large files, searching the Vault, or invoking TTS. If a freeze is detected, the operation MUST be offloaded to a background `QThread` worker.
-- **Resource Constraints (The Ponytail Check):** Scrutinize memory and dependency usage. Are we loading heavy packages where native stdlib (like `zipfile` for DOCX/PPTX) suffices? If a feature takes >100ms or uses excessive memory, log it as a bug and mandate a "ponytail" refactor.
-- **Thread Interruption:** Verify that background processes (TTS, search) can be immediately aborted without waiting for queues to drain (Rule 6).
+- **The <100ms Cold Start (Chromium Tax):** Verify that `QtWebEngine` and the Web Panel are strictly lazy-loaded and never imported at the top level. The app must launch instantly.
+- **Zero UI Freezes (Off-Thread Concurrency):** Test for UI stutter. Any heavy task (Vault Indexing, Draft Auto-saving, Feedback Submission) MUST run on background `QThread` workers.
+- **Zero-Dependency Parsing:** Verify that DOCX/PPTX files are parsed using the native Python `zipfile` library to inject Base64 images directly, avoiding disk I/O and bloated dependencies.
+- **Native Audio Playback:** Verify that TTS uses the native Windows Multimedia API (MCI) off-thread, avoiding heavy third-party audio packages.
+- **Offline-First Resilience:** Ensure no network calls or telemetry block the UI. The app must function instantly without an internet connection.
 
 ### D. Critical Gotchas to Check
 - **Lazy-Scope Import Contamination (Rule 25):** Any lazy-loaded function (like `open_web_tab()`) containing local imports AND `global` statements MUST place all local imports at the VERY TOP of the function scope. Mid-function imports cause Python to treat the symbol as an unbound local throughout the entire method, raising `UnboundLocalError` when accessed above the import line.
