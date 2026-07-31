@@ -187,13 +187,19 @@ class DraggableToolBar(QToolBar):
         super().paintEvent(event)
         if self._drop_indicator_x < 0:
             return
-        from PySide6.QtGui import QPainter, QPen
+        from PySide6.QtGui import QPainter, QPen, QColor
         from theme import get_active_accent
+        
         painter = QPainter(self)
-        pen = QPen(get_active_accent()["accent"], 2)
-        painter.setPen(pen)
-        painter.drawLine(self._drop_indicator_x, 4, self._drop_indicator_x, self.height() - 4)
-        painter.end()
+        try:
+            pen = QPen(QColor(get_active_accent().get("accent", "#6cb6ff")), 2)
+            painter.setPen(pen)
+            painter.drawLine(self._drop_indicator_x, 4, self._drop_indicator_x, self.height() - 4)
+        except Exception as e:
+            import logging
+            logging.error(f"Error drawing drag indicator: {e}")
+        finally:
+            painter.end()
 
 
 class MainWindow(QMainWindow):
