@@ -109,7 +109,7 @@ When invoked to work on the Python PySide6 desktop application, adhere to these 
 ## 14. Session Closing Ritual (Mandatory)
 After completing any task session in `eleviewer`, you MUST execute these four steps in order:
 
-1. **Run the regression suite first.** Execute `test_csv_viewer.py`, `test_html_viewer.py`, and `test_link_interception.py` and confirm all tests pass before committing anything. Do not commit broken code.
+1. **Run the regression suite first.** Execute the core tests (`pytest test_csv_viewer.py test_html_viewer.py test_link_interception.py`) directly from the project root (there is no `tests/` subdirectory for these). Confirm all pass before committing. Do not commit broken code.
 
 2. **Check for Telemetry Bugs (CRITICAL).** Run `gh issue list` (e.g., `gh issue list --limit 10`) to check for newly opened `[Bug] Feedback from App` issues. Because EleViewer suppresses terminal stack traces and auto-submits crashes, you cannot rely on exit codes alone to verify stability. Resolve any bugs found before proceeding.
 
@@ -117,6 +117,7 @@ After completing any task session in `eleviewer`, you MUST execute these four st
    ```powershell
    git add file1.py file2.py; git commit -m "type(scope): summary`n`nbody"
    ```
+   *Note: `PROJECT_LOG.md` is explicitly ignored by `.gitignore`. NEVER include it in your `git add` command or attempt to commit it.*
 
 4. **Update `PROJECT_LOG.md` Historical Ledger.** Prepend a new `### [DATE] Task Title` entry to the ledger with:
    - What changed and why, including the audit result (real bugs found vs. phantom assumptions).
