@@ -75,7 +75,7 @@ class QuickSwitcher(QDialog):
         
         # Help text
         help_label = QLabel("↑↓ Navigate  Enter Select  Esc Cancel")
-        help_label.setStyleSheet(f"color: {BRAND_MUTED_FG}; font-size: 11px; padding: 5px;")
+        help_label.setStyleSheet(f"color: {p['BRAND_MUTED_FG']}; font-size: 11px; padding: 5px;")
         
         # File list
         self.file_list = QListWidget()
