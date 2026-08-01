@@ -26,35 +26,15 @@ import json
 from paths import strip_pii
 
 
-def global_exception_handler(exc_type, exc_value, exc_traceback):
-    if issubclass(exc_type, KeyboardInterrupt):
-        sys.__excepthook__(exc_type, exc_value, exc_traceback)
-        return
-        
-    tb_lines = traceback.format_exception(exc_type, exc_value, exc_traceback)
-    tb_text = "".join(tb_lines)
-    
-    # SECURITY: Strip PII (User's home directory path) from the traceback
-    tb_text = strip_pii(tb_text)
-
-        
-    # Automatic clipboard log grabber
-    clipboard = QApplication.clipboard()
-    if clipboard:
-        clipboard.setText(f"--- EleViewer Crash Report ---\n{tb_text}")
-
-    
-    # Log exception to APP_DATA_DIR / logs / app.log
+def _show_crash_dialog_on_main_thread(tb_text):
+    # Automatic clipboard log grabber (safe on GUI thread)
     try:
-        from paths import APP_DATA_DIR
-        logs_dir = APP_DATA_DIR / "logs"
-        logs_dir.mkdir(parents=True, exist_ok=True)
-        log_file = logs_dir / "app.log"
-        with open(log_file, "a", encoding="utf-8") as f:
-            f.write(f"\n--- FATAL CRASH [{datetime.now().isoformat()}] ---\n{tb_text}\n")
+        clipboard = QApplication.clipboard()
+        if clipboard:
+            clipboard.setText(f"--- EleViewer Crash Report ---\n{tb_text}")
     except Exception:
         pass
-    
+
     from PySide6.QtWidgets import QMessageBox
     
     msg = QMessageBox()
@@ -89,6 +69,40 @@ def global_exception_handler(exc_type, exc_value, exc_traceback):
             pass
             
     sys.exit(1)
+
+
+def global_exception_handler(exc_type, exc_value, exc_traceback):
+    if issubclass(exc_type, KeyboardInterrupt):
+        sys.__excepthook__(exc_type, exc_value, exc_traceback)
+        return
+        
+    tb_lines = traceback.format_exception(exc_type, exc_value, exc_traceback)
+    tb_text = "".join(tb_lines)
+    
+    # SECURITY: Strip PII (User's home directory path) from the traceback
+    tb_text = strip_pii(tb_text)
+
+    # Log exception to APP_DATA_DIR / logs / app.log
+    try:
+        from paths import APP_DATA_DIR
+        logs_dir = APP_DATA_DIR / "logs"
+        logs_dir.mkdir(parents=True, exist_ok=True)
+        log_file = logs_dir / "app.log"
+        with open(log_file, "a", encoding="utf-8") as f:
+            f.write(f"\n--- FATAL CRASH [{datetime.now().isoformat()}] ---\n{tb_text}\n")
+    except Exception:
+        pass
+
+    app = QApplication.instance()
+    from PySide6.QtCore import QThread, QMetaObject, Qt
+    if app and QThread.currentThread() != app.thread():
+        QMetaObject.invokeMethod(
+            app,
+            lambda: _show_crash_dialog_on_main_thread(tb_text),
+            Qt.QueuedConnection
+        )
+    else:
+        _show_crash_dialog_on_main_thread(tb_text)
 
 sys.excepthook = global_exception_handler
 

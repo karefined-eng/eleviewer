@@ -2,11 +2,12 @@
 
 PackageIdentifier: karefined-eng.EleViewer
 PackageVersion: 1.3.0
-InstallerType: portable
+InstallerType: inno
+Scope: user
 Installers:
   - Architecture: x64
-    InstallerUrl: https://github.com/karefined-eng/eleviewer/releases/latest/download/EleViewer.exe
-    InstallerSha256: E1EF2B0FB6A01D3061331297B0FF621FD70A2E8C35338148A7E75CCF777FED3A
+    InstallerUrl: https://github.com/karefined-eng/eleviewer/releases/download/v1.3.0/EleViewer_Setup_v1.3.0.exe
+    InstallerSha256: 0000000000000000000000000000000000000000000000000000000000000000 # To be updated post-release
 Commands:
   - eleviewer
 FileExtensions:
