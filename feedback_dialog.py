@@ -7,7 +7,7 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import QThread, Signal
 import urllib.request
-from theme import BRAND_BACKGROUND, BRAND_PRIMARY, BRAND_PANEL, BRAND_BORDER, get_brand_accent, get_active_palette
+from theme import get_brand_accent, get_active_palette
 from paths import strip_pii
 
 APP_VERSION = "1.3.0"

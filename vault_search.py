@@ -94,6 +94,7 @@ class VaultSearchWorker(QThread):
 
 class VaultSearchDialog(QDialog):
     file_selected = Signal(str)
+    url_selected = Signal(str)
 
     def __init__(self, active_vault, all_vaults, parent=None):
         super().__init__(parent)
@@ -157,6 +158,21 @@ class VaultSearchDialog(QDialog):
         vaults = [active_vault] if active_vault else all_vaults
         schedule_vault_index(vaults if vaults else all_vaults)
         
+        # Pre-load for Omnibar
+        self.all_files = []
+        try:
+            for v in (self.all_vaults if self.all_vaults else []):
+                for root, dirs, files in os.walk(v):
+                    dirs[:] = [d for d in dirs if not d.startswith(".")]
+                    for f in files:
+                        if not f.startswith("."):
+                            self.all_files.append(os.path.join(root, f))
+        except Exception:
+            pass
+
+        from bookmark_manager import load_bookmarks
+        self.bookmarks = load_bookmarks(validate=False)
+        
     def _on_text_changed(self):
         self.search_timer.start(300)
         
@@ -174,6 +190,39 @@ class VaultSearchDialog(QDialog):
         if not query:
             return
             
+        # 1. URL Detection
+        if query.startswith("http://") or query.startswith("https://") or query.startswith("www."):
+            item = QListWidgetItem(f"🌐 Open URL: {query}")
+            url = query if query.startswith("http") else f"https://{query}"
+            item.setData(Qt.UserRole, f"URL:{url}")
+            self.results_list.addItem(item)
+            
+        # 2. Bookmarks Filter
+        for b in self.bookmarks:
+            label = b.get("label", "").lower()
+            if query in label or query in b.get("file_path", "").lower():
+                b_label = f"🔖 Bookmark: {b.get('label')} - {os.path.basename(b.get('file_path', ''))}"
+                item = QListWidgetItem(b_label)
+                item.setData(Qt.UserRole, f"BOOKMARK:{b.get('id')}:{b.get('file_path')}")
+                self.results_list.addItem(item)
+                
+        # 3. Fuzzy File Title Search
+        fuzzy_count = 0
+        for path in self.all_files:
+            if fuzzy_count > 20:
+                break
+            name = os.path.basename(path).lower()
+            idx = 0
+            for char in name:
+                if idx < len(query) and char == query[idx]:
+                    idx += 1
+            if idx == len(query):
+                item = QListWidgetItem(f"📄 {os.path.basename(path)} — {os.path.dirname(path)}")
+                item.setData(Qt.UserRole, path)
+                self.results_list.addItem(item)
+                fuzzy_count += 1
+            
+        # 4. Background Full Text Search
         scope = self.scope_combo.currentData()
         vaults_to_search = [self.active_vault] if scope == "active" and self.active_vault else self.all_vaults
         
@@ -192,7 +241,13 @@ class VaultSearchDialog(QDialog):
                         
     def _on_item_activated(self, item):
         path = item.data(Qt.UserRole)
-        self.file_selected.emit(path)
+        if path.startswith("URL:"):
+            self.url_selected.emit(path[4:])
+        elif path.startswith("BOOKMARK:"):
+            _, _, file_path = path.split(":", 2)
+            self.file_selected.emit(file_path)
+        else:
+            self.file_selected.emit(path)
         self.accept()
         
     def _cleanup_worker(self):

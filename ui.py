@@ -1054,7 +1054,7 @@ class MainWindow(QMainWindow):
         
         # 2. Premium Omnibar (Search)
         search_btn = QToolButton()
-        search_btn.setText("   Search your vault, type a URL, or press 'Ctrl+Q'...")
+        search_btn.setText("   Search files, content, bookmarks, or type a URL...")
         search_btn.setIcon(icon("search", size=20, color=p['BRAND_MUTED_FG']))
         search_btn.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
         search_btn.setCursor(Qt.PointingHandCursor)
@@ -1779,17 +1779,7 @@ class MainWindow(QMainWindow):
     def open_quick_switcher(self):
         if hasattr(self, "onboarding_widget"):
             self.onboarding_widget.check_off("quick_switch")
-        recent = load_recent_files(validate=True)
-        pinned = load_pinned_files(validate=True)
-        open_tabs = []
-        for i in range(self.tabs.count()):
-            editor = self.tabs.widget(i)
-            path = getattr(editor, "file_path", None)
-            if path: open_tabs.append(path)
-            
-        switcher = QuickSwitcher(recent, pinned, open_tabs, self)
-        switcher.file_selected.connect(self.open_recent_file)
-        switcher.exec()
+        self.open_vault_search()
 
     def _new_session(self):
         """Clear session state and close all tabs."""
@@ -1817,6 +1807,8 @@ class MainWindow(QMainWindow):
         from vault_search import VaultSearchDialog
         dlg = VaultSearchDialog(active_vault, all_vaults, self)
         dlg.file_selected.connect(self.open_file)
+        if hasattr(dlg, 'url_selected'):
+            dlg.url_selected.connect(self.open_web_tab)
         dlg.exec()
 
     def current_editor(self):
