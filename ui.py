@@ -609,6 +609,11 @@ class MainWindow(QMainWindow):
         save_btn.triggered.connect(self.save_file)
         self.toolbar.register_action("save", save_btn)
         
+        search_btn = QAction(icon("search", size=ICON_SIZE_TOOLBAR), "Search", self)
+        search_btn.setToolTip("Global Search (Ctrl+Q)")
+        search_btn.triggered.connect(self.open_vault_search)
+        self.toolbar.register_action("search", search_btn)
+        
         tts_btn = QAction(icon("volume-2", size=ICON_SIZE_TOOLBAR), "Read Aloud", self)
         tts_btn.setToolTip("Read Aloud / Toggle TTS (F9)")
         tts_btn.setShortcut("F9")
@@ -1220,7 +1225,13 @@ class MainWindow(QMainWindow):
         
         main_layout.addWidget(container)
         main_layout.addStretch()
-        return w
+        
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.NoFrame)
+        scroll.setWidget(w)
+        scroll.is_welcome_tab = True
+        return scroll
 
     def _replace_welcome_if_present(self):
         if self.tabs.count() == 1:
