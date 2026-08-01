@@ -1341,6 +1341,12 @@ class MainWindow(QMainWindow):
                     self.tts_bar.stop()
                 except Exception:
                     pass
+            for thread_attr in ("_update_thread", "_manual_update_thread"):
+                if hasattr(self, thread_attr):
+                    thread = getattr(self, thread_attr)
+                    if thread and thread.isRunning():
+                        thread.terminate()
+                        thread.wait(500)
             event.accept()
 
     def save_all_modified(self):

@@ -177,3 +177,9 @@ class UpdateDialog(QDialog):
         from PySide6.QtGui import QDesktopServices
         QDesktopServices.openUrl(QUrl(self.download_url))
         self.reject()
+
+    def reject(self):
+        if hasattr(self, "downloader") and self.downloader and self.downloader.isRunning():
+            self.downloader.terminate()
+            self.downloader.wait(500)
+        super().reject()
