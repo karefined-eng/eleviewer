@@ -4,7 +4,7 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Signal, Qt
 from icons import icon
-from theme import BRAND_PANEL_2, BRAND_BORDER, BRAND_PRIMARY, BRAND_PANEL, BRAND_MUTED
+from theme import BRAND_PANEL_2, BRAND_BORDER, BRAND_PRIMARY, BRAND_PANEL, BRAND_MUTED, get_active_palette
 
 class FindReplaceWidget(QWidget):
     find_next_requested = Signal(str, bool, bool, bool)  # text, match_case, whole_word, forward
@@ -14,26 +14,27 @@ class FindReplaceWidget(QWidget):
 
     def __init__(self, parent=None):
         super().__init__(parent)
+        p = get_active_palette()
         self.setStyleSheet(f"""
             QWidget {{
-                background: {BRAND_PANEL_2};
-                color: {BRAND_PRIMARY};
-                border-top: 1px solid {BRAND_BORDER};
+                background: {p['BRAND_PANEL_2']};
+                color: {p['BRAND_PRIMARY']};
+                border-top: 1px solid {p['BRAND_BORDER']};
             }}
             QLineEdit {{
-                background: {BRAND_PANEL};
-                border: 1px solid {BRAND_BORDER};
+                background: {p['BRAND_PANEL']};
+                border: 1px solid {p['BRAND_BORDER']};
                 padding: 4px;
-                color: {BRAND_PRIMARY};
+                color: {p['BRAND_PRIMARY']};
             }}
             QPushButton, QToolButton {{
-                background: {BRAND_PANEL_2};
-                border: 1px solid {BRAND_BORDER};
+                background: {p['BRAND_PANEL_2']};
+                border: 1px solid {p['BRAND_BORDER']};
                 padding: 4px 8px;
                 border-radius: 4px;
             }}
             QPushButton:hover, QToolButton:hover {{
-                background: {BRAND_MUTED};
+                background: {p['BRAND_MUTED']};
             }}
         """)
 

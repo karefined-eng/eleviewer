@@ -25,7 +25,7 @@ from icons import icon
 from theme import (
     editor_stylesheet, compact_toolbar_stylesheet, ICON_SIZE_COMPACT,
     BRAND_BACKGROUND, BRAND_PRIMARY, BRAND_BORDER, BRAND_PANEL,
-    BRAND_MUTED_FG, get_brand_accent,
+    BRAND_MUTED_FG, get_brand_accent, get_active_palette,
 )
 
 
@@ -285,16 +285,14 @@ class DocxViewer(QWidget):
         # Extract tables
         for table in doc.tables:
             table_html = ['<table style="border-collapse:collapse; width:100%; margin:12px 0;">']
-            for row_idx, row in enumerate(table.rows):
-                table_html.append("<tr>")
-                cell_tag = "th" if row_idx == 0 else "td"
-                for cell in row.cells:
-                    cell_text = cell.text.strip()
-                    table_html.append(
-                        f'<{cell_tag} style="border:1px solid {BRAND_BORDER}; '
-                        f'padding:6px 10px;">{cell_text}</{cell_tag}>'
-                    )
-                table_html.append("</tr>")
+            p = get_active_palette()
+            for i, row in enumerate(table.rows):
+                cell_tag = "th" if i == 0 else "td"
+                row_html = [
+                    f'<{cell_tag} style="border:1px solid {p["BRAND_BORDER"]}; padding: 6px;">{cell.text}</{cell_tag}>'
+                    for cell in row.cells
+                ]
+                table_html.append(f"<tr>{''.join(row_html)}</tr>")
             table_html.append("</table>")
             html_parts.append("".join(table_html))
 
@@ -302,26 +300,27 @@ class DocxViewer(QWidget):
 
     def _wrap_html(self, body_html):
         """Wrap raw HTML content in a styled document shell matching our dark theme."""
+        p = get_active_palette()
         accent = get_brand_accent()
         return f"""
         <html><head><style>
             body {{
-                background: {BRAND_BACKGROUND};
-                color: {BRAND_PRIMARY};
+                background: {p['BRAND_BACKGROUND']};
+                color: {p['BRAND_PRIMARY']};
                 font-family: 'Segoe UI', sans-serif;
                 font-size: 15px;
                 line-height: 1.7;
                 padding: 16px;
                 margin: 0;
             }}
-            h1, h2, h3, h4 {{ color: {BRAND_PRIMARY}; margin-top: 1.2em; }}
-            h1 {{ font-size: 22px; border-bottom: 1px solid {BRAND_BORDER}; padding-bottom: 8px; }}
+            h1, h2, h3, h4 {{ color: {p['BRAND_PRIMARY']}; margin-top: 1.2em; }}
+            h1 {{ font-size: 22px; border-bottom: 1px solid {p['BRAND_BORDER']}; padding-bottom: 8px; }}
             h2 {{ font-size: 18px; }}
             h3 {{ font-size: 16px; }}
             a {{ color: {accent}; }}
             table {{ border-collapse: collapse; width: 100%; margin: 12px 0; }}
-            th {{ background: {BRAND_PANEL}; font-weight: bold; }}
-            td, th {{ border: 1px solid {BRAND_BORDER}; padding: 6px 10px; }}
+            th {{ background: {p['BRAND_PANEL']}; font-weight: bold; }}
+            td, th {{ border: 1px solid {p['BRAND_BORDER']}; padding: 6px 10px; }}
             img {{ max-width: 100%; border-radius: 4px; margin: 8px 0; }}
             p {{ margin: 0.5em 0; }}
         </style></head><body>{body_html}</body></html>

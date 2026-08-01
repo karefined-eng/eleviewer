@@ -20,7 +20,7 @@ from PySide6.QtGui import QFont, QColor, QIcon, QTextDocument, QShortcut, QKeySe
 from theme import (
     BRAND_PANEL, BRAND_PRIMARY, BRAND_MUTED_FG, get_brand_accent,
     BRAND_BORDER, BRAND_BACKGROUND, compact_toolbar_stylesheet,
-    ICON_SIZE_COMPACT, resolve_markdown_icon_size, markdown_editor_stylesheet
+    ICON_SIZE_COMPACT, resolve_markdown_icon_size, markdown_editor_stylesheet, get_active_palette
 )
 from icons import icon
 from syntax_highlighter import HtmlHighlighter
@@ -99,10 +99,11 @@ class HtmlViewer(QWidget):
         layout.addLayout(tb_layout)
 
         # ── Splitter Area ─────────────────────────────────────────────────
+        p = get_active_palette()
         self.splitter = QSplitter(Qt.Horizontal, self)
         self.splitter.setStyleSheet(f"""
             QSplitter::handle {{
-                background-color: {BRAND_BORDER};
+                background-color: {p['BRAND_BORDER']};
                 width: 2px;
             }}
         """)
@@ -119,7 +120,7 @@ class HtmlViewer(QWidget):
         else:
             self.viewer = QTextBrowser()
             self.viewer.setOpenExternalLinks(True)
-            self.viewer.setStyleSheet(f"background: {BRAND_BACKGROUND}; color: {BRAND_PRIMARY}; border: none; padding: 16px;")
+            self.viewer.setStyleSheet(f"background: {p['BRAND_BACKGROUND']}; color: {p['BRAND_PRIMARY']}; border: none; padding: 16px;")
 
         self.splitter.addWidget(self.editor)
         self.splitter.addWidget(self.viewer)

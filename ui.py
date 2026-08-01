@@ -1018,8 +1018,8 @@ class MainWindow(QMainWindow):
         w = QWidget()
         w.is_welcome_tab = True
         main_layout = QVBoxLayout(w)
-        main_layout.setAlignment(Qt.AlignTop | Qt.AlignHCenter)
-        main_layout.setContentsMargins(0, 80, 0, 40)
+        main_layout.setAlignment(Qt.AlignCenter)
+        main_layout.setContentsMargins(0, 40, 0, 40)
         
         # Max-width container
         container = QWidget()
@@ -1107,7 +1107,7 @@ class MainWindow(QMainWindow):
                 item = QListWidgetItem(icon("book-open", size=16, color=p['BRAND_PRIMARY']), "  " + os.path.basename(path))
                 item.setData(Qt.UserRole, path)
                 recent_list.addItem(item)
-        recent_list.setFixedHeight(min(45 * max(1, len(recent_files)), 150))
+        recent_list.setMinimumHeight(100)
         recent_list.itemClicked.connect(lambda it: self._open_vault_file(it.data(Qt.UserRole)) if it.data(Qt.UserRole) else None)
         left_layout.addWidget(recent_list)
         
@@ -1128,7 +1128,7 @@ class MainWindow(QMainWindow):
                 item = QListWidgetItem(icon("bookmark", size=16, color=p['BRAND_PRIMARY']), "  " + b.get("label", "Bookmark"))
                 item.setData(Qt.UserRole, b)
                 bm_list.addItem(item)
-        bm_list.setFixedHeight(min(45 * max(1, len(bms)), 150))
+        bm_list.setMinimumHeight(100)
         
         def _handle_bm(it):
             b = it.data(Qt.UserRole)
@@ -1493,6 +1493,7 @@ class MainWindow(QMainWindow):
         self._add_menu_action(menu, "Settings...", self.open_settings, "Alt+S")
 
         help_menu = menu.addMenu("Help")
+        self._add_menu_action(help_menu, "Welcome Page", self.open_welcome_page)
         self._add_menu_action(help_menu, "Getting Started Guide", self.open_getting_started, "F1")
         self._add_menu_action(help_menu, "Check for Updates...", self.check_for_updates_manual)
         help_menu.addSeparator()
@@ -1500,6 +1501,15 @@ class MainWindow(QMainWindow):
         self._add_menu_action(help_menu, "Tell us what you think 💭", self.open_review_page)
 
         self.update_menus()
+
+    def open_welcome_page(self):
+        for i in range(self.tabs.count()):
+            widget = self.tabs.widget(i)
+            if getattr(widget, "is_welcome_tab", False):
+                self.tabs.setCurrentIndex(i)
+                return
+        self.tabs.addTab(self._create_welcome_widget(), "Welcome")
+        self.tabs.setCurrentIndex(self.tabs.count() - 1)
 
     # FIX: WA_DeleteOnClose=True ensures dialog is freed on close
     def open_settings(self):

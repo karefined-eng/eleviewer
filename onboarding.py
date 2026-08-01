@@ -2,7 +2,7 @@ from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QFrame, QSpacerItem, QSizePolicy
 )
 from PySide6.QtCore import Qt, Signal
-from theme import BRAND_BACKGROUND, BRAND_PANEL, BRAND_BORDER, BRAND_PRIMARY, get_brand_accent
+from theme import BRAND_BACKGROUND, BRAND_PANEL, BRAND_BORDER, BRAND_PRIMARY, get_brand_accent, get_active_palette
 from settings import load_settings, save_settings
 from icons import icon
 
@@ -33,8 +33,9 @@ class ChecklistItem(QWidget):
         layout.addLayout(text_layout, 1)
         
         if shortcut_text:
+            p = get_active_palette()
             self.shortcut_lbl = QLabel(shortcut_text)
-            self.shortcut_lbl.setStyleSheet(f"background: {BRAND_BACKGROUND}; padding: 4px 8px; border-radius: 4px; font-family: monospace;")
+            self.shortcut_lbl.setStyleSheet(f"background: {p['BRAND_BACKGROUND']}; padding: 4px 8px; border-radius: 4px; font-family: monospace;")
             layout.addWidget(self.shortcut_lbl, 0, Qt.AlignVCenter)
 
     def mark_done(self):
@@ -50,12 +51,13 @@ class InteractiveWelcomeWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         
+        p = get_active_palette()
         accent = get_brand_accent()
         self.setStyleSheet(f"""
-            QWidget {{ background: {BRAND_BACKGROUND}; color: {BRAND_PRIMARY}; }}
-            QFrame#panel {{ background: {BRAND_PANEL}; border: 1px solid {BRAND_BORDER}; border-radius: 8px; }}
+            QWidget {{ background: {p['BRAND_BACKGROUND']}; color: {p['BRAND_PRIMARY']}; }}
+            QFrame#panel {{ background: {p['BRAND_PANEL']}; border: 1px solid {p['BRAND_BORDER']}; border-radius: 8px; }}
             QLabel#title {{ font-size: 28px; font-weight: bold; color: {accent}; margin-bottom: 5px; }}
-            QPushButton#primary {{ background: {accent}; color: {BRAND_BACKGROUND}; font-weight: bold; border-radius: 6px; padding: 10px 20px; }}
+            QPushButton#primary {{ background: {accent}; color: {p['BRAND_BACKGROUND']}; font-weight: bold; border-radius: 6px; padding: 10px 20px; }}
             QPushButton#primary:hover {{ opacity: 0.8; }}
         """)
         

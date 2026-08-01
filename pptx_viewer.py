@@ -309,8 +309,9 @@ class PptxViewer(QWidget):
                 self.viewer.find(query)
 
     def _render_continuous_html(self):
+        p = get_active_palette()
         accent = get_brand_accent()
-        html = f"<div style='background: {BRAND_BACKGROUND}; padding-bottom: 40px;'>"
+        html = f"<div style='background: {p['BRAND_BACKGROUND']}; padding-bottom: 40px;'>"
         
         for index, slide_data in enumerate(self.slides):
             raw_content = slide_data['content'] or ''
@@ -319,23 +320,23 @@ class PptxViewer(QWidget):
             # Use anchor for scrolling
             html += f"<a name='slide_{index}'></a>"
             html += f"""
-            <div style="max-width: 800px; margin: 30px auto; padding: 40px; background: {BRAND_PANEL}; border: 1px solid {BRAND_BORDER}; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">
+            <div style="max-width: 800px; margin: 30px auto; padding: 40px; background: {p['BRAND_PANEL']}; border: 1px solid {p['BRAND_BORDER']}; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">
                 <div style="color: {accent}; font-size: 0.8em; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">
                     SLIDE {index + 1} OF {self.total_slides}
                 </div>
-                <h1 style="color: {BRAND_PRIMARY}; font-size: 1.5em; margin-top: 0; margin-bottom: 20px; border-bottom: 1px solid {BRAND_BORDER}; padding-bottom: 10px;">
+                <h1 style="color: {p['BRAND_PRIMARY']}; font-size: 1.5em; margin-top: 0; margin-bottom: 20px; border-bottom: 1px solid {p['BRAND_BORDER']}; padding-bottom: 10px;">
                     {slide_data['title']}
                 </h1>
-                <div style="font-size: 1.1em; line-height: 1.7; color: {BRAND_PRIMARY};">
+                <div style="font-size: 1.1em; line-height: 1.7; color: {p['BRAND_PRIMARY']};">
                     {content_html}
                 </div>
             """
             
             if slide_data.get("notes"):
                 html += f"""
-                <div style="margin-top: 30px; padding: 12px; background: {BRAND_PANEL_2}; border-left: 3px solid {accent}; border-radius: 4px;">
-                    <div style="color: {BRAND_MUTED_FG}; font-size: 0.8em; font-weight: bold; margin-bottom: 4px;">SPEAKER NOTES</div>
-                    <div style="font-size: 0.9em; color: {BRAND_MUTED_FG};">{slide_data['notes']}</div>
+                <div style="margin-top: 30px; padding: 12px; background: {p['BRAND_PANEL_2']}; border-left: 3px solid {accent}; border-radius: 4px;">
+                    <div style="color: {p['BRAND_MUTED_FG']}; font-size: 0.8em; font-weight: bold; margin-bottom: 4px;">SPEAKER NOTES</div>
+                    <div style="font-size: 0.9em; color: {p['BRAND_MUTED_FG']};">{slide_data['notes']}</div>
                 </div>
                 """
             html += "</div>"

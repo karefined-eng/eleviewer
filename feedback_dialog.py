@@ -7,7 +7,7 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import QThread, Signal
 import urllib.request
-from theme import BRAND_BACKGROUND, BRAND_PRIMARY, BRAND_PANEL, BRAND_BORDER, get_brand_accent
+from theme import BRAND_BACKGROUND, BRAND_PRIMARY, BRAND_PANEL, BRAND_BORDER, get_brand_accent, get_active_palette
 from paths import strip_pii
 
 APP_VERSION = "1.3.0"
@@ -73,17 +73,18 @@ class FeedbackDialog(QDialog):
         self.resize(500, 400)
         self._submit_thread = None
         
+        p = get_active_palette()
         accent = get_brand_accent()
         self.setStyleSheet(f"""
-            QDialog {{ background: {BRAND_BACKGROUND}; color: {BRAND_PRIMARY}; }}
-            QLabel {{ color: {BRAND_PRIMARY}; }}
-            QComboBox, QTextEdit {{ background: {BRAND_PANEL}; color: {BRAND_PRIMARY}; border: 1px solid {BRAND_BORDER}; padding: 6px; selection-background-color: {accent}; }}
-            QComboBox QAbstractItemView {{ background: {BRAND_PANEL}; color: {BRAND_PRIMARY}; border: 1px solid {BRAND_BORDER}; selection-background-color: {accent}; selection-color: {BRAND_BACKGROUND}; outline: none; }}
-            QComboBox::item {{ color: {BRAND_PRIMARY}; }}
-            QComboBox::item:selected {{ color: {BRAND_BACKGROUND}; background-color: {accent}; }}
-            QPushButton {{ background: {BRAND_PANEL}; color: {BRAND_PRIMARY}; border: 1px solid {BRAND_BORDER}; padding: 6px 12px; border-radius: 4px; }}
-            QPushButton:hover {{ background: {accent}; color: {BRAND_BACKGROUND}; }}
-            QPushButton#submitBtn {{ background: {accent}; color: {BRAND_BACKGROUND}; font-weight: bold; }}
+            QDialog {{ background: {p['BRAND_BACKGROUND']}; color: {p['BRAND_PRIMARY']}; }}
+            QLabel {{ color: {p['BRAND_PRIMARY']}; }}
+            QComboBox, QTextEdit {{ background: {p['BRAND_PANEL']}; color: {p['BRAND_PRIMARY']}; border: 1px solid {p['BRAND_BORDER']}; padding: 6px; selection-background-color: {accent}; }}
+            QComboBox QAbstractItemView {{ background: {p['BRAND_PANEL']}; color: {p['BRAND_PRIMARY']}; border: 1px solid {p['BRAND_BORDER']}; selection-background-color: {accent}; selection-color: {p['BRAND_BACKGROUND']}; outline: none; }}
+            QComboBox::item {{ color: {p['BRAND_PRIMARY']}; }}
+            QComboBox::item:selected {{ color: {p['BRAND_BACKGROUND']}; background-color: {accent}; }}
+            QPushButton {{ background: {p['BRAND_PANEL']}; color: {p['BRAND_PRIMARY']}; border: 1px solid {p['BRAND_BORDER']}; padding: 6px 12px; border-radius: 4px; }}
+            QPushButton:hover {{ background: {accent}; color: {p['BRAND_BACKGROUND']}; }}
+            QPushButton#submitBtn {{ background: {accent}; color: {p['BRAND_BACKGROUND']}; font-weight: bold; }}
             QPushButton#submitBtn:hover {{ opacity: 0.8; }}
         """)
         

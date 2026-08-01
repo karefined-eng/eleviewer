@@ -72,10 +72,10 @@ jobs:
 
       - name: Azure Trusted Signing (SmartScreen Bypass)
         uses: azure/trusted-signing-action@v0.5.0
+        env:
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
         with:
-          azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          azure-client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          azure-client-secret: ${{ secrets.AZURE_CLIENT_SECRET }}
           endpoint: https://eus.codesigning.azure.net/
           code-signing-account-name: karefined_signing
           certificate-profile-name: EleViewerProfile

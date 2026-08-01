@@ -198,10 +198,11 @@ class MarkdownViewer(QWidget):
             self._preview_filter = PreviewEventFilter(self)
             self.viewer.viewport().installEventFilter(self._preview_filter)
 
+        p = get_active_palette()
         self.simple_editor = QPlainTextEdit()
         self.simple_editor.setStyleSheet(f"""
             QPlainTextEdit {{
-                background: {BRAND_PANEL};
+                background: {p['BRAND_PANEL']};
                 padding: 16px;
                 border: none;
             }}
@@ -421,7 +422,11 @@ class MarkdownViewer(QWidget):
         self.viewer.setHtml(self._render_markdown(text))
 
     def reload_theme(self):
-        from theme import get_active_palette, markdown_editor_stylesheet, markdown_preview_stylesheet, compact_toolbar_stylesheet
+        from theme import (
+    BRAND_PANEL, BRAND_PRIMARY, BRAND_BORDER, BRAND_BACKGROUND, BRAND_PANEL_2, BRAND_MUTED,
+    markdown_editor_stylesheet, markdown_preview_stylesheet,
+    compact_toolbar_stylesheet, ICON_SIZE_COMPACT, get_active_palette
+)
         from PySide6.QtGui import QPalette, QColor, QFont
         p = get_active_palette()
         

@@ -242,10 +242,15 @@ class WebPanel(QWidget):
         self.btn_expand.setToolTip("Toggle Web Focus")
         self.btn_expand.clicked.connect(self.expand_requested.emit)
 
-        self.btn_bookmark = None
+        self.btn_bookmark = QToolButton()
+        self.btn_bookmark.setIconSize(icon_qsize)
+        self.btn_bookmark.setIcon(icon("bookmark", size=icon_sz))
+        self.btn_bookmark.setToolTip("Bookmark Current Page (Ctrl+D)")
+        self.btn_bookmark.clicked.connect(self._bookmark_current)
+
         self.btn_history = None
 
-        for btn in (self.btn_back, self.btn_forward, self.btn_refresh, self.btn_add, self.btn_expand):
+        for btn in (self.btn_back, self.btn_forward, self.btn_refresh, self.btn_add, self.btn_expand, self.btn_bookmark):
             btn.setStyleSheet(compact_toolbar_stylesheet())
             btn.setAutoRaise(True)
 
@@ -253,6 +258,7 @@ class WebPanel(QWidget):
         nav.addWidget(self.btn_forward)
         nav.addWidget(self.btn_refresh)
         nav.addWidget(self.url_bar, stretch=1)
+        nav.addWidget(self.btn_bookmark)
         nav.addWidget(self.btn_add)
         nav.addWidget(self.btn_expand)
 
