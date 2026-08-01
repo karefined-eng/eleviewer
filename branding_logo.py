@@ -3,7 +3,7 @@
 from PySide6.QtGui import QIcon, QPixmap, QPainter, QColor
 from PySide6.QtCore import Qt, QRect, QRectF
 
-from theme import BRAND_PANEL, BRAND_PRIMARY, get_brand_accent
+from theme import get_brand_accent, get_active_palette
 
 
 def create_eleviewer_icon(size: int = 32) -> QIcon:
@@ -14,8 +14,9 @@ def create_eleviewer_icon(size: int = 32) -> QIcon:
     - Middle bar: accent blue (#6cb6ff)
     - Bottom bar: white (#f2f2f0)
     """
+    p = get_active_palette()
     pixmap = QPixmap(size, size)
-    pixmap.fill(QColor(BRAND_PANEL))
+    pixmap.fill(QColor(p['BRAND_PANEL']))
 
     painter = QPainter(pixmap)
     painter.setRenderHint(QPainter.RenderHint.Antialiasing)
@@ -38,7 +39,7 @@ def create_eleviewer_icon(size: int = 32) -> QIcon:
 
     # Top bar (white)
     painter.setPen(Qt.NoPen)
-    painter.setBrush(QColor(BRAND_PRIMARY))
+    painter.setBrush(QColor(p['BRAND_PRIMARY']))
     painter.drawRoundedRect(
         QRectF(scaled(9), scaled(9), scaled(14), scaled(3)),
         scaled(1.5), scaled(1.5)
@@ -52,7 +53,7 @@ def create_eleviewer_icon(size: int = 32) -> QIcon:
     )
 
     # Bottom bar (white)
-    painter.setBrush(QColor(BRAND_PRIMARY))
+    painter.setBrush(QColor(p['BRAND_PRIMARY']))
     painter.drawRoundedRect(
         QRectF(scaled(9), scaled(20), scaled(14), scaled(3)),
         scaled(1.5), scaled(1.5)

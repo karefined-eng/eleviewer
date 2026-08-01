@@ -757,6 +757,11 @@ class MainWindow(QMainWindow):
             if idx >= 0:
                 self.tabs.removeTab(idx)
 
+    def open_whats_new(self):
+        from whats_new import WhatsNewDialog
+        dlg = WhatsNewDialog(self, APP_VERSION)
+        dlg.exec()
+
     def toggle_vault_panel(self):
         is_visible = not self.vault_panel.isVisible()
         self.vault_panel.setVisible(is_visible)

@@ -95,7 +95,8 @@ class MarkdownViewer(QWidget):
 
         hint_text = "Double-click to edit source · Click 📖 to preview" if self.is_html else "Double-click to edit · Triple-click for syntax"
         self.hint = QLabel(hint_text)
-        self.hint.setStyleSheet(f"color: {BRAND_MUTED_FG}; font-size: 11px;")
+        p = get_active_palette()
+        self.hint.setStyleSheet(f"color: {p['BRAND_MUTED_FG']}; font-size: 11px;")
         toolbar.addWidget(self.hint)
 
         self.formatting_widget = QWidget()

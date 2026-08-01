@@ -107,11 +107,12 @@ class QuickSwitcher(QDialog):
                 ("🕐 Recent", [f for f in files if f in self.recent_files and f not in self.open_tabs and f not in self.pinned_files])
             ]
             
+            p = get_active_palette()
             for header, group_files in groups:
                 if not group_files: continue
                 h_item = QListWidgetItem(header)
                 h_item.setFlags(h_item.flags() & ~Qt.ItemIsSelectable)
-                h_item.setForeground(QColor(BRAND_MUTED_FG))
+                h_item.setForeground(QColor(p['BRAND_MUTED_FG']))
                 self.file_list.addItem(h_item)
                 
                 for f in group_files:

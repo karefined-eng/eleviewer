@@ -46,13 +46,13 @@ class HtmlViewer(QWidget):
         self._mode = "split"  # "preview", "syntax", "split"
         self._icon_size = resolve_markdown_icon_size()
 
-        self._setup_ui()
-
         # 300ms debounce timer for live rendering without typing lag or flickering
         self._debounce_timer = QTimer(self)
         self._debounce_timer.setSingleShot(True)
         self._debounce_timer.setInterval(300)
         self._debounce_timer.timeout.connect(self._update_live_preview)
+
+        self._setup_ui()
 
         if content is not None:
             self.setPlainText(content)
