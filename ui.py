@@ -273,6 +273,11 @@ class MainWindow(QMainWindow):
         self.setStyleSheet(main_window_stylesheet())
         self._setup_status_bar()
 
+        from PySide6.QtWidgets import QApplication
+        app = QApplication.instance()
+        if app:
+            app.aboutToQuit.connect(self._final_thread_cleanup)
+
         self._build_layout()
         self._build_toolbar()
         self.create_menu()
@@ -1402,11 +1407,6 @@ class MainWindow(QMainWindow):
                         attr.wait()
                 except Exception:
                     pass
-            # Connect app quit signal for final thread cleanup
-        from PySide6.QtWidgets import QApplication
-        app = QApplication.instance()
-        if app:
-            app.aboutToQuit.connect(self._final_thread_cleanup)
 
     def _final_thread_cleanup(self):
         """Terminate any remaining QThreads to avoid "QThread destroyed while running" crashes.
