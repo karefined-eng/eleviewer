@@ -27,7 +27,7 @@ from quick_switcher import QuickSwitcher
 from settings import load_settings, save_settings, DEFAULT_SETTINGS
 from theme import (
     main_window_stylesheet, ICON_SIZE_TOOLBAR, ICON_SIZE_COMPACT,
-    BRAND_PRIMARY, BRAND_PANEL_2, compact_toolbar_stylesheet
+    compact_toolbar_stylesheet
 )
 from save_utils import atomic_write
 from icons import icon
@@ -233,6 +233,23 @@ class DraggableToolBar(QToolBar):
             painter.end()
 
 
+class _WebPanelDockShim:
+    def __init__(self, web_panel):
+        self._web_panel = web_panel
+
+    def widget(self):
+        return self._web_panel
+
+    def isHidden(self):
+        return not self._web_panel.isVisible()
+
+    def isVisible(self):
+        return self._web_panel.isVisible()
+
+    def setVisible(self, visible):
+        self._web_panel.setVisible(visible)
+
+
 class MainWindow(QMainWindow):
 
     FILE_FILTER = (
@@ -246,7 +263,7 @@ class MainWindow(QMainWindow):
         self.autosaver = None
         self.closed_tabs = []
         self.vault_panel = None
-        self._web_dock = None
+        self.web_panel = None
         self.bookmarks_panel = None
         self.tts_engine = TtsEngine()
 
@@ -575,6 +592,10 @@ class MainWindow(QMainWindow):
         self.toolbar.setIconSize(QSize(ICON_SIZE_COMPACT, ICON_SIZE_COMPACT))
         self.toolbar.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
         self.addToolBar(self.toolbar)
+        
+        from settings import load_settings
+        settings_data = load_settings()
+        self.toolbar.setVisible(settings_data.get("toolbar_visible", True))
 
         new_file_action = QAction(icon("file-plus", size=ICON_SIZE_TOOLBAR), "New File", self)
         new_file_action.setToolTip("New File")
@@ -610,8 +631,10 @@ class MainWindow(QMainWindow):
         self.toolbar.register_action("save", save_btn)
         
         search_btn = QAction(icon("search", size=ICON_SIZE_TOOLBAR), "Search", self)
-        search_btn.setToolTip("Global Search (Ctrl+Q)")
-        search_btn.triggered.connect(self.open_vault_search)
+        search_btn.setToolTip("Global Search (Ctrl+Q / Ctrl+P)")
+        search_btn.setShortcut("Ctrl+Q")
+        search_btn.setShortcutContext(Qt.WidgetShortcut)
+        search_btn.triggered.connect(self.open_quick_switcher)
         self.toolbar.register_action("search", search_btn)
         
         tts_btn = QAction(icon("volume-2", size=ICON_SIZE_TOOLBAR), "Read Aloud", self)
@@ -753,6 +776,10 @@ class MainWindow(QMainWindow):
         from onboarding import InteractiveWelcomeWidget
         self.onboarding_widget = InteractiveWelcomeWidget(self)
         self.onboarding_widget.close_requested.connect(self._close_onboarding)
+        self.onboarding_widget.vault_requested.connect(self.toggle_vault_panel)
+        self.onboarding_widget.quick_switch_requested.connect(self.open_quick_switcher)
+        self.onboarding_widget.web_requested.connect(self.open_web_tab)
+        self.onboarding_widget.scratchpad_requested.connect(self.new_tab)
         idx = self.tabs.addTab(self.onboarding_widget, "Welcome")
         self.tabs.setCurrentIndex(idx)
         
@@ -842,10 +869,10 @@ class MainWindow(QMainWindow):
         if not path:
             return
         if str(path).lower().startswith(("http://", "https://", "file://")):
-            if not self._web_dock or not self._web_dock.isVisible():
+            if getattr(self, "web_panel", None) is None or not self.web_panel.isVisible():
                 self.toggle_web_panel()
-            if self._web_dock and self._web_dock.widget():
-                self._web_dock.widget().open_url_in_new_tab(path, bookmark.get("label", "Bookmarked Page"))
+            if getattr(self, "web_panel", None):
+                self.web_panel.open_url_in_new_tab(path, bookmark.get("label", "Bookmarked Page"))
             self.show_status_message(f"Opened web bookmark: {bookmark.get('label', '')}", 2000)
             return
         if not os.path.exists(path):
@@ -871,8 +898,8 @@ class MainWindow(QMainWindow):
     def bookmark_current_tab(self):
         from PySide6.QtWidgets import QApplication
         focus_w = QApplication.focusWidget()
-        if self._web_dock and self._web_dock.isVisible() and focus_w and (self._web_dock.isAncestorOf(focus_w) or focus_w == self._web_dock):
-            self._web_dock.widget()._bookmark_current()
+        if getattr(self, 'web_panel', None) and self.web_panel.isVisible() and focus_w and (self.web_panel.isAncestorOf(focus_w) or focus_w == self.web_panel):
+            self.web_panel._bookmark_current()
             return
         editor = self.current_editor()
         if not editor:
@@ -905,14 +932,14 @@ class MainWindow(QMainWindow):
             QDesktopServices.openUrl(QUrl("https://eleviewer.vercel.app/review"))
             return
 
-        if self._web_dock is None:
+        if getattr(self, 'web_panel', None) is None:
             self.open_web_tab()
             
-        if not self._web_dock.isVisible():
-            self._web_dock.setVisible(True)
+        if not self.web_panel.isVisible():
+            self.web_panel.setVisible(True)
             
         # Add the specific URL as a new tab in the web panel
-        self._web_dock.widget()._add_tab_widget("https://eleviewer.vercel.app/review", "Leave a Review")
+        self.web_panel.open_url_in_new_tab("https://eleviewer.vercel.app/review", "Leave a Review")
 
     def open_getting_started(self):
         from paths import BASE_DIR
@@ -1002,11 +1029,11 @@ class MainWindow(QMainWindow):
     def _on_push_to_browser(self, file_path, url_str):
         if not WEB_AVAILABLE:
             return
-        if self._web_dock is None:
+        if getattr(self, 'web_panel', None) is None:
             self.toggle_web_panel()
-        elif not self._web_dock.isVisible():
+        elif not self.web_panel.isVisible():
             self.toggle_web_panel()
-        web_panel = self._web_dock.widget()
+        web_panel = self.web_panel
         title = os.path.basename(file_path) if file_path else "Live Feed"
         web_panel.open_url_in_new_tab(url_str, title)
 
@@ -1083,7 +1110,7 @@ class MainWindow(QMainWindow):
         search_btn.clicked.connect(self.open_vault_search)
         c_layout.addWidget(search_btn)
         
-        # 3. Two Columns: Activity & Actions
+        # 3. Three Columns: Recent, Bookmarks, & Actions
         columns = QWidget()
         cols_layout = QHBoxLayout(columns)
         cols_layout.setSpacing(50)
@@ -1120,10 +1147,16 @@ class MainWindow(QMainWindow):
         recent_list.setMinimumHeight(100)
         recent_list.itemClicked.connect(lambda it: self._open_vault_file(it.data(Qt.UserRole)) if it.data(Qt.UserRole) else None)
         left_layout.addWidget(recent_list)
+        left_layout.addStretch()
+        
+        # MIDDLE: Bookmarks
+        mid_col = QWidget()
+        mid_layout = QVBoxLayout(mid_col)
+        mid_layout.setSpacing(12)
         
         bm_lbl = QLabel("BOOKMARKS")
-        bm_lbl.setStyleSheet(f"color: {p['BRAND_MUTED_FG']}; font-size: 12px; font-weight: bold; letter-spacing: 1px; margin-top: 15px;")
-        left_layout.addWidget(bm_lbl)
+        bm_lbl.setStyleSheet(f"color: {p['BRAND_MUTED_FG']}; font-size: 12px; font-weight: bold; letter-spacing: 1px;")
+        mid_layout.addWidget(bm_lbl)
         
         bm_list = QListWidget()
         bm_list.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
@@ -1147,8 +1180,8 @@ class MainWindow(QMainWindow):
                 ww = self.tabs.currentWidget()
                 if hasattr(ww, "go_to_bookmark"): ww.go_to_bookmark(b.get("page_number", 0), b.get("scroll_position_y", 0.0))
         bm_list.itemClicked.connect(_handle_bm)
-        left_layout.addWidget(bm_list)
-        left_layout.addStretch()
+        mid_layout.addWidget(bm_list)
+        mid_layout.addStretch()
         
         # RIGHT: Actions
         right_col = QWidget()
@@ -1220,6 +1253,7 @@ class MainWindow(QMainWindow):
         right_layout.addStretch()
         
         cols_layout.addWidget(left_col, stretch=1)
+        cols_layout.addWidget(mid_col, stretch=1)
         cols_layout.addWidget(right_col, stretch=1)
         c_layout.addWidget(columns)
         
@@ -1295,11 +1329,11 @@ class MainWindow(QMainWindow):
         
         if msg.clickedButton() == join_btn:
             if WEB_AVAILABLE:
-                if self._web_dock is None:
+                if getattr(self, 'web_panel', None) is None:
                     self.open_web_tab()
-                if not self._web_dock.isVisible():
-                    self._web_dock.setVisible(True)
-                self._web_dock.widget()._add_tab_widget("https://eleviewer.vercel.app/community", "Nightly Insiders")
+                if not self.web_panel.isVisible():
+                    self.web_panel.setVisible(True)
+                self.web_panel.open_url_in_new_tab("https://eleviewer.vercel.app/community", "Nightly Insiders")
             else:
                 from PySide6.QtGui import QDesktopServices
                 from PySide6.QtCore import QUrl
@@ -1343,8 +1377,8 @@ class MainWindow(QMainWindow):
             try:
                 from vault_indexer import _active_worker as vault_worker
                 if vault_worker and vault_worker.isRunning():
-                    vault_worker.cancel()
-                    vault_worker.wait(500)
+                    vault_worker.terminate()
+                    vault_worker.wait()
             except Exception:
                 pass
             if hasattr(self, "tts_bar") and self.tts_bar:
@@ -1352,13 +1386,56 @@ class MainWindow(QMainWindow):
                     self.tts_bar.stop()
                 except Exception:
                     pass
-            for thread_attr in ("_update_thread", "_manual_update_thread"):
-                if hasattr(self, thread_attr):
-                    thread = getattr(self, thread_attr)
-                    if thread and thread.isRunning():
-                        thread.terminate()
-                        thread.wait(500)
-            event.accept()
+            # Cleanup known workers (Omnibar, VaultSearch, etc.)
+            if hasattr(self, "omnibar") and hasattr(self.omnibar, "cleanup"):
+                try:
+                    self.omnibar.cleanup()
+                except Exception:
+                    pass
+            # Generic QThread attribute cleanup
+            from PySide6.QtCore import QThread
+            for attr_name in dir(self):
+                try:
+                    attr = getattr(self, attr_name)
+                    if isinstance(attr, QThread) and attr.isRunning():
+                        attr.terminate()
+                        attr.wait()
+                except Exception:
+                    pass
+            # Connect app quit signal for final thread cleanup
+        from PySide6.QtWidgets import QApplication
+        app = QApplication.instance()
+        if app:
+            app.aboutToQuit.connect(self._final_thread_cleanup)
+
+    def _final_thread_cleanup(self):
+        """Terminate any remaining QThreads to avoid "QThread destroyed while running" crashes.
+        This is a safety net for threads that might not have been cleaned up via closeEvent.
+        """
+        # Cleanup omnibar worker
+        if hasattr(self, "omnibar") and hasattr(self.omnibar, "_search_worker"):
+            worker = self.omnibar._search_worker
+            if worker and worker.isRunning():
+                worker.terminate()
+                worker.wait()
+        # Cleanup vault indexer active worker if present
+        try:
+            from vault_indexer import _active_worker as vault_worker
+            if vault_worker and vault_worker.isRunning():
+                vault_worker.terminate()
+                vault_worker.wait()
+        except Exception:
+            pass
+        # Generic cleanup for any QThread attributes on self
+        from PySide6.QtCore import QThread
+        for attr_name in dir(self):
+            try:
+                attr = getattr(self, attr_name)
+                if isinstance(attr, QThread) and attr.isRunning():
+                    attr.terminate()
+                    attr.wait()
+            except Exception:
+                pass
 
     def save_all_modified(self):
         for i in range(self.tabs.count()):
@@ -1472,6 +1549,7 @@ class MainWindow(QMainWindow):
 
     def create_menu(self):
         menu = self.menuBar()
+        menu.clear()
 
         file_menu = menu.addMenu("File")
         self._add_menu_action(file_menu, "New", self.new_tab, "Ctrl+N")
@@ -1492,6 +1570,9 @@ class MainWindow(QMainWindow):
         self._add_menu_action(edit_menu, "Find...", self.show_find, "Ctrl+F")
         self._add_menu_action(edit_menu, "Replace...", self.show_replace, "Ctrl+H")
         self._add_menu_action(edit_menu, "Search in Vault...", self.open_vault_search, "Ctrl+Shift+F")
+
+        view_menu = menu.addMenu("View")
+        self._add_menu_action(view_menu, "Toggle Main Toolbar", self.toggle_main_toolbar, "Ctrl+F1")
 
         vault_menu = menu.addMenu("Vault")
         vault_menu.addAction("Add Folder", self.add_vault)
@@ -1519,10 +1600,19 @@ class MainWindow(QMainWindow):
         self._add_menu_action(help_menu, "Getting Started Guide", self.open_getting_started, "F1")
         self._add_menu_action(help_menu, "Check for Updates...", self.check_for_updates_manual)
         help_menu.addSeparator()
-        self._add_menu_action(help_menu, "Submit Feedback...", self.open_feedback_dialog)
-        self._add_menu_action(help_menu, "Tell us what you think 💭", self.open_review_page)
+        help_menu.addAction("What's New", self.open_whats_new)
+        help_menu.addAction("Leave Feedback...", self.open_feedback_dialog)
+        help_menu.addSeparator()
 
         self.update_menus()
+
+    def toggle_main_toolbar(self):
+        from settings import load_settings, save_settings
+        is_visible = not self.toolbar.isVisible()
+        self.toolbar.setVisible(is_visible)
+        s = load_settings()
+        s["toolbar_visible"] = is_visible
+        save_settings(s)
 
     def open_welcome_page(self):
         for i in range(self.tabs.count()):
@@ -1688,8 +1778,8 @@ class MainWindow(QMainWindow):
     def close_current_tab(self):
         from PySide6.QtWidgets import QApplication
         focus_w = QApplication.focusWidget()
-        if self._web_dock and self._web_dock.isVisible() and focus_w and (self._web_dock.isAncestorOf(focus_w) or focus_w == self._web_dock):
-            web_panel = self._web_dock.widget()
+        if getattr(self, 'web_panel', None) and self.web_panel.isVisible() and focus_w and (self.web_panel.isAncestorOf(focus_w) or focus_w == self.web_panel):
+            web_panel = self.web_panel
             if web_panel and hasattr(web_panel, "tabs") and web_panel.tabs.count() > 0:
                 web_panel._close_tab(web_panel.tabs.currentIndex())
                 return
@@ -1743,7 +1833,13 @@ class MainWindow(QMainWindow):
             widget.deleteLater()
 
         if self.tabs.count() == 0:
-            self.new_tab()
+            from empty_state import EmptyStateWidget
+            empty_state = EmptyStateWidget(self)
+            empty_state.open_vault_requested.connect(self.add_vault)
+            empty_state.new_file_requested.connect(self.new_tab)
+            empty_state.is_welcome_tab = True
+            self.tabs.addTab(empty_state, "Home")
+            self.update_status_bar()
         else:
             self.update_status_bar()
 
@@ -1790,7 +1886,27 @@ class MainWindow(QMainWindow):
     def open_quick_switcher(self):
         if hasattr(self, "onboarding_widget"):
             self.onboarding_widget.check_off("quick_switch")
-        self.open_vault_search()
+        recent_files = load_recent_files(validate=True)
+        pinned_files = load_pinned_files(validate=True)
+        open_tabs = []
+
+        for tab_widget in (self.tabs, getattr(self, "tabs_right", None)):
+            if not tab_widget:
+                continue
+            for i in range(tab_widget.count()):
+                editor = tab_widget.widget(i)
+                path = getattr(editor, "file_path", None)
+                if path:
+                    open_tabs.append(path)
+
+        vaults = getattr(self.vault_panel, "_vault_paths", []) if hasattr(self, "vault_panel") else []
+
+        dialog = QuickSwitcher(recent_files, pinned_files, open_tabs, vaults, self)
+        dialog.file_selected.connect(self.open_recent_file)
+        dialog.url_selected.connect(self.open_web_tab_with_url)
+        dialog.finished.connect(lambda _: setattr(self, "_quick_switcher_dialog", None))
+        self._quick_switcher_dialog = dialog
+        dialog.exec()
 
     def _new_session(self):
         """Clear session state and close all tabs."""
@@ -1804,23 +1920,7 @@ class MainWindow(QMainWindow):
         self.show_status_message("Started new fresh session", 3000)
 
     def open_vault_search(self, active_vault=None):
-        if not active_vault or not isinstance(active_vault, str):
-            if hasattr(self, 'vault_panel') and self.vault_panel.vault_selector.currentData():
-                active_vault = self.vault_panel.vault_selector.currentData()
-            else:
-                active_vault = None
-                
-        all_vaults = load_settings().get("vault_paths", [])
-        if not all_vaults and not active_vault:
-            QMessageBox.information(self, "No Vaults", "You don't have any vaults opened.")
-            return
-            
-        from vault_search import VaultSearchDialog
-        dlg = VaultSearchDialog(active_vault, all_vaults, self)
-        dlg.file_selected.connect(self.open_file)
-        if hasattr(dlg, 'url_selected'):
-            dlg.url_selected.connect(self.open_web_tab)
-        dlg.exec()
+        self.open_quick_switcher()
 
     def current_editor(self):
         from PySide6.QtWidgets import QApplication
@@ -1885,10 +1985,10 @@ class MainWindow(QMainWindow):
             self.update_tab_title(editor)
             self.show_status_message(f"Saved {os.path.basename(path)}", 3000)
             self.update_status_bar()
-            if WEB_AVAILABLE and self._web_dock and self._web_dock.isVisible():
+            if WEB_AVAILABLE and getattr(self, 'web_panel', None) and self.web_panel.isVisible():
                 from PySide6.QtCore import QUrl
                 file_url = QUrl.fromLocalFile(os.path.abspath(path)).toString()
-                self._web_dock.widget().reload_url(file_url)
+                self.web_panel.reload_url(file_url)
             return True
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Failed to save file: {str(e)}")
@@ -2017,14 +2117,16 @@ class MainWindow(QMainWindow):
         if not WEB_AVAILABLE:
             QMessageBox.warning(self, "Missing Module", "QtWebEngine not installed.")
             return
-        if self._web_dock is not None:
-            self._web_dock.setVisible(not self._web_dock.isVisible())
+        if getattr(self, 'web_panel', None) is not None:
+            visible = not self.web_panel.isVisible()
+            self.web_panel.setVisible(visible)
+            if visible:
+                self.editor_splitter.setSizes([max(self.width() - 520, 400), 260, 260])
         else:
             self.open_web_tab()
 
     def open_web_tab(self):
-        from PySide6.QtWidgets import QDockWidget, QWidget, QLabel, QToolButton, QHBoxLayout, QMessageBox
-        from theme import get_active_palette, compact_toolbar_stylesheet
+        from PySide6.QtWidgets import QMessageBox
         global WEB_AVAILABLE
         if hasattr(self, "onboarding_widget"):
             self.onboarding_widget.check_off("web")
@@ -2032,15 +2134,12 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "Missing Module", "QtWebEngine not installed.")
             return
 
-        if self._web_dock is not None:
-            if not self._web_dock.isVisible():
-                self._web_dock.setVisible(True)
-            self._web_dock.widget().add_tab()
+        if getattr(self, 'web_panel', None) is not None:
+            if not self.web_panel.isVisible():
+                self.web_panel.setVisible(True)
+            self.web_panel.add_tab()
             return
 
-        # First time: create as a dockable side panel (matches site's
-        # "side-by-side" promise — the web panel is NOT a tab)
-        # Lazy-load Chromium only when Ctrl+T is pressed!
         try:
             from web_panel import WebPanel, WEB_AVAILABLE as _WEB_AVAILABLE
             WEB_AVAILABLE = _WEB_AVAILABLE
@@ -2049,93 +2148,32 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "Missing Module", "QtWebEngine not installed.")
             return
 
-        web_panel = WebPanel()
-        web_panel.expand_requested.connect(self.toggle_web_focus)
+        self.web_panel = WebPanel()
+        self._web_dock = _WebPanelDockShim(self.web_panel)
+        self.web_panel.expand_requested.connect(self.toggle_web_focus)
         
-        self._web_dock = QDockWidget("Web Browser", self)
-        self._web_dock.setWidget(web_panel)
-        self._web_dock.setMinimumWidth(480)
-        self._web_dock.setFeatures(
-            QDockWidget.DockWidgetClosable
-            | QDockWidget.DockWidgetMovable
-            | QDockWidget.DockWidgetFloatable
-        )
-        self.addDockWidget(Qt.RightDockWidgetArea, self._web_dock)
+        # URL bar has moved to WebPanel internally
+        self.editor_splitter.addWidget(self.web_panel)
+        w = self.width() // 2
+        self.editor_splitter.setSizes([max(w - 260, 400), 260, w])
+        self.web_panel.show()
 
     def toggle_web_focus(self):
         from icons import icon
-        from theme import get_active_palette, compact_toolbar_stylesheet
-        if self._web_dock and self._web_dock.isVisible():
-            if self.main_splitter.isVisible():
-                self.main_splitter.hide()
-                self._web_dock.widget().btn_expand.setIcon(icon("minimize-2", size=24))
-                self._web_dock.widget().btn_expand.setToolTip("Exit Web Focus")
+        if getattr(self, 'web_panel', None) and self.web_panel.isVisible():
+            if self.tabs.isVisible():
+                self.tabs.hide()
+                if getattr(self, 'vault_panel', None) and self.vault_panel.isVisible():
+                    self._vault_was_visible = True
+                    self.vault_panel.hide()
+                self.web_panel.btn_expand.setIcon(icon("minimize-2", size=24))
+                self.web_panel.btn_expand.setToolTip("Exit Web Focus")
             else:
-                self.main_splitter.show()
-                self._web_dock.widget().btn_expand.setIcon(icon("maximize-2", size=24))
-                self._web_dock.widget().btn_expand.setToolTip("Toggle Web Focus")
-        
-        # Auto-maximize if no editor tabs are open (ponytail)
-        if self.tabs.count() == 0:
-            self.editor_splitter.hide()
-
-        p = get_active_palette()
-        title_bar = QWidget()
-        title_bar.setStyleSheet(f"background: {p['BRAND_PANEL']}; border-bottom: 1px solid {p['BRAND_BORDER']};")
-        tb_layout = QHBoxLayout(title_bar)
-        tb_layout.setContentsMargins(10, 6, 10, 6)
-        
-        lbl_title = QLabel("Web Browser")
-        lbl_title.setStyleSheet(f"color: {p['BRAND_MUTED_FG']}; font-weight: bold; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;")
-        tb_layout.addWidget(lbl_title)
-        tb_layout.addStretch()
-
-        icon_sz = 26
-        icon_qsize = QSize(icon_sz, icon_sz)
-
-        btn_max = QToolButton()
-        btn_max.setIcon(icon("maximize", size=icon_sz))
-        btn_max.setIconSize(icon_qsize)
-        btn_max.setToolTip("Maximize Web Panel")
-        btn_max.setStyleSheet(compact_toolbar_stylesheet())
-        
-        btn_float = QToolButton()
-        btn_float.setIcon(icon("external-link", size=icon_sz))
-        btn_float.setIconSize(icon_qsize)
-        btn_float.setToolTip("Pop Out Web Panel")
-        btn_float.setStyleSheet(compact_toolbar_stylesheet())
-        
-        btn_close = QToolButton()
-        btn_close.setIcon(icon("x", size=icon_sz))
-        btn_close.setIconSize(icon_qsize)
-        btn_close.setToolTip("Close Web Panel")
-        btn_close.setStyleSheet(compact_toolbar_stylesheet())
-
-        tb_layout.addWidget(btn_max)
-        tb_layout.addWidget(btn_float)
-        tb_layout.addWidget(btn_close)
-
-        self._web_dock.setTitleBarWidget(title_bar)
-
-        # Maximize logic: hide the editor splitter so the dock takes full width
-        def _toggle_maximize():
-            if self.editor_splitter.isVisible():
-                self.editor_splitter.hide()
-                btn_max.setIcon(icon("minimize", size=icon_sz))
-                btn_max.setToolTip("Restore Web Panel")
-            else:
-                self.editor_splitter.show()
-                btn_max.setIcon(icon("maximize", size=icon_sz))
-                btn_max.setToolTip("Maximize Web Panel")
-                
-        btn_max.clicked.connect(_toggle_maximize)
-        
-        def _toggle_float():
-            self._web_dock.setFloating(not self._web_dock.isFloating())
-            
-        btn_float.clicked.connect(_toggle_float)
-        btn_close.clicked.connect(self._web_dock.hide)
-
+                self.tabs.show()
+                if getattr(self, '_vault_was_visible', False) and getattr(self, 'vault_panel', None):
+                    self.vault_panel.show()
+                self.web_panel.btn_expand.setIcon(icon("maximize-2", size=24))
+                self.web_panel.btn_expand.setToolTip("Toggle Web Focus")
     @Slot(QUrl)
     @Slot(str)
     def handle_url(self, url):
@@ -2149,10 +2187,12 @@ class MainWindow(QMainWindow):
 
     def open_web_tab_with_url(self, url, title=None):
         url_str = url.toString() if hasattr(url, "toString") else str(url)
-        if not self._web_dock or not self._web_dock.isVisible():
+        web_panel = getattr(self, 'web_panel', None)
+        if not web_panel or not web_panel.isVisible():
             self.toggle_web_panel()
-        if self._web_dock and self._web_dock.widget():
-            self._web_dock.widget().open_url_in_new_tab(url_str, title if isinstance(title, str) else url_str)
+            web_panel = getattr(self, 'web_panel', None)
+        if web_panel:
+            web_panel.open_url_in_new_tab(url_str, title if isinstance(title, str) else url_str)
 
     def _handle_file_url(self, url):
         url_str = url.toString() if hasattr(url, "toString") else str(url)

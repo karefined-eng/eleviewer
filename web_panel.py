@@ -28,14 +28,18 @@ def get_persistent_profile():
         settings_dict = load_settings()
         
         _web_profile = QWebEngineProfile("eleviewer_web_profile", QCoreApplication.instance())
+
+        storage_path = APP_DATA_DIR / "web_data"
+        cache_path = APP_DATA_DIR / "web_cache"
+        storage_path.mkdir(parents=True, exist_ok=True)
+        cache_path.mkdir(parents=True, exist_ok=True)
         
         if settings_dict.get("web_enable_adblock", True):
             _interceptor = AdBlockInterceptor(_web_profile)
             _web_profile.setUrlRequestInterceptor(_interceptor)
-            
-        storage_path = str(APP_DATA_DIR / "web_data")
-        _web_profile.setPersistentStoragePath(storage_path)
-        _web_profile.setCachePath(storage_path)
+
+        _web_profile.setPersistentStoragePath(str(storage_path))
+        _web_profile.setCachePath(str(cache_path))
         _web_profile.setPersistentCookiesPolicy(QWebEngineProfile.PersistentCookiesPolicy.ForcePersistentCookies)
         
         settings = _web_profile.settings()
@@ -170,12 +174,14 @@ from PySide6.QtGui import QKeySequence, QShortcut
 
 from icons import icon
 from settings import load_settings, save_settings, DEFAULT_WEB_TABS
-from theme import compact_toolbar_stylesheet, ICON_SIZE_COMPACT, get_active_palette
+from theme import compact_toolbar_stylesheet, ICON_SIZE_COMPACT, get_active_palette, get_brand_accent
 
 
 class WebPanel(QWidget):
     tabs_changed = Signal()
     expand_requested = Signal()
+    url_changed = Signal(str)
+    title_changed = Signal(str)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -186,31 +192,13 @@ class WebPanel(QWidget):
         layout.setSpacing(0)
 
         p = get_active_palette()
+        accent = get_brand_accent()
 
         nav = QHBoxLayout()
         nav.setContentsMargins(6, 4, 6, 4)
         nav.setSpacing(4)
         icon_sz = 20
         icon_qsize = QSize(icon_sz, icon_sz)
-
-        self.url_bar = QLineEdit()
-        self.url_bar.setPlaceholderText("Search or enter web URL...")
-        self.url_bar.returnPressed.connect(self._navigate_current)
-        from theme import get_brand_accent
-        accent = get_brand_accent()
-        self.url_bar.setStyleSheet(f"""
-            QLineEdit {{
-                background: {p['BRAND_PANEL']};
-                color: {p['BRAND_PRIMARY']};
-                border: 1px solid {p['BRAND_BORDER']};
-                border-radius: 6px;
-                padding: 4px 10px;
-                font-size: 13px;
-            }}
-            QLineEdit:focus {{
-                border: 1px solid {accent};
-            }}
-        """)
 
         self.btn_back = QToolButton()
         self.btn_back.setIconSize(icon_qsize)
@@ -257,7 +245,22 @@ class WebPanel(QWidget):
         nav.addWidget(self.btn_back)
         nav.addWidget(self.btn_forward)
         nav.addWidget(self.btn_refresh)
-        nav.addWidget(self.url_bar, stretch=1)
+        self.url_input = QLineEdit()
+        self.url_input.setPlaceholderText("Search or enter web address...")
+        self.url_input.setStyleSheet(f"""
+            QLineEdit {{
+                background: {p['BRAND_PANEL_2']};
+                color: {p['BRAND_PRIMARY']};
+                border: 1px solid {p['BRAND_BORDER']};
+                border-radius: 4px;
+                padding: 4px 8px;
+            }}
+            QLineEdit:focus {{
+                border: 1px solid {accent};
+            }}
+        """)
+        self.url_input.returnPressed.connect(self._on_url_entered)
+        nav.addWidget(self.url_input, 1)
         nav.addWidget(self.btn_bookmark)
         nav.addWidget(self.btn_add)
         nav.addWidget(self.btn_expand)
@@ -407,17 +410,44 @@ class WebPanel(QWidget):
         return w if WEB_AVAILABLE else None
 
     def _on_tab_changed(self, index):
+        view = self.tabs.widget(index)
+        if view and hasattr(self, 'url_input'):
+            self.url_input.setText(view.url().toString())
         view = self._current_view()
         if view:
-            self.url_bar.setText(view.url().toString())
+            self.url_changed.emit(view.url().toString())
+            self.title_changed.emit(view.title())
         self.persist_tabs()
 
+    def _on_url_entered(self):
+        url = self.url_input.text().strip()
+        if not url: return
+        if not url.startswith(("http://", "https://", "file://")):
+            if "." in url and " " not in url:
+                url = "https://" + url
+            else:
+                import urllib.parse
+                url = "https://duckduckgo.com/?q=" + urllib.parse.quote(url)
+        view = self.tabs.currentWidget()
+        if view:
+            view.setUrl(QUrl(url))
+
     def _on_url_changed(self, view, url):
-        if self.tabs.currentWidget() is view:
-            self.url_bar.setText(url.toString())
+        url_str = url.toString() if hasattr(url, "toString") else str(url)
+        if hasattr(self, 'url_changed'):
+            self.url_changed.emit(url_str)
+        if view == self.tabs.currentWidget() and hasattr(self, 'url_input'):
+            self.url_input.setText(url_str)
         idx = self.tabs.indexOf(view)
         if 0 <= idx < len(self._tabs_data):
-            self._tabs_data[idx]["url"] = url.toString()
+            self._tabs_data[idx]["url"] = url_str
+            
+        try:
+            from web_history import add_to_history
+            add_to_history(url_str, view.title())
+        except Exception as e:
+            pass
+            
         self.persist_tabs()
 
     def _on_title_changed(self, view, title):
@@ -427,14 +457,23 @@ class WebPanel(QWidget):
             self.tabs.setTabText(idx, short)
             if idx < len(self._tabs_data):
                 self._tabs_data[idx]["title"] = title
+                
+        if self.tabs.currentWidget() is view:
+            self.title_changed.emit(title)
+            
+        try:
+            from web_history import add_to_history
+            add_to_history(view.url().toString(), title)
+        except Exception as e:
+            pass
+            
         self.persist_tabs()
 
-    def _navigate_current(self):
+    def navigate_current(self, url):
         view = self._current_view()
         if not view:
             return
-        url = self.url_bar.text().strip()
-        if url and not url.startswith("http"):
+        if url and not url.startswith(("http://", "https://", "file://", "chrome://")):
             url = "https://" + url
         view.setUrl(QUrl(url))
 

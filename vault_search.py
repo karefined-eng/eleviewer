@@ -69,7 +69,8 @@ class VaultSearchWorker(QThread):
                     dirs.clear()
                     continue
 
-                dirs[:] = [d for d in dirs if not d.startswith(".")]
+                skip_dirs = {".venv", "venv", "node_modules", "__pycache__", "site-packages", ".git", "dist", "build", "target"}
+                dirs[:] = [d for d in dirs if not d.startswith(".") and d not in skip_dirs]
 
                 for f in files:
                     if self._is_cancelled or count >= 100:

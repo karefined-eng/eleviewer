@@ -10,7 +10,7 @@ from PySide6.QtCore import Signal, Qt, QSize
 
 from bookmark_manager import load_bookmarks, remove_bookmark, rename_bookmark
 from icons import icon
-from theme import compact_toolbar_stylesheet, BRAND_PANEL, BRAND_PRIMARY, BRAND_MUTED, BRAND_MUTED_FG, get_brand_accent, BRAND_BACKGROUND
+from theme import compact_toolbar_stylesheet, get_brand_accent
 
 
 class BookmarkItemWidget(QWidget):

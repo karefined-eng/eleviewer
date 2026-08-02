@@ -19,7 +19,7 @@ Opens & edits **DOCX, XLSX, PPTX, PDF, MD, TXT, CSV and HTML** — all in one wo
 
 ### 🔊 Reading & Study Tools
 - **Universal Text-to-Speech** — reads lectures, notes, Word docs, Markdown, CSV tables, HTML text, and PDFs aloud for hands-free studying (Toggle with `F9` or the toolbar button). Reads highlighted text selection or the full document.
-- **Hybrid Neural TTS** — automatically uses high-quality Microsoft Neural voices (`edge-tts`) when online, and seamlessly falls back to native Windows SAPI5 voices (`pyttsx3`) when offline. No setup required.
+- **Hybrid Neural TTS** — automatically uses high-quality Microsoft Neural voices (`edge-tts`) when online, and seamlessly falls back to native Windows SAPI5 voices (`pyttsx3`) when offline. Audio plays natively off-thread via Windows MCI (no `pygame` bloat).
 - **Persistent Bookmarks** — drop a bookmark anywhere in your documents (`Ctrl+D`), even in 400-page textbooks or lengthy notes, and jump back instantly.
 
 ### 🗂️ Organization & System Tray
@@ -136,12 +136,12 @@ Key directories and modules:
 - `draft_recovery.py`, `feedback_dialog.py` — Background `QThread` workers for auto-backup and feedback.
 - `session_manager.py`, `save_utils.py`, `settings.py` — Atomic writes, settings, and session scroll/zoom/page restore.
 - `release_hash.py` — Automated SHA-256 release manifest generator.
-- Test suites are archived in `OneDrive\Documents\EleViewer\tests\`.
+- Test suites run via `pytest` directly in the project root.
 - Data is stored in `%APPDATA%\EleViewer\` (`recent_files.json`, `settings.json`, `session.json`, `vault_index.db`, etc.)
 
 - **ModuleNotFoundError (e.g., 'PySide6', 'docx')**: Ensure you've run `pip install -r requirements.txt`.
 - **Web panel not available**: Run `pip install PySide6-WebEngine`.
-- **PDF read-aloud not working**: Ensure `pyttsx3` is installed and Windows speech voices are enabled in OS settings. For higher quality neural voices, install `edge-tts` and `pygame` (requires internet connection).
+- **PDF read-aloud not working**: Ensure `pyttsx3` is installed and Windows speech voices are enabled in OS settings. For higher quality neural voices, install `edge-tts` (requires internet connection). Audio plays natively via Windows MCI without heavy third-party packages.
 
 ## 🛡️ The Offline-First Philosophy
 Independent utility apps often suffer from bloated file-rendering engines, heavy cloud dependencies, or unpolished UIs. EleViewer explicitly rejects this trend:

@@ -71,3 +71,6 @@ eleviewer-native/target/
 eleviewer-native/dist/
 *.pyd
 
+main.dist/
+urls_temp.txt
+agentic-awesome-skills/

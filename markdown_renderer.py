@@ -17,7 +17,7 @@ from markdown_utils import markdown_to_simple, simple_to_markdown, preprocess_ma
 from settings import load_settings, save_settings
 from theme import (
     markdown_editor_stylesheet, markdown_preview_css, compact_toolbar_stylesheet,
-    resolve_markdown_icon_size, markdown_preview_stylesheet, BRAND_PANEL, BRAND_PRIMARY, BRAND_MUTED_FG,
+    resolve_markdown_icon_size, markdown_preview_stylesheet,
     get_active_palette
 )
 

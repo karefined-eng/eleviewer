@@ -18,8 +18,8 @@ from PySide6.QtCore import Qt, Signal, QTimer, QUrl, QSize
 from PySide6.QtGui import QFont, QColor, QIcon, QTextDocument, QShortcut, QKeySequence
 
 from theme import (
-    BRAND_PANEL, BRAND_PRIMARY, BRAND_MUTED_FG, get_brand_accent,
-    BRAND_BORDER, BRAND_BACKGROUND, compact_toolbar_stylesheet,
+    get_brand_accent,
+    compact_toolbar_stylesheet,
     ICON_SIZE_COMPACT, resolve_markdown_icon_size, markdown_editor_stylesheet, get_active_palette
 )
 from icons import icon

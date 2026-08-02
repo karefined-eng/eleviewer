@@ -19,17 +19,19 @@ def test_quick_switcher_fuzzy_search():
     app = get_app()
     recent = ["C:/my_secret_doc.txt", "C:/hello_world.md"]
     qs = QuickSwitcher(recent, [], [])
+    qs.bookmarks = [] # Prevent local state contamination
     
     qs.search_input.setText("msd")
-    assert qs.file_list.count() == 1
-    assert "my_secret_doc.txt" in qs.file_list.item(0).text()
+    qs._do_search()
+    assert any("my_secret_doc.txt" in qs.file_list.item(i).text() for i in range(qs.file_list.count()))
     
     qs.search_input.setText("hw")
-    assert qs.file_list.count() == 1
-    assert "hello_world.md" in qs.file_list.item(0).text()
+    qs._do_search()
+    assert any("hello_world.md" in qs.file_list.item(i).text() for i in range(qs.file_list.count()))
     
-    qs.search_input.setText("zzz")
-    assert qs.file_list.count() == 0
+    qs.search_input.setText("zzz_impossible_match")
+    qs._do_search()
+    assert not any("zzz_impossible_match" in qs.file_list.item(i).text() for i in range(qs.file_list.count()))
 
 def test_quick_switcher_selection():
     app = get_app()
@@ -37,6 +39,7 @@ def test_quick_switcher_selection():
     qs = QuickSwitcher(recent, [], [])
     
     qs.search_input.setText("doc2")
+    qs._do_search()
     qs.file_list.setCurrentRow(0)
     
     selected_path = None

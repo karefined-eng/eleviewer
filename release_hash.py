@@ -10,9 +10,16 @@ import json
 from pathlib import Path
 from datetime import datetime, timezone
 
-EXE_PATH = Path("dist/EleViewer.exe")
-OUTPUT_PATH = Path("dist/EleViewer_SHA256.txt")
+import sys
 
+# Find the installer executable
+setup_files = list(Path("dist").glob("EleViewer_Setup_v*.exe"))
+if not setup_files:
+    print("ERROR: No installer found in dist/. Run Inno Setup first.")
+    exit(1)
+
+EXE_PATH = setup_files[0]
+OUTPUT_PATH = Path("dist/EleViewer_Setup_SHA256.txt")
 
 def sha256_file(path: Path) -> str:
     h = hashlib.sha256()
@@ -21,10 +28,9 @@ def sha256_file(path: Path) -> str:
             h.update(chunk)
     return h.hexdigest()
 
-
 if __name__ == "__main__":
     if not EXE_PATH.exists():
-        print(f"ERROR: {EXE_PATH} not found. Run PyInstaller first.")
+        print(f"ERROR: {EXE_PATH} not found.")
         exit(1)
 
     digest = sha256_file(EXE_PATH)

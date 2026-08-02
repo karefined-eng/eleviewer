@@ -11,4 +11,7 @@ requires-python = ">=3.11"
 [tool.maturin]
 manifest-path = "eleviewer-native/Cargo.toml"
 module-name = "eleviewer_native"
-python-source = "."
+
+
+[tool.pytest.ini_options]
+norecursedirs = ["agentic-awesome-skills"]

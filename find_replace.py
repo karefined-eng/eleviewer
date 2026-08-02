@@ -4,7 +4,7 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Signal, Qt
 from icons import icon
-from theme import BRAND_PANEL_2, BRAND_BORDER, BRAND_PRIMARY, BRAND_PANEL, BRAND_MUTED, get_active_palette
+from theme import get_active_palette
 
 class FindReplaceWidget(QWidget):
     find_next_requested = Signal(str, bool, bool, bool)  # text, match_case, whole_word, forward
