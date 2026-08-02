@@ -27,7 +27,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install maturin
-          cd eleviewer-native; maturin develop --release; cd ..
+          cd eleviewer-native; maturin build --release; cd ..
+          $wheel = Get-ChildItem -Path eleviewer-native/target/wheels/*.whl | Select-Object -First 1
+          pip install $wheel.FullName --force-reinstall
           pip install nuitka ordered-set zstandard
 
       - name: Extract Version from Tag
