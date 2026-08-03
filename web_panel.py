@@ -8,6 +8,7 @@ from PySide6.QtCore import Signal, Qt, QUrl, QTimer, QRect
 from PySide6.QtGui import QDesktopServices
 
 import os
+import sys
 import subprocess
 import ctypes
 import uuid
