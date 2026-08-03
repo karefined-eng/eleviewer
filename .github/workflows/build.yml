@@ -57,6 +57,7 @@ jobs:
             --include-data-dir=getting_started=getting_started `
             --include-module=eleviewer_native `
             --disable-console `
+            --assume-yes-for-downloads `
             --output-filename=EleViewer.exe `
             main.py
 
