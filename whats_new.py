@@ -21,7 +21,7 @@ class WhatsNewDialog(QDialog):
                 border: none; 
                 border-top: 1px solid {p['BRAND_BORDER']}; 
                 border-bottom: 1px solid {p['BRAND_BORDER']}; 
-                color: #e0e0e0; 
+                color: {p['BRAND_MUTED_FG']}; 
                 padding: 15px; 
                 font-family: 'Segoe UI', sans-serif; 
                 font-size: 14px; 
@@ -44,7 +44,7 @@ class WhatsNewDialog(QDialog):
 
         header_layout = QHBoxLayout()
         title_label = QLabel(f"🎉 EleViewer updated to v{app_version}")
-        title_label.setStyleSheet("font-size: 22px; font-weight: bold; color: #ffffff;")
+        title_label.setStyleSheet(f"font-size: 22px; font-weight: bold; color: {{p['BRAND_PRIMARY']}};")
         header_layout.addWidget(title_label)
         header_layout.addStretch()
         

@@ -7,8 +7,9 @@ import subprocess
 from PySide6.QtCore import QThread, Signal, Qt, QUrl
 from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel, 
-    QTextEdit, QPushButton, QProgressBar, QMessageBox
+    QTextBrowser, QPushButton, QProgressBar, QMessageBox
 )
+import markdown
 
 REPO_OWNER = "karefined-eng"
 REPO_NAME = "eleviewer"
@@ -83,9 +84,10 @@ class UpdateDialog(QDialog):
         notes_label.setStyleSheet("font-weight: bold;")
         layout.addWidget(notes_label)
 
-        self.notes_area = QTextEdit()
-        self.notes_area.setReadOnly(True)
-        self.notes_area.setMarkdown(release_notes)
+        self.notes_area = QTextBrowser()
+        self.notes_area.setOpenExternalLinks(True)
+        html_notes = markdown.markdown(release_notes)
+        self.notes_area.setHtml(html_notes)
         layout.addWidget(self.notes_area)
 
         self.progress_bar = QProgressBar()
