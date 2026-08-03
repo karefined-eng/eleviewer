@@ -16,7 +16,7 @@ def create_eleviewer_icon(size: int = 32) -> QIcon:
     """
     Load the native EleViewer logo icon (which has a transparent background).
     """
-    icon_path = os.path.join(_get_base_path(), "icons", "eleviewer.ico")
+    icon_path = os.path.join(_get_base_path(), "icons", "eleviewer.png")
     if os.path.exists(icon_path):
         return QIcon(icon_path)
     
