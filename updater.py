@@ -64,40 +64,7 @@ class CheckUpdateThread(QThread):
         except Exception as e:
             self.error_occurred.emit(str(e))
 
-class DownloadThread(QThread):
-    progress = Signal(int)
-    finished = Signal(str)
-    failed = Signal(str)
 
-    def __init__(self, download_url, parent=None):
-        super().__init__(parent)
-        self.download_url = download_url
-
-    def run(self):
-        try:
-            req = urllib.request.Request(self.download_url, headers={"User-Agent": "EleViewer-AutoUpdater"})
-            temp_dir = tempfile.gettempdir()
-            dest_path = os.path.join(temp_dir, "EleViewer_Setup_Update.exe")
-
-            with urllib.request.urlopen(req, timeout=30) as resp:
-                total_size = int(resp.headers.get('Content-Length', 0))
-                downloaded = 0
-                block_size = 8192
-
-                with open(dest_path, 'wb') as f:
-                    while True:
-                        buffer = resp.read(block_size)
-                        if not buffer:
-                            break
-                        downloaded += len(buffer)
-                        f.write(buffer)
-                        if total_size > 0:
-                            percent = int((downloaded / total_size) * 100)
-                            self.progress.emit(percent)
-            
-            self.finished.emit(dest_path)
-        except Exception as e:
-            self.failed.emit(str(e))
 
 class UpdateDialog(QDialog):
     def __init__(self, tag_name, release_notes, download_url, parent=None):
@@ -144,42 +111,15 @@ class UpdateDialog(QDialog):
         layout.addLayout(btn_layout)
 
     def _start_download(self):
-        if self.download_url.endswith(".exe"):
-            self.update_btn.setEnabled(False)
-            self.cancel_btn.setEnabled(False)
-            self.progress_bar.setVisible(True)
-            self.progress_bar.setValue(0)
-            self.status_label.setText("Downloading installer update...")
-            self.status_label.setVisible(True)
-
-            self.downloader = DownloadThread(self.download_url, self)
-            self.downloader.progress.connect(self.progress_bar.setValue)
-            self.downloader.finished.connect(self._on_download_finished)
-            self.downloader.failed.connect(self._on_download_failed)
-            self.downloader.start()
-        else:
-            # Fallback to browser download
-            from PySide6.QtGui import QDesktopServices
-            QDesktopServices.openUrl(QUrl(self.download_url))
-            self.accept()
-
-    def _on_download_finished(self, exe_path):
-        self.status_label.setText("Starting installer...")
-        try:
-            subprocess.Popen([exe_path, "/SILENT", "/RESTARTAPP"])
-            sys.exit(0)
-        except Exception as e:
-            QMessageBox.critical(self, "Update Error", f"Failed to launch installer: {e}")
-            self.reject()
-
-    def _on_download_failed(self, reason):
-        QMessageBox.warning(self, "Download Failed", f"Could not download update: {reason}\nOpening release page instead.")
+        # SECURITY FIX: Silently downloading and executing .exe files without 
+        # cryptographic hash validation or Authenticode signature checking 
+        # is vulnerable to MITM attacks or repository asset compromises.
+        # Fallback to opening the browser to the release page to let the OS
+        # and browser handle secure downloads and SmartScreen validation.
+        # ponytail: removed custom downloader -> use browser until hashes/signatures are in place.
         from PySide6.QtGui import QDesktopServices
         QDesktopServices.openUrl(QUrl(self.download_url))
-        self.reject()
+        self.accept()
 
     def reject(self):
-        if hasattr(self, "downloader") and self.downloader and self.downloader.isRunning():
-            self.downloader.terminate()
-            self.downloader.wait(500)
         super().reject()
