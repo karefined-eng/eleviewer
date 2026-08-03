@@ -85,3 +85,23 @@ jobs:
           draft: false
           prerelease: false
           generate_release_notes: true
+
+      # TODO: Azure Trusted Signing
+      # Once you have an Azure Trusted Signing resource set up, uncomment this block to sign the executable and remove SmartScreen warnings.
+      # - name: Setup Azure Trusted Signing
+      #   uses: azure/trusted-signing-action@v0.5.0
+      #   with:
+      #     azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+      #     azure-client-id: ${{ secrets.AZURE_CLIENT_ID }}
+      #     endpoint: https://eus.codesigning.azure.net/
+      #     code-signing-account-name: your_account_name
+      #     certificate-profile-name: your_profile_name
+      #     files-folder: dist/
+      #     files-folder-filter: exe
+
+      - name: Submit to Winget
+        uses: vedantmgoyal2009/winget-releaser@v2
+        with:
+          identifier: karefined-eng.EleViewer
+          installers-regex: '\.exe$'
+          token: ${{ secrets.WINGET_TOKEN }}

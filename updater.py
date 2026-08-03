@@ -12,7 +12,7 @@ from PySide6.QtWidgets import (
 
 REPO_OWNER = "karefined-eng"
 REPO_NAME = "eleviewer"
-CURRENT_VERSION = "1.3.0"  # Fallback current version
+CURRENT_VERSION = "1.3.4"  # Fallback current version
 
 def parse_version(v_str: str):
     """Clean version string like 'v1.3.0' -> (1, 3, 0)."""
@@ -166,7 +166,7 @@ class UpdateDialog(QDialog):
     def _on_download_finished(self, exe_path):
         self.status_label.setText("Starting installer...")
         try:
-            subprocess.Popen([exe_path])
+            subprocess.Popen([exe_path, "/SILENT", "/RESTARTAPP"])
             sys.exit(0)
         except Exception as e:
             QMessageBox.critical(self, "Update Error", f"Failed to launch installer: {e}")

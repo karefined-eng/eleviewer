@@ -9,6 +9,7 @@
 #endif
 
 [Setup]
+AppId={{F9D3B2A1-8E7C-4D6B-9F5A-3C2E1D0B4A9E}
 AppName=EleViewer
 AppVersion={#AppVersion}
 AppPublisher=karefined-eng
@@ -149,3 +150,10 @@ Root: HKCU; Subkey: "Software\Classes\EleViewer.Html\shell\open\command"; ValueT
 
 [Run]
 Filename: "{app}\EleViewer.exe"; Description: "Launch EleViewer"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\EleViewer.exe"; Parameters: ""; Flags: nowait; Check: IsSilentRelaunch
+
+[Code]
+function IsSilentRelaunch(): Boolean;
+begin
+  Result := CmdLineParamExists('/RESTARTAPP');
+end;
