@@ -6,6 +6,7 @@
 - **Out-of-Process Web Panel:** Implemented native Edge WebView2 embedding using Win32 API (`SetParent`, `MoveWindow`) to achieve a seamlessly docked internal web browser without the 450MB Chromium footprint.
 - **Installer Granularity:** Overhauled the Inno Setup (`setup.iss`) to include granular installation tasks (optional file associations, desktop shortcuts) and post-install auto-launch options.
 - **Win32 Upgrade Mutex:** Added a native Windows Mutex check in `main.py` and connected it to Inno Setup's `SetupMutex` and `CloseApplications` directives, completely eliminating the "Access is denied" (Code 5) crashes during background updates.
+- **Architectural Rules (AGENTS.md):** Formalized Rule 52 to mandate Out-of-Process UI Reparenting for all future web features, preventing accidental re-introduction of Chromium bloat.
 
 ### Fixed
 - **Fatal Infinite Crash Loop:** Fixed an issue where the Chromium WebEngine renderer triggered an aggressive restart loop on Windows, causing massive disk and CPU usage without displaying a window.
@@ -13,6 +14,10 @@
 
 ### Changed
 - **App Bloat Reduction (487MB -> <25MB):** Aggressively stripped `QWebEngineView` and excluded heavy AI data-science packages from the Nuitka build process to restore the lightweight standalone footprint.
+
+### Removed
+- **Extraneous AI Skills:** Completely cleaned up the repository by moving 1,939 unrelated agentic skills (including marketing, ponytail rules, and awesome-skills) out of the local `.agents/skills` folder and into the native global PC configuration (`~/.gemini/config/skills`).
+- **GitHub Pre-receive Hook Bloat:** Purged a 121MB bloated `EleViewer_Setup_v1.3.0.exe` binary from the git history via `git rm --cached` and amended commits to restore fast push times and unblock GitHub Actions pipelines.
 
 All notable changes to this project will be documented in this file.
 
