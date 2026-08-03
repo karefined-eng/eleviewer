@@ -6,60 +6,39 @@ from PySide6.QtCore import Qt, QRect, QRectF
 from theme import get_brand_accent, get_active_palette
 
 
+import os
+
+def _get_base_path():
+    """Get absolute path to resource, works for dev and for Nuitka"""
+    return os.path.dirname(os.path.abspath(__file__))
+
 def create_eleviewer_icon(size: int = 32) -> QIcon:
     """
-    Create the EleViewer "E" logo icon.
-    The logo consists of three horizontal bars:
-    - Top bar: white (#f2f2f0)
-    - Middle bar: accent blue (#6cb6ff)
-    - Bottom bar: white (#f2f2f0)
+    Load the native EleViewer logo icon (which has a transparent background).
     """
+    icon_path = os.path.join(_get_base_path(), "icons", "eleviewer.ico")
+    if os.path.exists(icon_path):
+        return QIcon(icon_path)
+    
+    # Fallback to a simple transparent icon if file is missing
     p = get_active_palette()
     pixmap = QPixmap(size, size)
-    pixmap.fill(QColor(p['BRAND_PANEL']))
-
+    pixmap.fill(Qt.transparent)
+    
     painter = QPainter(pixmap)
     painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-
-    # Calculate scale factor relative to 32x32 reference
     scale = size / 32.0
+    def scaled(val): return val * scale
 
-    def scaled(val):
-        return val * scale
-
-    # Background is already filled with BRAND_PANEL
-    
-    # Border (optional but good for consistency with SVG)
-    painter.setPen(QColor("#2c2c2c"))
-    painter.setBrush(Qt.NoBrush)
-    painter.drawRoundedRect(
-        QRectF(scaled(0.5), scaled(0.5), scaled(31), scaled(31)),
-        scaled(6.5), scaled(6.5)
-    )
-
-    # Top bar (white)
     painter.setPen(Qt.NoPen)
     painter.setBrush(QColor(p['BRAND_PRIMARY']))
-    painter.drawRoundedRect(
-        QRectF(scaled(9), scaled(9), scaled(14), scaled(3)),
-        scaled(1.5), scaled(1.5)
-    )
-
-    # Middle bar (accent blue)
+    painter.drawRoundedRect(QRectF(scaled(9), scaled(9), scaled(14), scaled(3)), scaled(1.5), scaled(1.5))
     painter.setBrush(QColor(get_brand_accent()))
-    painter.drawRoundedRect(
-        QRectF(scaled(11), scaled(14.5), scaled(10), scaled(3)),
-        scaled(1.5), scaled(1.5)
-    )
-
-    # Bottom bar (white)
+    painter.drawRoundedRect(QRectF(scaled(11), scaled(14.5), scaled(10), scaled(3)), scaled(1.5), scaled(1.5))
     painter.setBrush(QColor(p['BRAND_PRIMARY']))
-    painter.drawRoundedRect(
-        QRectF(scaled(9), scaled(20), scaled(14), scaled(3)),
-        scaled(1.5), scaled(1.5)
-    )
-
+    painter.drawRoundedRect(QRectF(scaled(9), scaled(20), scaled(14), scaled(3)), scaled(1.5), scaled(1.5))
     painter.end()
+    
     return QIcon(pixmap)
 
 
