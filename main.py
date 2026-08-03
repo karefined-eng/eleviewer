@@ -19,6 +19,14 @@ try:
 except Exception:
     pass
 
+# Create a Win32 Mutex so Inno Setup (SetupMutex=EleViewerMutex) can detect and close running instances
+_win_mutex = None
+try:
+    kernel32 = ctypes.WinDLL('kernel32', use_last_error=True)
+    _win_mutex = kernel32.CreateMutexW(None, False, "EleViewerMutex")
+except Exception:
+    pass
+
 import traceback
 from datetime import datetime
 import urllib.request

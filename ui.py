@@ -314,7 +314,7 @@ class MainWindow(QMainWindow):
         QDesktopServices.setUrlHandler("file", self, "handle_url")
 
         # IMPROVEMENT: system tray minimization with restore on double-click
-        self.tray_icon = QSystemTrayIcon(create_eleviewer_icon(32), self)
+        self.tray_icon = QSystemTrayIcon(create_eleviewer_icon(32, rounded=True), self)
         tray_menu = QMenu()
         tray_menu.addAction("Open EleViewer", self.show_and_raise)
         tray_menu.addAction("Quit", QApplication.quit)

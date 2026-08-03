@@ -25,6 +25,9 @@ OutputBaseFilename=EleViewer_Setup_v{#AppVersion}
 SetupIconFile=icons\eleviewer.ico
 UninstallDisplayIcon={app}\EleViewer.exe
 PrivilegesRequired=lowest
+CloseApplications=yes
+RestartApplications=yes
+SetupMutex=EleViewerMutex
 ArchitecturesInstallIn64BitMode=x64
 ; Modern UI & Brand Styling
 WizardStyle=modern
@@ -47,8 +50,17 @@ FinishedLabelNoIcons=Setup has finished installing EleViewer on your computer.%n
 
 [Tasks]
 Name: "desktopicon"; Description: "Create a shortcut on my desktop"; GroupDescription: "Desktop Shortcut"; Flags: unchecked
-Name: "associate"; Description: "Open my study files (PDFs, Word docs, Excel, PowerPoint, Markdown, CSV, TXT, HTML) with EleViewer by default"; GroupDescription: "Default File Associations"
 Name: "contextmenu"; Description: "Add 'Open with EleViewer' to my right-click menu in Windows Explorer"; GroupDescription: "Windows Explorer Integration"
+
+Name: "associate"; Description: "Register EleViewer as the default viewer for:"; GroupDescription: "File Associations"; Flags: unchecked
+Name: "associate\pdf"; Description: "PDF Documents (.pdf)"; GroupDescription: "File Associations"; Flags: unchecked
+Name: "associate\md"; Description: "Markdown Notes (.md)"; GroupDescription: "File Associations"; Flags: unchecked
+Name: "associate\docx"; Description: "Word Documents (.docx)"; GroupDescription: "File Associations"; Flags: unchecked
+Name: "associate\xlsx"; Description: "Excel Spreadsheets (.xlsx)"; GroupDescription: "File Associations"; Flags: unchecked
+Name: "associate\pptx"; Description: "PowerPoint Presentations (.pptx)"; GroupDescription: "File Associations"; Flags: unchecked
+Name: "associate\csv"; Description: "CSV/TSV Spreadsheets (.csv, .tsv)"; GroupDescription: "File Associations"; Flags: unchecked
+Name: "associate\txt"; Description: "Plain Text (.txt)"; GroupDescription: "File Associations"; Flags: unchecked
+Name: "associate\html"; Description: "Web Documents (.html, .htm)"; GroupDescription: "File Associations"; Flags: unchecked
 
 [Files]
 ; The source is the Nuitka standalone directory (which includes DLLs and native Rust extensions).
@@ -68,70 +80,72 @@ Root: HKCU; Subkey: "Software\Classes\*\shell\EleViewer\command"; ValueType: str
 Root: HKCU; Subkey: "Software\RegisteredApplications"; ValueType: string; ValueName: "EleViewer"; ValueData: "Software\EleViewer\Capabilities"; Flags: uninsdeletevalue; Tasks: associate
 Root: HKCU; Subkey: "Software\EleViewer\Capabilities"; ValueType: string; ValueName: "ApplicationDescription"; ValueData: "Lightweight Document Viewer & Study Workspace"; Flags: uninsdeletekey; Tasks: associate
 Root: HKCU; Subkey: "Software\EleViewer\Capabilities"; ValueType: string; ValueName: "ApplicationName"; ValueData: "EleViewer"; Flags: uninsdeletekey; Tasks: associate
-Root: HKCU; Subkey: "Software\EleViewer\Capabilities\FileAssociations"; ValueType: string; ValueName: ".pdf"; ValueData: "EleViewer.PDF"; Flags: uninsdeletevalue; Tasks: associate
-Root: HKCU; Subkey: "Software\EleViewer\Capabilities\FileAssociations"; ValueType: string; ValueName: ".md"; ValueData: "EleViewer.Markdown"; Flags: uninsdeletevalue; Tasks: associate
-Root: HKCU; Subkey: "Software\EleViewer\Capabilities\FileAssociations"; ValueType: string; ValueName: ".docx"; ValueData: "EleViewer.Docx"; Flags: uninsdeletevalue; Tasks: associate
-Root: HKCU; Subkey: "Software\EleViewer\Capabilities\FileAssociations"; ValueType: string; ValueName: ".xlsx"; ValueData: "EleViewer.Xlsx"; Flags: uninsdeletevalue; Tasks: associate
-Root: HKCU; Subkey: "Software\EleViewer\Capabilities\FileAssociations"; ValueType: string; ValueName: ".pptx"; ValueData: "EleViewer.Pptx"; Flags: uninsdeletevalue; Tasks: associate
-Root: HKCU; Subkey: "Software\EleViewer\Capabilities\FileAssociations"; ValueType: string; ValueName: ".csv"; ValueData: "EleViewer.Csv"; Flags: uninsdeletevalue; Tasks: associate
-Root: HKCU; Subkey: "Software\EleViewer\Capabilities\FileAssociations"; ValueType: string; ValueName: ".txt"; ValueData: "EleViewer.Txt"; Flags: uninsdeletevalue; Tasks: associate
-Root: HKCU; Subkey: "Software\EleViewer\Capabilities\FileAssociations"; ValueType: string; ValueName: ".html"; ValueData: "EleViewer.Html"; Flags: uninsdeletevalue; Tasks: associate
+Root: HKCU; Subkey: "Software\EleViewer\Capabilities\FileAssociations"; ValueType: string; ValueName: ".pdf"; ValueData: "EleViewer.PDF"; Flags: uninsdeletevalue; Tasks: associate\pdf
+Root: HKCU; Subkey: "Software\EleViewer\Capabilities\FileAssociations"; ValueType: string; ValueName: ".md"; ValueData: "EleViewer.Markdown"; Flags: uninsdeletevalue; Tasks: associate\md
+Root: HKCU; Subkey: "Software\EleViewer\Capabilities\FileAssociations"; ValueType: string; ValueName: ".docx"; ValueData: "EleViewer.Docx"; Flags: uninsdeletevalue; Tasks: associate\docx
+Root: HKCU; Subkey: "Software\EleViewer\Capabilities\FileAssociations"; ValueType: string; ValueName: ".xlsx"; ValueData: "EleViewer.Xlsx"; Flags: uninsdeletevalue; Tasks: associate\xlsx
+Root: HKCU; Subkey: "Software\EleViewer\Capabilities\FileAssociations"; ValueType: string; ValueName: ".pptx"; ValueData: "EleViewer.Pptx"; Flags: uninsdeletevalue; Tasks: associate\pptx
+Root: HKCU; Subkey: "Software\EleViewer\Capabilities\FileAssociations"; ValueType: string; ValueName: ".csv"; ValueData: "EleViewer.Csv"; Flags: uninsdeletevalue; Tasks: associate\csv
+Root: HKCU; Subkey: "Software\EleViewer\Capabilities\FileAssociations"; ValueType: string; ValueName: ".txt"; ValueData: "EleViewer.Txt"; Flags: uninsdeletevalue; Tasks: associate\txt
+Root: HKCU; Subkey: "Software\EleViewer\Capabilities\FileAssociations"; ValueType: string; ValueName: ".html"; ValueData: "EleViewer.Html"; Flags: uninsdeletevalue; Tasks: associate\html
 
 ; ProgID: Markdown (.md)
-Root: HKCU; Subkey: "Software\Classes\.md\OpenWithProgids"; ValueType: string; ValueName: "EleViewer.Markdown"; ValueData: ""; Flags: uninsdeletevalue; Tasks: associate
-Root: HKCU; Subkey: "Software\Classes\EleViewer.Markdown"; ValueType: string; ValueName: ""; ValueData: "Markdown File"; Flags: uninsdeletekey; Tasks: associate
-Root: HKCU; Subkey: "Software\Classes\EleViewer.Markdown"; ValueType: string; ValueName: "FriendlyTypeName"; ValueData: "EleViewer Markdown Note"; Flags: uninsdeletekey; Tasks: associate
-Root: HKCU; Subkey: "Software\Classes\EleViewer.Markdown\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: "{app}\EleViewer.exe,0"; Tasks: associate
-Root: HKCU; Subkey: "Software\Classes\EleViewer.Markdown\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\EleViewer.exe"" ""%1"""; Tasks: associate
+Root: HKCU; Subkey: "Software\Classes\.md\OpenWithProgids"; ValueType: string; ValueName: "EleViewer.Markdown"; ValueData: ""; Flags: uninsdeletevalue; Tasks: associate\md
+Root: HKCU; Subkey: "Software\Classes\EleViewer.Markdown"; ValueType: string; ValueName: ""; ValueData: "Markdown File"; Flags: uninsdeletekey; Tasks: associate\md
+Root: HKCU; Subkey: "Software\Classes\EleViewer.Markdown"; ValueType: string; ValueName: "FriendlyTypeName"; ValueData: "EleViewer Markdown Note"; Flags: uninsdeletekey; Tasks: associate\md
+Root: HKCU; Subkey: "Software\Classes\EleViewer.Markdown\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: "{app}\EleViewer.exe,0"; Tasks: associate\md
+Root: HKCU; Subkey: "Software\Classes\EleViewer.Markdown\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\EleViewer.exe"" ""%1"""; Tasks: associate\md
 
 ; ProgID: PDF (.pdf)
-Root: HKCU; Subkey: "Software\Classes\.pdf\OpenWithProgids"; ValueType: string; ValueName: "EleViewer.PDF"; ValueData: ""; Flags: uninsdeletevalue; Tasks: associate
-Root: HKCU; Subkey: "Software\Classes\EleViewer.PDF"; ValueType: string; ValueName: ""; ValueData: "PDF Document"; Flags: uninsdeletekey; Tasks: associate
-Root: HKCU; Subkey: "Software\Classes\EleViewer.PDF"; ValueType: string; ValueName: "FriendlyTypeName"; ValueData: "EleViewer PDF Document"; Flags: uninsdeletekey; Tasks: associate
-Root: HKCU; Subkey: "Software\Classes\EleViewer.PDF\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: "{app}\EleViewer.exe,0"; Tasks: associate
-Root: HKCU; Subkey: "Software\Classes\EleViewer.PDF\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\EleViewer.exe"" ""%1"""; Tasks: associate
+Root: HKCU; Subkey: "Software\Classes\.pdf\OpenWithProgids"; ValueType: string; ValueName: "EleViewer.PDF"; ValueData: ""; Flags: uninsdeletevalue; Tasks: associate\pdf
+Root: HKCU; Subkey: "Software\Classes\EleViewer.PDF"; ValueType: string; ValueName: ""; ValueData: "PDF Document"; Flags: uninsdeletekey; Tasks: associate\pdf
+Root: HKCU; Subkey: "Software\Classes\EleViewer.PDF"; ValueType: string; ValueName: "FriendlyTypeName"; ValueData: "EleViewer PDF Document"; Flags: uninsdeletekey; Tasks: associate\pdf
+Root: HKCU; Subkey: "Software\Classes\EleViewer.PDF\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: "{app}\EleViewer.exe,0"; Tasks: associate\pdf
+Root: HKCU; Subkey: "Software\Classes\EleViewer.PDF\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\EleViewer.exe"" ""%1"""; Tasks: associate\pdf
 
 ; ProgID: Word Document (.docx)
-Root: HKCU; Subkey: "Software\Classes\.docx\OpenWithProgids"; ValueType: string; ValueName: "EleViewer.Docx"; ValueData: ""; Flags: uninsdeletevalue; Tasks: associate
-Root: HKCU; Subkey: "Software\Classes\EleViewer.Docx"; ValueType: string; ValueName: ""; ValueData: "Word Document"; Flags: uninsdeletekey; Tasks: associate
-Root: HKCU; Subkey: "Software\Classes\EleViewer.Docx"; ValueType: string; ValueName: "FriendlyTypeName"; ValueData: "EleViewer Word Document"; Flags: uninsdeletekey; Tasks: associate
-Root: HKCU; Subkey: "Software\Classes\EleViewer.Docx\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: "{app}\EleViewer.exe,0"; Tasks: associate
-Root: HKCU; Subkey: "Software\Classes\EleViewer.Docx\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\EleViewer.exe"" ""%1"""; Tasks: associate
+Root: HKCU; Subkey: "Software\Classes\.docx\OpenWithProgids"; ValueType: string; ValueName: "EleViewer.Docx"; ValueData: ""; Flags: uninsdeletevalue; Tasks: associate\docx
+Root: HKCU; Subkey: "Software\Classes\EleViewer.Docx"; ValueType: string; ValueName: ""; ValueData: "Word Document"; Flags: uninsdeletekey; Tasks: associate\docx
+Root: HKCU; Subkey: "Software\Classes\EleViewer.Docx"; ValueType: string; ValueName: "FriendlyTypeName"; ValueData: "EleViewer Word Document"; Flags: uninsdeletekey; Tasks: associate\docx
+Root: HKCU; Subkey: "Software\Classes\EleViewer.Docx\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: "{app}\EleViewer.exe,0"; Tasks: associate\docx
+Root: HKCU; Subkey: "Software\Classes\EleViewer.Docx\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\EleViewer.exe"" ""%1"""; Tasks: associate\docx
 
 ; ProgID: Excel Spreadsheet (.xlsx)
-Root: HKCU; Subkey: "Software\Classes\.xlsx\OpenWithProgids"; ValueType: string; ValueName: "EleViewer.Xlsx"; ValueData: ""; Flags: uninsdeletevalue; Tasks: associate
-Root: HKCU; Subkey: "Software\Classes\EleViewer.Xlsx"; ValueType: string; ValueName: ""; ValueData: "Excel Spreadsheet"; Flags: uninsdeletekey; Tasks: associate
-Root: HKCU; Subkey: "Software\Classes\EleViewer.Xlsx"; ValueType: string; ValueName: "FriendlyTypeName"; ValueData: "EleViewer Excel Spreadsheet"; Flags: uninsdeletekey; Tasks: associate
-Root: HKCU; Subkey: "Software\Classes\EleViewer.Xlsx\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: "{app}\EleViewer.exe,0"; Tasks: associate
-Root: HKCU; Subkey: "Software\Classes\EleViewer.Xlsx\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\EleViewer.exe"" ""%1"""; Tasks: associate
+Root: HKCU; Subkey: "Software\Classes\.xlsx\OpenWithProgids"; ValueType: string; ValueName: "EleViewer.Xlsx"; ValueData: ""; Flags: uninsdeletevalue; Tasks: associate\xlsx
+Root: HKCU; Subkey: "Software\Classes\EleViewer.Xlsx"; ValueType: string; ValueName: ""; ValueData: "Excel Spreadsheet"; Flags: uninsdeletekey; Tasks: associate\xlsx
+Root: HKCU; Subkey: "Software\Classes\EleViewer.Xlsx"; ValueType: string; ValueName: "FriendlyTypeName"; ValueData: "EleViewer Excel Spreadsheet"; Flags: uninsdeletekey; Tasks: associate\xlsx
+Root: HKCU; Subkey: "Software\Classes\EleViewer.Xlsx\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: "{app}\EleViewer.exe,0"; Tasks: associate\xlsx
+Root: HKCU; Subkey: "Software\Classes\EleViewer.Xlsx\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\EleViewer.exe"" ""%1"""; Tasks: associate\xlsx
 
 ; ProgID: PowerPoint Presentation (.pptx)
-Root: HKCU; Subkey: "Software\Classes\.pptx\OpenWithProgids"; ValueType: string; ValueName: "EleViewer.Pptx"; ValueData: ""; Flags: uninsdeletevalue; Tasks: associate
-Root: HKCU; Subkey: "Software\Classes\EleViewer.Pptx"; ValueType: string; ValueName: ""; ValueData: "PowerPoint Presentation"; Flags: uninsdeletekey; Tasks: associate
-Root: HKCU; Subkey: "Software\Classes\EleViewer.Pptx"; ValueType: string; ValueName: "FriendlyTypeName"; ValueData: "EleViewer PowerPoint Presentation"; Flags: uninsdeletekey; Tasks: associate
-Root: HKCU; Subkey: "Software\Classes\EleViewer.Pptx\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: "{app}\EleViewer.exe,0"; Tasks: associate
-Root: HKCU; Subkey: "Software\Classes\EleViewer.Pptx\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\EleViewer.exe"" ""%1"""; Tasks: associate
+Root: HKCU; Subkey: "Software\Classes\.pptx\OpenWithProgids"; ValueType: string; ValueName: "EleViewer.Pptx"; ValueData: ""; Flags: uninsdeletevalue; Tasks: associate\pptx
+Root: HKCU; Subkey: "Software\Classes\EleViewer.Pptx"; ValueType: string; ValueName: ""; ValueData: "PowerPoint Presentation"; Flags: uninsdeletekey; Tasks: associate\pptx
+Root: HKCU; Subkey: "Software\Classes\EleViewer.Pptx"; ValueType: string; ValueName: "FriendlyTypeName"; ValueData: "EleViewer PowerPoint Presentation"; Flags: uninsdeletekey; Tasks: associate\pptx
+Root: HKCU; Subkey: "Software\Classes\EleViewer.Pptx\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: "{app}\EleViewer.exe,0"; Tasks: associate\pptx
+Root: HKCU; Subkey: "Software\Classes\EleViewer.Pptx\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\EleViewer.exe"" ""%1"""; Tasks: associate\pptx
 
 ; ProgID: CSV Spreadsheet (.csv, .tsv)
-Root: HKCU; Subkey: "Software\Classes\.csv\OpenWithProgids"; ValueType: string; ValueName: "EleViewer.Csv"; ValueData: ""; Flags: uninsdeletevalue; Tasks: associate
-Root: HKCU; Subkey: "Software\Classes\.tsv\OpenWithProgids"; ValueType: string; ValueName: "EleViewer.Csv"; ValueData: ""; Flags: uninsdeletevalue; Tasks: associate
-Root: HKCU; Subkey: "Software\Classes\EleViewer.Csv"; ValueType: string; ValueName: ""; ValueData: "CSV Spreadsheet"; Flags: uninsdeletekey; Tasks: associate
-Root: HKCU; Subkey: "Software\Classes\EleViewer.Csv"; ValueType: string; ValueName: "FriendlyTypeName"; ValueData: "EleViewer CSV Data Spreadsheet"; Flags: uninsdeletekey; Tasks: associate
-Root: HKCU; Subkey: "Software\Classes\EleViewer.Csv\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: "{app}\EleViewer.exe,0"; Tasks: associate
-Root: HKCU; Subkey: "Software\Classes\EleViewer.Csv\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\EleViewer.exe"" ""%1"""; Tasks: associate
+Root: HKCU; Subkey: "Software\Classes\.csv\OpenWithProgids"; ValueType: string; ValueName: "EleViewer.Csv"; ValueData: ""; Flags: uninsdeletevalue; Tasks: associate\csv
+Root: HKCU; Subkey: "Software\Classes\.tsv\OpenWithProgids"; ValueType: string; ValueName: "EleViewer.Csv"; ValueData: ""; Flags: uninsdeletevalue; Tasks: associate\csv
+Root: HKCU; Subkey: "Software\Classes\EleViewer.Csv"; ValueType: string; ValueName: ""; ValueData: "CSV Spreadsheet"; Flags: uninsdeletekey; Tasks: associate\csv
+Root: HKCU; Subkey: "Software\Classes\EleViewer.Csv"; ValueType: string; ValueName: "FriendlyTypeName"; ValueData: "EleViewer CSV Data Spreadsheet"; Flags: uninsdeletekey; Tasks: associate\csv
+Root: HKCU; Subkey: "Software\Classes\EleViewer.Csv\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: "{app}\EleViewer.exe,0"; Tasks: associate\csv
+Root: HKCU; Subkey: "Software\Classes\EleViewer.Csv\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\EleViewer.exe"" ""%1"""; Tasks: associate\csv
 
 ; ProgID: Plain Text (.txt)
-Root: HKCU; Subkey: "Software\Classes\.txt\OpenWithProgids"; ValueType: string; ValueName: "EleViewer.Txt"; ValueData: ""; Flags: uninsdeletevalue; Tasks: associate
-Root: HKCU; Subkey: "Software\Classes\EleViewer.Txt"; ValueType: string; ValueName: ""; ValueData: "Text Document"; Flags: uninsdeletekey; Tasks: associate
-Root: HKCU; Subkey: "Software\Classes\EleViewer.Txt"; ValueType: string; ValueName: "FriendlyTypeName"; ValueData: "EleViewer Plain Text File"; Flags: uninsdeletekey; Tasks: associate
-Root: HKCU; Subkey: "Software\Classes\EleViewer.Txt\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: "{app}\EleViewer.exe,0"; Tasks: associate
-Root: HKCU; Subkey: "Software\Classes\EleViewer.Txt\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\EleViewer.exe"" ""%1"""; Tasks: associate
+Root: HKCU; Subkey: "Software\Classes\.txt\OpenWithProgids"; ValueType: string; ValueName: "EleViewer.Txt"; ValueData: ""; Flags: uninsdeletevalue; Tasks: associate\txt
+Root: HKCU; Subkey: "Software\Classes\EleViewer.Txt"; ValueType: string; ValueName: ""; ValueData: "Text Document"; Flags: uninsdeletekey; Tasks: associate\txt
+Root: HKCU; Subkey: "Software\Classes\EleViewer.Txt"; ValueType: string; ValueName: "FriendlyTypeName"; ValueData: "EleViewer Plain Text File"; Flags: uninsdeletekey; Tasks: associate\txt
+Root: HKCU; Subkey: "Software\Classes\EleViewer.Txt\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: "{app}\EleViewer.exe,0"; Tasks: associate\txt
+Root: HKCU; Subkey: "Software\Classes\EleViewer.Txt\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\EleViewer.exe"" ""%1"""; Tasks: associate\txt
 
 ; ProgID: HTML Document (.html, .htm)
-Root: HKCU; Subkey: "Software\Classes\.html\OpenWithProgids"; ValueType: string; ValueName: "EleViewer.Html"; ValueData: ""; Flags: uninsdeletevalue; Tasks: associate
-Root: HKCU; Subkey: "Software\Classes\.htm\OpenWithProgids"; ValueType: string; ValueName: "EleViewer.Html"; ValueData: ""; Flags: uninsdeletevalue; Tasks: associate
-Root: HKCU; Subkey: "Software\Classes\EleViewer.Html"; ValueType: string; ValueName: ""; ValueData: "HTML Document"; Flags: uninsdeletekey; Tasks: associate
-Root: HKCU; Subkey: "Software\Classes\EleViewer.Html"; ValueType: string; ValueName: "FriendlyTypeName"; ValueData: "EleViewer Web Document"; Flags: uninsdeletekey; Tasks: associate
-Root: HKCU; Subkey: "Software\Classes\EleViewer.Html\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: "{app}\EleViewer.exe,0"; Tasks: associate
-Root: HKCU; Subkey: "Software\Classes\EleViewer.Html\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\EleViewer.exe"" ""%1"""; Tasks: associate
+Root: HKCU; Subkey: "Software\Classes\.html\OpenWithProgids"; ValueType: string; ValueName: "EleViewer.Html"; ValueData: ""; Flags: uninsdeletevalue; Tasks: associate\html
+Root: HKCU; Subkey: "Software\Classes\.htm\OpenWithProgids"; ValueType: string; ValueName: "EleViewer.Html"; ValueData: ""; Flags: uninsdeletevalue; Tasks: associate\html
+Root: HKCU; Subkey: "Software\Classes\EleViewer.Html"; ValueType: string; ValueName: ""; ValueData: "HTML Document"; Flags: uninsdeletekey; Tasks: associate\html
+Root: HKCU; Subkey: "Software\Classes\EleViewer.Html"; ValueType: string; ValueName: "FriendlyTypeName"; ValueData: "EleViewer Web Document"; Flags: uninsdeletekey; Tasks: associate\html
+Root: HKCU; Subkey: "Software\Classes\EleViewer.Html\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: "{app}\EleViewer.exe,0"; Tasks: associate\html
+Root: HKCU; Subkey: "Software\Classes\EleViewer.Html\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\EleViewer.exe"" ""%1"""; Tasks: associate\html
 
+[Run]
+Filename: "{app}\EleViewer.exe"; Description: "Launch EleViewer"; Flags: nowait postinstall skipifsilent
