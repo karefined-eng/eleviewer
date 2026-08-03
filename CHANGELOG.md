@@ -2,12 +2,17 @@
 
 ## [1.3.1] - 2026-08-03
 
+### Added
+- **Out-of-Process Web Panel:** Implemented native Edge WebView2 embedding using Win32 API (`SetParent`, `MoveWindow`) to achieve a seamlessly docked internal web browser without the 450MB Chromium footprint.
+- **Installer Granularity:** Overhauled the Inno Setup (`setup.iss`) to include granular installation tasks (optional file associations, desktop shortcuts) and post-install auto-launch options.
+- **Win32 Upgrade Mutex:** Added a native Windows Mutex check in `main.py` and connected it to Inno Setup's `SetupMutex` and `CloseApplications` directives, completely eliminating the "Access is denied" (Code 5) crashes during background updates.
+
 ### Fixed
 - **Fatal Infinite Crash Loop:** Fixed an issue where the Chromium WebEngine renderer triggered an aggressive restart loop on Windows, causing massive disk and CPU usage without displaying a window.
-- **App Bloat Reduction (487MB -> <25MB):** Aggressively stripped `QWebEngineView` and excluded heavy AI data-science packages from the Nuitka build process to restore the lightweight standalone footprint.
+- **System Tray Aesthetics:** Fixed the harsh square icon in the Windows 11 hidden tray by natively applying a 20% border radius mask via `QPainterPath` clipping.
 
 ### Changed
-- **Web Browser Panel:** Replaced the embedded Chromium browser with a native OS web launcher. `Ctrl+T` now seamlessly opens web searches natively in your default system browser, saving ~450MB of binary bloat.
+- **App Bloat Reduction (487MB -> <25MB):** Aggressively stripped `QWebEngineView` and excluded heavy AI data-science packages from the Nuitka build process to restore the lightweight standalone footprint.
 
 All notable changes to this project will be documented in this file.
 
