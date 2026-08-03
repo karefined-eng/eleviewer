@@ -32,6 +32,7 @@ Opens & edits **DOCX, XLSX, PPTX, PDF, MD, TXT, CSV and HTML** — all in one wo
 - **Reopen closed tab** (`Ctrl+Shift+T`).
 
 ### ✨ Security & Reliability
+- **In-App Auto-Updater** — silently checks GitHub Releases for new versions on boot, offering a 1-click seamless installer upgrade without leaving the app.
 - **Atomic Writes** — zero-byte file corruption prevention on sudden crash or power loss.
 - **HTML XSS Sanitization** — `bleach` sanitization before rendering Markdown previews.
 - **Symlink Path Traversal Guards** — strict canonical root validation to isolate local file access.
@@ -108,21 +109,16 @@ Opens & edits **DOCX, XLSX, PPTX, PDF, MD, TXT, CSV and HTML** — all in one wo
 - **Vaults**: Add multiple project folders. Switch between them via the sidebar dropdown. Set up vaults via the **+** icon.
 - **Web Panel**: Persists URLs between sessions. Configure the default new tab URL in the Settings menu.
 
-## 🛠️ Building the Executable & SHA-256 Release Hashing
+## 🛠️ Automated CI/CD Release Pipeline
 
-EleViewer v1.3.0 utilizes **Nuitka LTO** to compile Python directly to C++ machine code, paired with a **Rust/PyO3** extension for native asynchronous I/O (Vault Indexing).
+EleViewer v1.3.0 utilizes a fully automated GitHub Actions pipeline. When a new semantic version tag (`vX.Y.Z`) is pushed, the cloud runner automatically:
 
-```bash
-# 1. Compile the Rust extensions
-maturin develop --release
+1. **Compiles the Rust extensions** (`eleviewer-native`) into a `.whl` package using `maturin build`.
+2. **Compiles the core application** to native C++ machine code using **Nuitka LTO** (`--standalone --lto=yes`), yielding a tiny, zero-dependency executable.
+3. **Packages the Installer** via **Inno Setup** (`iscc`), which compresses the assets, executable, and registry scripts into `EleViewer_Setup_vX.Y.Z.exe`.
+4. **Publishes the Release** directly to GitHub.
 
-# 2. Compile the core application to C++ via Nuitka
-nuitka --standalone --lto=yes --plugin-enable=pyside6 main.py
-
-# 3. Generate SHA-256 hashes
-python release_hash.py
-```
-The executable will be generated in the `dist/` directory alongside `EleViewer_SHA256.txt`.
+For power users, distribution is also managed via the **Winget** package manager.
 
 ## 📁 Architecture & Structure
 
