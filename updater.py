@@ -118,7 +118,7 @@ class UpdateDialog(QDialog):
 
         self.notes_area = QTextEdit()
         self.notes_area.setReadOnly(True)
-        self.notes_area.setPlainText(release_notes)
+        self.notes_area.setMarkdown(release_notes)
         layout.addWidget(self.notes_area)
 
         self.progress_bar = QProgressBar()

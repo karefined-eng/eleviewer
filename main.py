@@ -11,6 +11,11 @@ import ctypes
 from PySide6.QtCore import QByteArray
 from settings import load_settings
 
+if len(sys.argv) > 1 and sys.argv[1] == "--webview-worker":
+    import webview_worker
+    webview_worker.main()
+    sys.exit(0)
+
 APP_VERSION = "1.3.1"
 
 # Set AppUserModelID so taskbar grouping and jump lists work correctly

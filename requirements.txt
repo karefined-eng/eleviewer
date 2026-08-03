@@ -7,3 +7,4 @@ bleach>=6.0.0
 edge-tts>=7.0.0
 chardet>=5.0.0
 mammoth>=1.8.0
+pywebview>=5.1.0

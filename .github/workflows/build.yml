@@ -57,6 +57,7 @@ jobs:
             --include-data-dir=icons=icons `
             --include-data-dir=getting_started=getting_started `
             --include-module=eleviewer_native `
+            --include-module=webview `
             --disable-console `
             --assume-yes-for-downloads `
             --output-filename=EleViewer.exe `

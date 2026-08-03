@@ -128,7 +128,7 @@ class WebPanel(QWidget):
         worker_path = os.path.join(os.path.dirname(__file__), "webview_worker.py")
         
         self._webview_proc = subprocess.Popen(
-            [sys.executable, worker_path, self._target_window_title, url_str],
+            [sys.executable, "--webview-worker", self._target_window_title, url_str],
             creationflags=subprocess.CREATE_NO_WINDOW
         )
         

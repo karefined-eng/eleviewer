@@ -1,6 +1,6 @@
 # Changelog
 
-## [1.3.2] - 2026-08-03
+## [1.3.3] - 2026-08-03
 
 ### Added
 - **Out-of-Process Web Panel:** Implemented native Edge WebView2 embedding using Win32 API (`SetParent`, `MoveWindow`) to achieve a seamlessly docked internal web browser without the 450MB Chromium footprint.
