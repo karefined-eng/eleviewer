@@ -85,3 +85,6 @@ Before creating or modifying any module in `eleviewer`, you MUST read and strict
     - **Granular Tasks:** Always preserve the [Tasks] sections for desktopicon, contextmenu, and file ssociate flags.
     - **Post-Install Launch:** Ensure the [Run] directive is present to launch the app immediately post-install.
     - **Branded UI Assets:** The installer MUST be branded. Always specify WizardImageFile and WizardSmallImageFile pointing to valid .bmp assets with the #161616 dark panel and #6cb6ff electric blue accent theme.
+
+53. **Nuitka PyWebView Compilation on Windows:** When compiling applications that use `pywebview` on Windows via Nuitka, you MUST explicitly exclude non-Windows platform modules to prevent fatal plugin conflicts. Always include `--nofollow-import-to=webview.platforms.android,webview.platforms.gtk,webview.platforms.cocoa` in the Nuitka build command.
+54. **Secure Auto-Updates:** Never implement automatic, silent downloads and executions of `.exe` files (e.g., in `updater.py`) without strict Authenticode signature checking or cryptographic hash validation. When these are unavailable, gracefully degrade to opening the secure release page (e.g., GitHub Releases) in the user's default web browser using `QDesktopServices.openUrl()`.
