@@ -16,7 +16,7 @@ if len(sys.argv) > 1 and sys.argv[1] == "--webview-worker":
     webview_worker.main()
     sys.exit(0)
 
-APP_VERSION = "1.3.4"
+APP_VERSION = "1.3.0"
 
 # Set AppUserModelID so taskbar grouping and jump lists work correctly
 try:
