@@ -11,7 +11,7 @@ import ctypes
 from PySide6.QtCore import QByteArray
 from settings import load_settings
 
-APP_VERSION = "1.3.0"
+APP_VERSION = "1.3.1"
 
 # Set AppUserModelID so taskbar grouping and jump lists work correctly
 try:

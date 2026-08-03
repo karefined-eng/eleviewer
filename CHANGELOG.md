@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.3.1] - 2026-08-03
+
+### Fixed
+- **Fatal Infinite Crash Loop:** Fixed an issue where the Chromium WebEngine renderer triggered an aggressive restart loop on Windows, causing massive disk and CPU usage without displaying a window.
+- **App Bloat Reduction (487MB -> <25MB):** Aggressively stripped `QWebEngineView` and excluded heavy AI data-science packages from the Nuitka build process to restore the lightweight standalone footprint.
+
+### Changed
+- **Web Browser Panel:** Replaced the embedded Chromium browser with a native OS web launcher. `Ctrl+T` now seamlessly opens web searches natively in your default system browser, saving ~450MB of binary bloat.
+
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
