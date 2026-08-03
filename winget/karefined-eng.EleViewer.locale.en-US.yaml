@@ -14,7 +14,7 @@ License: GPL-3.0
 LicenseUrl: https://github.com/karefined-eng/eleviewer/blob/main/LICENSE
 Copyright: Copyright (c) 2026 karefined-eng
 ShortDescription: A lightweight, portable Windows document viewer and study workspace supporting DOCX, XLSX, PPTX, PDF, Markdown, CSV, TXT, and HTML.
-Description: EleViewer is a lightweight, open-source document viewer and study workspace designed for students and developers to manage academic and professional file formats in a single Windows application. It supports Word, Excel, PowerPoint, Markdown, CSV, HTML, and plain text editing alongside a robust PDF reader with universal text-to-speech (TTS). Features include a portable design requiring no installation, keyboard-centric navigation, and a built-in web panel.
+Description: EleViewer is a lightweight, open-source document viewer and study workspace designed for students and developers to manage academic and professional file formats in a single Windows application. It supports Word, Excel, PowerPoint, Markdown, CSV, HTML, and plain text editing alongside a robust PDF reader with universal text-to-speech (TTS). Features include a built-in auto-updater, keyboard-centric navigation, and a web panel.
 Tags:
   - document-viewer
   - pdf-reader

@@ -7,7 +7,7 @@ Scope: user
 Installers:
   - Architecture: x64
     InstallerUrl: https://github.com/karefined-eng/eleviewer/releases/download/v1.3.0/EleViewer_Setup_v1.3.0.exe
-    InstallerSha256: 0000000000000000000000000000000000000000000000000000000000000000 # To be updated post-release
+    InstallerSha256: DEBD8F65633DAD60A91BAF3A520497A605C45AF574E07A49BB5106DEC2C2233A
 Commands:
   - eleviewer
 FileExtensions:
