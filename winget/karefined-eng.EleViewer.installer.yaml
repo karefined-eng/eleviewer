@@ -1,12 +1,12 @@
 # yaml-language-server: $schema=https://aka.ms/winget-manifest.installer.1.6.0.schema.json
 
 PackageIdentifier: karefined-eng.EleViewer
-PackageVersion: 1.3.0
+PackageVersion: 1.3.1
 InstallerType: inno
 Scope: user
 Installers:
   - Architecture: x64
-    InstallerUrl: https://github.com/karefined-eng/eleviewer/releases/download/v1.3.0/EleViewer_Setup_v1.3.0.exe
+    InstallerUrl: https://github.com/karefined-eng/eleviewer/releases/download/v1.3.1/EleViewer_Setup_v1.3.1.exe
     InstallerSha256: DEBD8F65633DAD60A91BAF3A520497A605C45AF574E07A49BB5106DEC2C2233A
 Commands:
   - eleviewer
