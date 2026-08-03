@@ -34,8 +34,8 @@ WizardStyle=modern
 WizardResizable=no
 ; To apply our custom color code (#161616 dark panels and #6cb6ff electric blue accents)
 ; to the wizard sidebars and headers, place branded bitmaps in the icons/ folder:
-; WizardImageFile=icons\wizard_banner.bmp
-; WizardSmallImageFile=icons\wizard_logo.bmp
+WizardImageFile=icons\wizard_banner.bmp
+WizardSmallImageFile=icons\wizard_logo.bmp
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"

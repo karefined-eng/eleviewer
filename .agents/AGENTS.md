@@ -79,3 +79,9 @@ Before creating or modifying any module in `eleviewer`, you MUST read and strict
     - **Post-Install Execution (`[Run]`):** Always include a `[Run]` section with a `postinstall` checkbox (e.g., `Filename: "{app}\EleViewer.exe"; Description: "Launch EleViewer"; Flags: nowait postinstall skipifsilent`) so the setup doesn't abruptly end without offering to launch the application.
 
 52. **Unified Workspace vs. Web Bloat Dilemma (Out-of-Process UI Reparenting):** When implementing web-based features (like a Web Panel) that require a unified workspace (embedded UI), you MUST NEVER fall back to `QtWebEngineView` (violates 25MB limit). Instead, you MUST use Out-of-Process UI Reparenting: launch a lightweight native wrapper (e.g., `pywebview`) as a subprocess, obtain its native `HWND`, and forcibly embed it into a PySide6 `QFrame` container using `win32gui.SetParent`. This preserves the 0MB native Edge footprint while maintaining the illusion of a unified UI.
+
+48. **Inno Setup Installer Hard Requirements:** When updating or modifying the EleViewer setup.iss installer script, you MUST enforce the following constraints:
+    - **Mutex Synchronization:** You must always include SetupMutex=EleViewerMutex and CloseApplications=yes to gracefully terminate any background instances (preventing "Access is denied" LTO write errors).
+    - **Granular Tasks:** Always preserve the [Tasks] sections for desktopicon, contextmenu, and file ssociate flags.
+    - **Post-Install Launch:** Ensure the [Run] directive is present to launch the app immediately post-install.
+    - **Branded UI Assets:** The installer MUST be branded. Always specify WizardImageFile and WizardSmallImageFile pointing to valid .bmp assets with the #161616 dark panel and #6cb6ff electric blue accent theme.
