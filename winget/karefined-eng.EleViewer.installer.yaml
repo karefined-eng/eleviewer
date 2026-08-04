@@ -10,4 +10,15 @@ Installers:
 Commands:
   - eleviewer
 ManifestType: installer
+FileExtensions:
+  - .md
+  - .txt
+  - .docx
+  - .xlsx
+  - .pptx
+  - .pdf
+  - .csv
+  - .tsv
+  - .html
+  - .htm
 ManifestVersion: 1.6.0
