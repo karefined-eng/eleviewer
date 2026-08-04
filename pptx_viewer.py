@@ -2,7 +2,9 @@
 
 Extracts slide text, titles, notes, and bullet points using python-pptx
 (with a zipfile XML fallback if python-pptx is unavailable).
-Renders clean slide cards with toolbar navigation and TTS read-aloud support.
+Renders slide cards via the bundled Chromium WebEngine (QWebEngineView) for
+full CSS fidelity — box shadows, images, themes. Falls back to QTextBrowser
+if WebEngine is unavailable.
 """
 
 import html
@@ -21,8 +23,11 @@ from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QToolButton, QLabel,
     QTextBrowser, QLineEdit, QSplitter, QListWidget, QListWidgetItem, QFrame
 )
-from PySide6.QtCore import Qt, Signal, QSize
+from PySide6.QtCore import Qt, Signal, QSize, QUrl
 from PySide6.QtGui import QIntValidator, QKeyEvent, QShortcut, QKeySequence
+
+# Lazy WebEngine availability flag — set inside __init__ to avoid Chromium cold-start tax
+_WEB_AVAILABLE: bool | None = None  # None = not yet checked
 
 from icons import icon
 from theme import (
@@ -132,21 +137,37 @@ class PptxViewer(QWidget):
         search_layout.addWidget(self.btn_search_next)
         self.search_container.hide()
 
-        self.viewer = QTextBrowser()
-        # Enable continuous elastic scaling (no fixed px sizes)
-        self.viewer.setStyleSheet(f"""
-            QTextBrowser {{
-                background: {p['BRAND_BACKGROUND']};
-                color: {p['BRAND_PRIMARY']};
-                border: none;
-                padding: 0px;
-                font-family: 'Segoe UI', sans-serif;
-            }}
-        """)
-        self.viewer.setOpenExternalLinks(True)
-        # Sync scrolling back to sidebar
-        self.viewer.verticalScrollBar().valueChanged.connect(self._on_scroll)
-        self._is_jumping = False # prevent circular sync
+        # ── Lazy-load WebEngine (Rule 25: never import at module level) ────────
+        global _WEB_AVAILABLE
+        if _WEB_AVAILABLE is None:
+            try:
+                from web_panel import _SecureWebView as _SWV, WEB_AVAILABLE as _WA
+                _WEB_AVAILABLE = _WA
+            except Exception:
+                _WEB_AVAILABLE = False
+
+        if _WEB_AVAILABLE:
+            from web_panel import _SecureWebView
+            self.viewer = _SecureWebView()
+            self._use_webengine = True
+        else:
+            self.viewer = QTextBrowser()
+            self.viewer.setStyleSheet(f"""
+                QTextBrowser {{
+                    background: {p['BRAND_BACKGROUND']};
+                    color: {p['BRAND_PRIMARY']};
+                    border: none;
+                    padding: 0px;
+                    font-family: 'Segoe UI', sans-serif;
+                }}
+            """)
+            self.viewer.setOpenExternalLinks(True)
+            self._use_webengine = False
+
+        # Sync scroll → sidebar only available in QTextBrowser mode
+        if not self._use_webengine:
+            self.viewer.verticalScrollBar().valueChanged.connect(self._on_scroll)
+        self._is_jumping = False  # prevent circular sync
 
         right_panel = QWidget()
         right_layout = QVBoxLayout(right_panel)
@@ -324,10 +345,15 @@ class PptxViewer(QWidget):
 
     def _perform_search(self):
         query = self.search_input.text()
-        if query:
-            # find() natively scrolls to and highlights the next match
+        if not query:
+            return
+        if self._use_webengine:
+            # QWebEngineView.findText wraps automatically
+            from PySide6.QtWebEngineWidgets import QWebEngineView
+            self.viewer.findText(query)
+        else:
+            # QTextBrowser.find — loop back on no match
             if not self.viewer.find(query):
-                # loop back to top
                 self.viewer.moveCursor(self.viewer.textCursor().Start)
                 self.viewer.find(query)
 
@@ -342,45 +368,52 @@ class PptxViewer(QWidget):
 
         fragments = []
         for chunk in re.split(r"(<img[^>]*>)", raw_content):
-            if not chunk:
-                continue
-            if chunk.startswith("<img"):
-                fragments.append(chunk)
-            else:
-                fragments.append(self._render_text_block(chunk))
-        return "".join(fragments)
-
-    def _render_continuous_html(self):
+            if not chu    def _render_continuous_html(self):
         p = get_active_palette()
         accent = get_brand_accent()
-        html_output = f"<div style='background: {p['BRAND_BACKGROUND']}; padding-bottom: 40px;'>"
-        
+        # Full-page wrapper — WebEngine renders this with proper CSS (shadows, layout, etc.)
+        html_output = f"""<!DOCTYPE html><html><head><meta charset="utf-8">
+<style>
+  body {{ margin: 0; padding: 0; background: {p['BRAND_BACKGROUND']}; font-family: 'Segoe UI', sans-serif; }}
+  .slide-card {{
+    max-width: 800px; margin: 30px auto; padding: 40px;
+    background: {p['BRAND_PANEL']};
+    border: 1px solid {p['BRAND_BORDER']};
+    border-radius: 8px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.35);
+  }}
+  .slide-label {{ color: {accent}; font-size: 0.8em; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }}
+  .slide-title {{ color: {p['BRAND_PRIMARY']}; font-size: 1.5em; margin: 0 0 20px 0; border-bottom: 1px solid {p['BRAND_BORDER']}; padding-bottom: 10px; }}
+  .slide-body {{ font-size: 1.1em; line-height: 1.7; color: {p['BRAND_PRIMARY']}; }}
+  .slide-body img {{ max-width: 100%; border-radius: 4px; margin: 10px 0; }}
+  .notes-box {{ margin-top: 30px; padding: 12px; background: {p['BRAND_PANEL_2']}; border-left: 3px solid {accent}; border-radius: 4px; }}
+  .notes-label {{ color: {p['BRAND_MUTED_FG']}; font-size: 0.8em; font-weight: bold; margin-bottom: 4px; }}
+  .notes-body {{ font-size: 0.9em; color: {p['BRAND_MUTED_FG']}; }}
+  .bottom-pad {{ height: 40px; }}
+</style></head><body>"""
+
         for index, slide_data in enumerate(self.slides):
             raw_content = slide_data['content'] or ''
             content_html = self._render_slide_content(raw_content)
             title_text = self._render_text_block(slide_data['title'])
             notes_text = self._render_text_block(slide_data.get('notes', ''))
-            
-            # Use anchor for scrolling
-            html_output += f"<a name='slide_{index}'></a>"
-            html_output += f"""
-            <div style="max-width: 800px; margin: 30px auto; padding: 40px; background: {p['BRAND_PANEL']}; border: 1px solid {p['BRAND_BORDER']}; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">
-                <div style="color: {accent}; font-size: 0.8em; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">
-                    SLIDE {index + 1} OF {self.total_slides}
-                </div>
-                <h1 style="color: {p['BRAND_PRIMARY']}; font-size: 1.5em; margin-top: 0; margin-bottom: 20px; border-bottom: 1px solid {p['BRAND_BORDER']}; padding-bottom: 10px;">
-                    {title_text}
-                </h1>
-                <div style="font-size: 1.1em; line-height: 1.7; color: {p['BRAND_PRIMARY']};">
-                    {content_html}
-                </div>
-            """
-            
+
+            html_output += f'<div id="slide_{index}" class="slide-card">'
+            html_output += f'<div class="slide-label">SLIDE {index + 1} OF {self.total_slides}</div>'
+            html_output += f'<h1 class="slide-title">{title_text}</h1>'
+            html_output += f'<div class="slide-body">{content_html}</div>'
             if notes_text:
-                html_output += f"""
-                <div style="margin-top: 30px; padding: 12px; background: {p['BRAND_PANEL_2']}; border-left: 3px solid {accent}; border-radius: 4px;">
-                    <div style="color: {p['BRAND_MUTED_FG']}; font-size: 0.8em; font-weight: bold; margin-bottom: 4px;">SPEAKER NOTES</div>
-                    <div style="font-size: 0.9em; color: {p['BRAND_MUTED_FG']};">{notes_text}</div>
+                html_output += (f'<div class="notes-box">'
+                                f'<div class="notes-label">SPEAKER NOTES</div>'
+                                f'<div class="notes-body">{notes_text}</div></div>')
+            html_output += '</div>'
+
+        html_output += '<div class="bottom-pad"></div></body></html>'
+
+        if self._use_webengine:
+            self.viewer.setHtml(html_output, QUrl())
+        else:
+            self.viewer.setHtml(html_output)nt-size: 0.9em; color: {p['BRAND_MUTED_FG']};">{notes_text}</div>
                 </div>
                 """
             html_output += "</div>"
@@ -418,20 +451,24 @@ class PptxViewer(QWidget):
     def go_to_slide(self, index):
         if index < 0 or index >= self.total_slides:
             return
-            
+
         self._is_jumping = True
         self.current_slide = index
         self.slide_input.setText(str(index + 1))
-        
+
         self.slide_list.blockSignals(True)
         self.slide_list.setCurrentRow(index)
         self.slide_list.blockSignals(False)
 
-        self.viewer.scrollToAnchor(f"slide_{index}")
-        
-        # Debounce the jump lock
-        import PySide6.QtCore
-        PySide6.QtCore.QTimer.singleShot(100, lambda: setattr(self, '_is_jumping', False))
+        if self._use_webengine:
+            # Use JS scrollIntoView for smooth, accurate slide navigation
+            js = f"var el = document.getElementById('slide_{index}'); if (el) el.scrollIntoView({{behavior: 'smooth', block: 'start'}});"
+            self.viewer.page().runJavaScript(js)
+        else:
+            self.viewer.scrollToAnchor(f"slide_{index}")
+
+        from PySide6.QtCore import QTimer
+        QTimer.singleShot(100, lambda: setattr(self, '_is_jumping', False))
 
     def prev_slide(self):
         if self.current_slide > 0:
