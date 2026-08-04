@@ -4,12 +4,12 @@
 ![License](https://img.shields.io/github/license/karefined-eng/eleviewer)
 ![Downloads](https://img.shields.io/github/downloads/karefined-eng/eleviewer/total)
 
-A lightweight Windows document editor supporting **DOCX**, **XLSX**, **PPTX**, **MD**, **TXT**, **CSV**, **HTML/HTM**, and **PDF**. Built with Python and PySide6.
+A lightweight Windows document editor supporting **DOCX**, **XLSX**, **PPTX**, **MD**, **TXT**, **CSV**, **TSV**, **HTML/HTM**, and **PDF**. Built with Python and PySide6.
 
 ## 📚 Features
 
 ### 📁 File Support
-Opens & edits **DOCX, XLSX, PPTX, PDF, MD, TXT, CSV and HTML** — all in one workspace.
+Opens & edits **DOCX, XLSX, PPTX, PDF, MD, TXT, CSV, TSV and HTML/HTM** — all in one workspace.
 - **XLSX View-Only Mode** — displays computed formula values (not raw formulas) in a read-only grid, protecting spreadsheet integrity while letting you study the data.
 - **Image Placeholders** — DOCX and PPTX files with embedded images display `📷 [Image]` markers so you know where visuals exist, even in text-only rendering.
 - **CSV Smart Encoding** — automatically detects file encoding via `chardet` so Excel-exported CSVs in Windows-1252, Latin-1, or UTF-8 render without garbled characters.
