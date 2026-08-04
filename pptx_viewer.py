@@ -368,7 +368,15 @@ class PptxViewer(QWidget):
 
         fragments = []
         for chunk in re.split(r"(<img[^>]*>)", raw_content):
-            if not chu    def _render_continuous_html(self):
+            if not chunk:
+                continue
+            if chunk.startswith("<img"):
+                fragments.append(chunk)
+            else:
+                fragments.append(self._render_text_block(chunk))
+        return "".join(fragments)
+
+    def _render_continuous_html(self):
         p = get_active_palette()
         accent = get_brand_accent()
         # Full-page wrapper — WebEngine renders this with proper CSS (shadows, layout, etc.)
@@ -413,13 +421,7 @@ class PptxViewer(QWidget):
         if self._use_webengine:
             self.viewer.setHtml(html_output, QUrl())
         else:
-            self.viewer.setHtml(html_output)nt-size: 0.9em; color: {p['BRAND_MUTED_FG']};">{notes_text}</div>
-                </div>
-                """
-            html_output += "</div>"
-            
-        html_output += "</div>"
-        self.viewer.setHtml(html_output)
+            self.viewer.setHtml(html_output)
 
     def _on_sidebar_click(self, index):
         if not self._is_jumping:
