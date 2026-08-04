@@ -51,8 +51,8 @@ Opens & edits **DOCX, XLSX, PPTX, PDF, MD, TXT, CSV and HTML** — all in one wo
 ## 🚀 Quick Start
 
 ### For End Users
-1. Download `EleViewer.exe` from the [releases](https://github.com/karefined-eng/eleviewer/releases) page.
-2. Run it — no installation needed!
+1. Download the latest `EleViewer_Setup_vX.Y.Z.exe` installer from the [releases](https://github.com/karefined-eng/eleviewer/releases) page.
+2. Run the installer and follow the prompts.
 
 ### What’s new
 - Faster preview refreshes for Markdown and HTML content while you type, with less wasted work and smoother updates.
@@ -129,13 +129,13 @@ pip install -r requirements.txt
 python main.py
 ```
 
-If you want a packaged build, the repo also supports Nuitka-based standalone builds when that tool is available:
+If you want a packaged build, the release workflow uses Nuitka plus Inno Setup to produce a Windows installer and a bundled `EleViewer.exe` inside the build directory.
 
 ```bash
-nuitka --standalone --plugin-enable=pyside6 main.py
+nuitka --standalone --plugin-enable=pyside6 --include-qt-plugins=sensible,styles --disable-console main.py
 ```
 
-Release hashes can still be generated with:
+Release hashes can still be generated from the packaged artifact with:
 
 ```bash
 python release_hash.py
@@ -152,7 +152,7 @@ Key directories and modules:
 - `vault_explorer.py`, `vault_search.py`, `vault_indexer.py` — Vault browser, live search, and SQLite FTS5 indexer.
 - `draft_recovery.py`, `feedback_dialog.py` — Background `QThread` workers for auto-backup and feedback.
 - `session_manager.py`, `save_utils.py`, `settings.py` — Atomic writes, settings, and session scroll/zoom/page restore.
-- `release_hash.py` — Automated SHA-256 release manifest generator.
+- `release_hash.py` — Automated SHA-256 release manifest generator for the packaged installer or bundled executable.
 - Tests live in the repository root as `test_*.py` files.
 - Data is stored in `%APPDATA%\EleViewer\` (`recent_files.json`, `settings.json`, `session.json`, `vault_index.db`, etc.)
 

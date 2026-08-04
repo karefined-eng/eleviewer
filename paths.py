@@ -3,8 +3,8 @@ import sys
 from pathlib import Path
 
 # BASE_DIR: root of bundled resources. Handles three execution contexts:
-#   1. PyInstaller frozen exe  -> sys._MEIPASS (temp extraction dir)
-#   2. Source / dev run        -> directory containing main.py / this file
+#   1. Nuitka frozen exe        -> sys._MEIPASS (temp extraction dir)
+#   2. Source / dev run         -> directory containing main.py / this file
 if getattr(sys, 'frozen', False):
     BASE_DIR = Path(sys._MEIPASS)
 else:
