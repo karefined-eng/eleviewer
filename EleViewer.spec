@@ -1,5 +1,6 @@
 # -*- mode: python ; coding: utf-8 -*-
-# EleViewer.spec — single canonical build spec (UPX disabled to prevent decompression errors)
+# EleViewer.spec — legacy PyInstaller build spec retained for reference only.
+# The active release workflow now packages EleViewer with Nuitka + Inno Setup.
 
 a = Analysis(
     ['main.py'],

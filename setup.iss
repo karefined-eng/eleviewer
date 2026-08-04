@@ -17,7 +17,7 @@ AppSupportURL=https://github.com/karefined-eng/eleviewer/issues
 AppUpdatesURL=https://github.com/karefined-eng/eleviewer/releases
 DefaultDirName={autopf}\EleViewer
 DisableProgramGroupPage=yes
-; Compression settings for maximum reduction of PyInstaller .exe
+; Compression settings for maximum reduction of the Nuitka-built .exe
 Compression=lzma2/ultra64
 SolidCompression=yes
 OutputDir=dist
@@ -51,7 +51,7 @@ Name: "associate"; Description: "Open my study files (PDFs, Word docs, Excel, Po
 Name: "contextmenu"; Description: "Add 'Open with EleViewer' to my right-click menu in Windows Explorer"; GroupDescription: "Windows Explorer Integration"
 
 [Files]
-; The source is the single portable executable created by PyInstaller.
+; The source is the single portable executable created by Nuitka.
 Source: "dist\EleViewer.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "icons\*"; DestDir: "{app}\icons"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "getting_started\*"; DestDir: "{app}\getting_started"; Flags: ignoreversion recursesubdirs createallsubdirs

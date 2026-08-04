@@ -49,6 +49,9 @@ from theme import (
 )
 from paths import APP_DATA_DIR
 
+_PDF_DOCUMENT_CACHE = {}
+_PDF_DOCUMENT_CACHE_MAX_ENTRIES = 8
+
 # ── Custom QPdfView with Ctrl+Wheel zoom and key navigation ─────────
 
 if QTPDF_AVAILABLE:
@@ -289,6 +292,14 @@ class PdfViewer(QWidget):
 
     # ── Load ─────────────────────────────────────────────────────────
 
+    def _get_render_cache_key(self, file_path):
+        if not file_path or not os.path.exists(file_path):
+            return None
+        try:
+            return (file_path, os.path.getmtime(file_path), os.path.getsize(file_path))
+        except OSError:
+            return None
+
     def load_from_path(self, file_path):
         if not QTPDF_AVAILABLE:
             QMessageBox.critical(
@@ -297,8 +308,19 @@ class PdfViewer(QWidget):
             )
             return
         try:
-            # Load into Qt's native PDF engine for display
-            self.pdf_doc_qt.load(file_path)
+            cache_key = self._get_render_cache_key(file_path)
+            if cache_key is not None and cache_key in _PDF_DOCUMENT_CACHE:
+                self.pdf_doc_qt = _PDF_DOCUMENT_CACHE[cache_key]
+            else:
+                self.pdf_doc_qt = QPdfDocument(self)
+                self.pdf_doc_qt.load(file_path)
+                if cache_key is not None:
+                    if len(_PDF_DOCUMENT_CACHE) >= _PDF_DOCUMENT_CACHE_MAX_ENTRIES:
+                        _PDF_DOCUMENT_CACHE.pop(next(iter(_PDF_DOCUMENT_CACHE)))
+                    _PDF_DOCUMENT_CACHE[cache_key] = self.pdf_doc_qt
+
+            self.bookmark_model.setDocument(self.pdf_doc_qt)
+            self.pdf_view.setDocument(self.pdf_doc_qt)
             self.total_pages = self.pdf_doc_qt.pageCount()
             self.current_page = 0
             self.lbl_total.setText(f" / {self.total_pages}")

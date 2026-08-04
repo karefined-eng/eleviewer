@@ -9,6 +9,9 @@ import os
 import zipfile
 import xml.etree.ElementTree as ET
 
+_DOCX_RENDER_CACHE = {}
+_DOCX_RENDER_CACHE_MAX_ENTRIES = 24
+
 try:
     import mammoth
     MAMMOTH_AVAILABLE = True
@@ -92,9 +95,39 @@ class DocxViewer(QWidget):
         self._display_content()
         self.is_modified = False
 
+    def _get_render_cache_key(self, file_path):
+        if not file_path or not os.path.exists(file_path):
+            return None
+        try:
+            return (file_path, os.path.getmtime(file_path), os.path.getsize(file_path))
+        except OSError:
+            return None
+
+    def _get_cached_render(self, file_path):
+        key = self._get_render_cache_key(file_path)
+        if key is None:
+            return None
+        return _DOCX_RENDER_CACHE.get(key)
+
+    def _cache_render(self, file_path, html):
+        key = self._get_render_cache_key(file_path)
+        if key is None:
+            return
+        if len(_DOCX_RENDER_CACHE) >= _DOCX_RENDER_CACHE_MAX_ENTRIES:
+            _DOCX_RENDER_CACHE.pop(next(iter(_DOCX_RENDER_CACHE)))
+        _DOCX_RENDER_CACHE[key] = html
+
     def _display_content(self):
         """Render DOCX to rich HTML with base64 images via mammoth, falling back to python-docx and stdlib zip parsing."""
         if not self.file_path and not self.docx_content:
+            return
+
+        cached_html = self._get_cached_render(self.file_path)
+        if cached_html is not None:
+            self.editor.blockSignals(True)
+            self.editor.setHtml(cached_html)
+            self.editor.blockSignals(False)
+            self.is_modified = False
             return
 
         self.editor.blockSignals(True)
@@ -110,6 +143,7 @@ class DocxViewer(QWidget):
                     )
                     html_content = result.value
                     styled_html = self._wrap_html(html_content)
+                    self._cache_render(self.file_path, styled_html)
                     self.editor.setHtml(styled_html)
                     self.editor.blockSignals(False)
                     self.is_modified = False
@@ -122,6 +156,7 @@ class DocxViewer(QWidget):
             try:
                 html = self._build_html_from_docx(self.docx_content)
                 styled_html = self._wrap_html(html)
+                self._cache_render(self.file_path, styled_html)
                 self.editor.setHtml(styled_html)
                 self.editor.blockSignals(False)
                 self.is_modified = False
@@ -133,6 +168,7 @@ class DocxViewer(QWidget):
         if self.file_path and os.path.exists(self.file_path):
             html = self._fallback_zip_parse(self.file_path)
             styled_html = self._wrap_html(html)
+            self._cache_render(self.file_path, styled_html)
             self.editor.setHtml(styled_html)
 
         self.editor.blockSignals(False)
