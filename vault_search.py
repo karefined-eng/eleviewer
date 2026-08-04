@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLineEdit, QListWidget, QListWidgetItem, 
-    QLabel, QComboBox
+    QLabel, QComboBox, QWidget
 )
 from PySide6.QtCore import Qt, Signal, QTimer, QThread, QEvent
 from theme import get_active_palette, get_brand_accent
@@ -96,7 +96,19 @@ class VaultSearchDialog(QDialog):
         header_layout = QHBoxLayout()
         self.search_input = QLineEdit()
         self.search_input.setPlaceholderText("Search file names...")
+        # show a small clear icon inside the line edit
+        try:
+            self.search_input.setClearButtonEnabled(True)
+        except Exception:
+            pass
+        self.search_input.setAccessibleName("Vault search input")
         self.search_input.textChanged.connect(self._on_text_changed)
+        
+        # small textual spinner / indicator shown while searching
+        self.spinner_label = QLabel("Searching…")
+        self.spinner_label.setVisible(False)
+        self.spinner_label.setStyleSheet(f"color: {p['BRAND_MUTED_FG']}; font-size: 12px; margin-left:8px; margin-right:6px;")
+        self.spinner_label.setAccessibleName("Search status")
         
         self.scope_combo = QComboBox()
         self.scope_combo.addItem("Active Vault", "active")
@@ -108,12 +120,20 @@ class VaultSearchDialog(QDialog):
             self.scope_combo.setCurrentIndex(1)
             
         header_layout.addWidget(self.search_input, stretch=1)
+        header_layout.addWidget(self.spinner_label)
         header_layout.addWidget(self.scope_combo)
         
         self.results_list = QListWidget()
         self.results_list.itemDoubleClicked.connect(self._on_item_activated)
         
         layout.addLayout(header_layout)
+
+        # result count label (updates live)
+        self.result_count_label = QLabel("")
+        self.result_count_label.setStyleSheet(f"color: {p['BRAND_MUTED_FG']}; font-size: 12px; margin-bottom:6px;")
+        self.result_count_label.setAccessibleName("Search result count")
+        layout.addWidget(self.result_count_label)
+
         layout.addWidget(self.results_list)
         
         help_label = QLabel("↑↓ Navigate  Enter Select  Esc Cancel")
@@ -129,34 +149,86 @@ class VaultSearchDialog(QDialog):
         self.search_input.setFocus()
         
     def _on_text_changed(self):
-        self.search_timer.start(300)
+        # slightly snappier debounce for perceived responsiveness
+        self.search_timer.start(200)
         
     def _do_search(self):
         query = self.search_input.text().lower()
+        # cancel any in-flight worker
         if self._search_worker and self._search_worker.isRunning():
             self._search_worker.cancel()
             try:
                 self._search_worker.result_found.disconnect()
             except Exception:
                 pass
+            try:
+                self._search_worker.finished.disconnect()
+            except Exception:
+                pass
             self._search_worker.wait(50)
             
         self.results_list.clear()
+        # reset live count
+        self._result_count = 0
+        self.result_count_label.setText("")
         if not query:
+            self.spinner_label.setVisible(False)
             return
             
         scope = self.scope_combo.currentData()
         vaults_to_search = [self.active_vault] if scope == "active" and self.active_vault else self.all_vaults
         
-        self._search_worker = VaultSearchWorker(vaults_to_search, query)
-        self._search_worker.result_found.connect(self._on_result_found)
-        self._search_worker.start()
+        # start new worker and show spinner / searching state
+        worker = VaultSearchWorker(vaults_to_search, query)
+        self._search_worker = worker
+        self.spinner_label.setVisible(True)
+        self.result_count_label.setText("Searching…")
+        worker.result_found.connect(self._on_result_found)
+        # only handle finished for the worker we just started
+        worker.finished.connect(lambda w=worker: self._on_search_finished(w))
+        worker.start()
 
     def _on_result_found(self, f, display_dir, vault_name, full_path):
-        item = QListWidgetItem(f"{f}{display_dir} — [{vault_name}]")
+        # create a richer item widget: icon + bold filename + muted secondary line
+        icon = file_type_icon(Path(f).suffix, 16)
+        item = QListWidgetItem()
         item.setData(Qt.UserRole, full_path)
-        item.setIcon(file_type_icon(Path(f).suffix, 16))
+        # container widget
+        w = QWidget()
+        h = QHBoxLayout(w)
+        h.setContentsMargins(6, 4, 6, 4)
+        # icon label
+        icon_label = QLabel()
+        try:
+            icon_label.setPixmap(icon.pixmap(16, 16))
+        except Exception:
+            pass
+        h.addWidget(icon_label)
+        # text block
+        text_block = QWidget()
+        text_layout = QVBoxLayout(text_block)
+        text_layout.setContentsMargins(6, 0, 0, 0)
+        title = QLabel(f)
+        # make filename stand out
+        title.setStyleSheet(f"color: {p['BRAND_PRIMARY']}; font-weight: 600; font-size: 13px;")
+        subtitle = QLabel(f"{display_dir} — [{vault_name}]")
+        subtitle.setStyleSheet(f"color: {p['BRAND_MUTED_FG']}; font-size: 11px;")
+        text_layout.addWidget(title)
+        text_layout.addWidget(subtitle)
+        h.addWidget(text_block, stretch=1)
+        # finalize
+        item.setSizeHint(w.sizeHint())
         self.results_list.addItem(item)
+        self.results_list.setItemWidget(item, w)
+        # increment and update live count
+        try:
+            self._result_count += 1
+        except Exception:
+            self._result_count = 1
+        if self._result_count >= 100:
+            self.result_count_label.setText("100+ results (showing first 100) — refine to narrow")
+        else:
+            self.result_count_label.setText(f"{self._result_count} result{'s' if self._result_count != 1 else ''}")
                         
     def _on_item_activated(self, item):
         path = item.data(Qt.UserRole)
