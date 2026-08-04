@@ -146,19 +146,42 @@ python release_hash.py
 EleViewer uses a **factory pattern** for file handling. `file_handler.py` routes files to the correct viewer module (e.g., `docx_viewer.py`, `xlsx_viewer.py`, `pdf_viewer.py`).
 
 Key directories and modules:
-- `main.py` & `ui.py` — Entry point, system tray, and main window tab management.
+- `main.py`, `ui.py`, `file_handler.py` — First stop for new contributors. `main.py` boots the app, `ui.py` manages the main window and toolbar, and `file_handler.py` routes supported file types to viewer modules.
 - `editor.py` & `markdown_renderer.py` — Text and markdown editors with sanitized preview rendering.
 - `pdf_viewer.py`, `docx_viewer.py`, `pptx_viewer.py`, `xlsx_viewer.py`, `csv_viewer.py` — Format-specific viewers.
-- `vault_explorer.py`, `vault_search.py`, `vault_indexer.py` — Vault browser, live search, and SQLite FTS5 indexer.
-- `draft_recovery.py`, `feedback_dialog.py` — Background `QThread` workers for auto-backup and feedback.
+- `vault_explorer.py`, `vault_search.py`, `vault_indexer.py` — Vault browser, live search, and a pure-Python SQLite FTS5 indexer.
+- `draft_recovery.py`, `feedback_dialog.py` — Background `QThread` workers for auto-save and feedback submission.
 - `session_manager.py`, `save_utils.py`, `settings.py` — Atomic writes, settings, and session scroll/zoom/page restore.
-- `release_hash.py` — Automated SHA-256 release manifest generator for the packaged installer or bundled executable.
-- Tests live in the repository root as `test_*.py` files.
+- `release_hash.py` — SHA-256 release hash generator used by the installer and GitHub release flow.
+- Tests live in the repository root as `test_*.py` files. Use them to understand current behavior and validate your work.
 - Data is stored in `%APPDATA%\EleViewer\` (`recent_files.json`, `settings.json`, `session.json`, `vault_index.db`, etc.)
 
-- **ModuleNotFoundError (e.g., 'PySide6', 'docx')**: Ensure you've run `pip install -r requirements.txt`.
-- **Web panel not available**: Run `pip install PySide6-WebEngine`.
-- **PDF read-aloud not working**: Ensure `pyttsx3` is installed and Windows speech voices are enabled in OS settings. For higher quality neural voices, install `edge-tts` and `pygame` (requires internet connection).
+## 🧪 Testing
+
+All tests are run via `pytest` from the repository root.
+
+To run the full suite with live output:
+```bash
+pytest -s
+```
+
+To run a specific test file:
+```bash
+pytest -s test_all_ui_actions.py
+pytest -s test_markdown_renderer.py
+```
+
+If a test fails due to missing dependencies, ensure you have installed the requirements:
+```bash
+pip install -r requirements.txt
+```
+
+- **`ModuleNotFoundError` (e.g., 'PySide6', 'docx')**: Install missing packages from `requirements.txt`.
+- **Web panel not available**: Install the optional web engine dependency:
+  ```bash
+  pip install PySide6-WebEngine
+  ```
+- **PDF read-aloud not working**: Ensure `pyttsx3` is installed and Windows speech voices are enabled in OS settings. For higher quality neural voices, install `edge-tts`.
 
 ## 🛡️ The Offline-First Philosophy
 Independent utility apps often suffer from bloated file-rendering engines, heavy cloud dependencies, or unpolished UIs. EleViewer explicitly rejects this trend:

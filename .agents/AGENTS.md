@@ -12,9 +12,11 @@ This repository is a Python + PySide6 desktop app for browsing and studying loca
 - There is no Rust-based viewer implementation in the current repository; do not add Rust or PyO3 work unless the user explicitly asks for it.
 
 ## Before editing
+- Read `README.md` and `DEVELOPER_ONBOARDING.md` before making architecture or implementation changes.
 - Read the relevant module and nearby callers before changing behavior.
-- Check whether the change should be covered by an existing test in the repository root (for example [test_markdown_renderer.py](../test_markdown_renderer.py)).
+- Check whether the change should be covered by an existing test in the repository root (for example [test_markdown_renderer.py](../test_markdown_renderer.py)). Use `pytest -s <test_file>.py` to validate changes.
 - If a change affects public module APIs, search for imports before editing.
+- Website-specific UI/CSS changes belong in the `eleviewer-site` repository unless the user explicitly asks for desktop app changes.
 
 ## Implementation rules
 - Keep UI responsiveness in mind for preview-heavy paths. Debouncing, caching, and skipping redundant renders are preferred when the user is typing or revisiting the same content.
@@ -23,6 +25,6 @@ This repository is a Python + PySide6 desktop app for browsing and studying loca
 - Avoid adding new packages unless the task truly requires them.
 
 ## Validation
-- Run the relevant tests with `pytest`.
+- Run the relevant root-level tests with `pytest -s <test_file>.py`.
 - If the change touches a viewer, do a quick manual smoke check by launching the app with `python main.py`.
 

@@ -60,7 +60,7 @@ EleViewer relies heavily on standard PySide6 widgets and custom components to ke
 
 1. **Read the code first**: Start with the relevant viewer or UI module, then update the docs if behavior changes.
 2. **Keep the app lightweight**: Prefer smaller rendering changes, response-time improvements, and cache reuse over new dependencies.
-3. **Testing**: Run `python main.py` for manual smoke checks, or execute the repository's `test_*.py` suites with `pytest`.
+3. **Testing**: Run `python main.py` for manual smoke checks, or execute the repository's root `test_*.py` suites with `pytest` (for example `pytest -s test_all_ui_actions.py`).
 4. **Pull Requests**: Explain *why* a feature is needed, not just *what* it does. Ensure it doesn't break the "Offline First" or "Zero Telemetry" rules.
 
 Welcome aboard!
