@@ -293,7 +293,7 @@ class MainWindow(QMainWindow):
             from settings import load_settings
             behavior = load_settings().get("fresh_session_behavior", "welcome")
             if behavior == "welcome":
-                self.tabs.addTab(self._create_welcome_widget(), "Welcome")
+                self.tabs.addTab(self._create_welcome_widget(), "Dashboard")
             elif behavior == "blank_tab":
                 self.new_tab()
             # if 'empty', do nothing
@@ -1080,230 +1080,21 @@ class MainWindow(QMainWindow):
         self.update_status_bar()
 
     def _create_welcome_widget(self):
-        from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QGridLayout, QToolButton, QFrame, QLineEdit, QListWidget, QListWidgetItem, QSizePolicy, QScrollArea
-        from PySide6.QtCore import Qt, QSize
-        from PySide6.QtGui import QPixmap, QIcon
-        from theme import get_active_palette, get_brand_accent
-        p = get_active_palette()
-        from branding_logo import create_eleviewer_pixmap
-        from icons import icon
-        from recent_files import load_recent_files
-        from bookmark_manager import load_bookmarks
+        from home_view import DashboardView
+        dashboard = DashboardView(self)
+        dashboard.search_requested.connect(self.open_vault_search)
+        dashboard.new_note_requested.connect(self.new_tab)
+        dashboard.web_requested.connect(self.open_web_tab)
+        dashboard.file_requested.connect(self._open_vault_file)
         
-        w = QWidget()
-        w.is_welcome_tab = True
-        main_layout = QVBoxLayout(w)
-        main_layout.setAlignment(Qt.AlignCenter)
-        main_layout.setContentsMargins(0, 40, 0, 40)
+        def _handle_bookmark(b):
+            self._open_vault_file(b["file_path"])
+            ww = self.tabs.currentWidget()
+            if hasattr(ww, "go_to_bookmark"): 
+                ww.go_to_bookmark(b.get("page_number", 0), b.get("scroll_position_y", 0.0))
         
-        # Max-width container
-        container = QWidget()
-        container.setMinimumWidth(700)
-        container.setMaximumWidth(850)
-        c_layout = QVBoxLayout(container)
-        c_layout.setSpacing(40)
-        c_layout.setAlignment(Qt.AlignTop)
-        
-        # 1. Hero Section
-        hero = QWidget()
-        hero_layout = QVBoxLayout(hero)
-        hero_layout.setAlignment(Qt.AlignCenter)
-        hero_layout.setSpacing(15)
-        
-        logo_lbl = QLabel()
-        logo_lbl.setPixmap(create_eleviewer_pixmap(72))
-        logo_lbl.setAlignment(Qt.AlignCenter)
-        
-        title = QLabel("EleViewer")
-        title.setStyleSheet(f"font-size: 34px; font-weight: 800; color: {p['BRAND_PRIMARY']}; letter-spacing: -0.5px;")
-        title.setAlignment(Qt.AlignCenter)
-        
-        hero_layout.addWidget(logo_lbl)
-        hero_layout.addWidget(title)
-        c_layout.addWidget(hero)
-        
-        # 2. Premium Omnibar (Search)
-        search_btn = QToolButton()
-        search_btn.setText("   Search files, content, bookmarks, or type a URL...")
-        search_btn.setIcon(icon("search", size=20, color=p['BRAND_MUTED_FG']))
-        search_btn.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
-        search_btn.setCursor(Qt.PointingHandCursor)
-        search_btn.setStyleSheet(f"""
-            QToolButton {{
-                background: {p['BRAND_PANEL']};
-                color: {p['BRAND_MUTED_FG']};
-                border: 1px solid {p['BRAND_BORDER']};
-                border-radius: 12px;
-                padding: 14px 24px;
-                font-size: 15px;
-                text-align: left;
-            }}
-            QToolButton:hover {{
-                border: 1px solid {get_brand_accent()};
-                background: {p['BRAND_PANEL_2']};
-                color: {p['BRAND_PRIMARY']};
-            }}
-        """)
-        search_btn.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-        search_btn.clicked.connect(self.open_vault_search)
-        c_layout.addWidget(search_btn)
-        
-        # 3. Three Columns: Recent, Bookmarks, & Actions
-        columns = QWidget()
-        cols_layout = QHBoxLayout(columns)
-        cols_layout.setSpacing(50)
-        cols_layout.setAlignment(Qt.AlignTop)
-        
-        # LEFT: Activity
-        left_col = QWidget()
-        left_layout = QVBoxLayout(left_col)
-        left_layout.setSpacing(12)
-        
-        list_style = f"""
-            QListWidget {{ background: transparent; border: none; color: {p['BRAND_PRIMARY']}; outline: none; font-size: 14px; }}
-            QListWidget::item {{ padding: 10px; border-radius: 6px; color: {p['BRAND_PRIMARY']}; }}
-            QListWidget::item:hover {{ background: {p['BRAND_PANEL_2']}; }}
-        """
-        
-        recent_lbl = QLabel("RECENT FILES")
-        recent_lbl.setStyleSheet(f"color: {p['BRAND_MUTED_FG']}; font-size: 12px; font-weight: bold; letter-spacing: 1px;")
-        left_layout.addWidget(recent_lbl)
-        
-        recent_list = QListWidget()
-        recent_list.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        recent_list.setStyleSheet(list_style)
-        recent_list.setSelectionMode(QListWidget.NoSelection)
-        recent_list.setCursor(Qt.PointingHandCursor)
-        recent_files = load_recent_files(validate=True)[:3]
-        if not recent_files:
-            recent_list.addItem(QListWidgetItem("No recent files"))
-        else:
-            for path in recent_files:
-                item = QListWidgetItem(icon("book-open", size=16, color=p['BRAND_PRIMARY']), "  " + os.path.basename(path))
-                item.setData(Qt.UserRole, path)
-                recent_list.addItem(item)
-        recent_list.setMinimumHeight(100)
-        recent_list.itemClicked.connect(lambda it: self._open_vault_file(it.data(Qt.UserRole)) if it.data(Qt.UserRole) else None)
-        left_layout.addWidget(recent_list)
-        left_layout.addStretch()
-        
-        # MIDDLE: Bookmarks
-        mid_col = QWidget()
-        mid_layout = QVBoxLayout(mid_col)
-        mid_layout.setSpacing(12)
-        
-        bm_lbl = QLabel("BOOKMARKS")
-        bm_lbl.setStyleSheet(f"color: {p['BRAND_MUTED_FG']}; font-size: 12px; font-weight: bold; letter-spacing: 1px;")
-        mid_layout.addWidget(bm_lbl)
-        
-        bm_list = QListWidget()
-        bm_list.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        bm_list.setStyleSheet(list_style)
-        bm_list.setSelectionMode(QListWidget.NoSelection)
-        bm_list.setCursor(Qt.PointingHandCursor)
-        bms = load_bookmarks()[:3]
-        if not bms:
-            bm_list.addItem(QListWidgetItem("No bookmarks"))
-        else:
-            for b in bms:
-                item = QListWidgetItem(icon("bookmark", size=16, color=p['BRAND_PRIMARY']), "  " + b.get("label", "Bookmark"))
-                item.setData(Qt.UserRole, b)
-                bm_list.addItem(item)
-        bm_list.setMinimumHeight(100)
-        
-        def _handle_bm(it):
-            b = it.data(Qt.UserRole)
-            if b:
-                self._open_vault_file(b["file_path"])
-                ww = self.tabs.currentWidget()
-                if hasattr(ww, "go_to_bookmark"): ww.go_to_bookmark(b.get("page_number", 0), b.get("scroll_position_y", 0.0))
-        bm_list.itemClicked.connect(_handle_bm)
-        mid_layout.addWidget(bm_list)
-        mid_layout.addStretch()
-        
-        # RIGHT: Actions
-        right_col = QWidget()
-        right_layout = QVBoxLayout(right_col)
-        right_layout.setSpacing(12)
-        
-        btn_style = f"""
-            QToolButton {{
-                background: {p['BRAND_PANEL']};
-                color: {p['BRAND_PRIMARY']};
-                border: 1px solid {p['BRAND_BORDER']};
-                border-radius: 8px;
-                padding: 12px;
-                font-size: 14px;
-                font-weight: 500;
-            }}
-            QToolButton:hover {{
-                background: {p['BRAND_PANEL_2']};
-                border: 1px solid {get_brand_accent()};
-            }}
-        """
-        
-        btn_note = QToolButton()
-        btn_note.setText(" New Text Note")
-        btn_note.setIcon(icon("file-plus", size=18, color=p['BRAND_PRIMARY']))
-        btn_note.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
-        btn_note.setStyleSheet(btn_style)
-        btn_note.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-        btn_note.setCursor(Qt.PointingHandCursor)
-        btn_note.clicked.connect(self.new_tab)
-        
-        btn_web = QToolButton()
-        btn_web.setText(" Open Web Browser")
-        btn_web.setIcon(icon("globe", size=18, color=p['BRAND_PRIMARY']))
-        btn_web.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
-        btn_web.setStyleSheet(btn_style)
-        btn_web.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-        btn_web.setCursor(Qt.PointingHandCursor)
-        # FIX: Previously connected to new_tab incorrectly
-        btn_web.clicked.connect(self.open_web_tab)
-        
-        right_layout.addWidget(btn_note)
-        right_layout.addWidget(btn_web)
-        
-        # Sleek Shortcuts
-        sc_lbl = QLabel("QUICK ACTIONS")
-        sc_lbl.setStyleSheet(f"color: {p['BRAND_MUTED_FG']}; font-size: 12px; font-weight: bold; letter-spacing: 1px; margin-top: 15px;")
-        right_layout.addWidget(sc_lbl)
-        
-        shortcuts = [
-            ("Ctrl+O", "Open file"),
-            ("Alt+V", "Toggle vault"),
-            ("F11", "Zen mode")
-        ]
-
-        grid = QWidget()
-        grid_layout = QGridLayout(grid)
-        grid_layout.setSpacing(12)
-        grid_layout.setContentsMargins(0, 5, 0, 0)
-        for i, (key, desc) in enumerate(shortcuts):
-            k_lbl = QLabel(key)
-            k_lbl.setStyleSheet(f"background: {p['BRAND_BACKGROUND']}; border: 1px solid {p['BRAND_BORDER']}; padding: 4px 8px; border-radius: 4px; font-family: monospace; color: {get_brand_accent()}; font-size: 12px;")
-            d_lbl = QLabel(desc)
-            d_lbl.setStyleSheet(f"color: {p['BRAND_MUTED_FG']}; font-size: 13px;")
-            grid_layout.addWidget(k_lbl, i, 0)
-            grid_layout.addWidget(d_lbl, i, 1)
-            
-        right_layout.addWidget(grid)
-        right_layout.addStretch()
-        
-        cols_layout.addWidget(left_col, stretch=1)
-        cols_layout.addWidget(mid_col, stretch=1)
-        cols_layout.addWidget(right_col, stretch=1)
-        c_layout.addWidget(columns)
-        
-        main_layout.addWidget(container)
-        main_layout.addStretch()
-        
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
-        scroll.setFrameShape(QFrame.NoFrame)
-        scroll.setWidget(w)
-        scroll.is_welcome_tab = True
-        return scroll
+        dashboard.bookmark_requested.connect(_handle_bookmark)
+        return dashboard
 
     def _replace_welcome_if_present(self):
         if self.tabs.count() == 1:
@@ -1685,7 +1476,7 @@ class MainWindow(QMainWindow):
             if getattr(widget, "is_welcome_tab", False):
                 self.tabs.setCurrentIndex(i)
                 return
-        self.tabs.addTab(self._create_welcome_widget(), "Welcome")
+        self.tabs.addTab(self._create_welcome_widget(), "Dashboard")
         self.tabs.setCurrentIndex(self.tabs.count() - 1)
 
     # FIX: WA_DeleteOnClose=True ensures dialog is freed on close
@@ -1898,12 +1689,8 @@ class MainWindow(QMainWindow):
             widget.deleteLater()
 
         if self.tabs.count() == 0:
-            from empty_state import EmptyStateWidget
-            empty_state = EmptyStateWidget(self)
-            empty_state.open_vault_requested.connect(self.add_vault)
-            empty_state.new_file_requested.connect(self.new_tab)
-            empty_state.is_welcome_tab = True
-            self.tabs.addTab(empty_state, "Home")
+            dashboard = self._create_welcome_widget()
+            self.tabs.addTab(dashboard, "Dashboard")
             self.update_status_bar()
         else:
             self.update_status_bar()
@@ -1981,7 +1768,7 @@ class MainWindow(QMainWindow):
             if w:
                 w.deleteLater()
         clear_session()
-        self.tabs.addTab(self._create_welcome_widget(), "Welcome")
+        self.tabs.addTab(self._create_welcome_widget(), "Dashboard")
         self.show_status_message("Started new fresh session", 3000)
 
     def open_vault_search(self, active_vault=None):
