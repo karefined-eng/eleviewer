@@ -9,6 +9,9 @@ import os
 import zipfile
 import xml.etree.ElementTree as ET
 
+_PPTX_RENDER_CACHE = {}
+_PPTX_RENDER_CACHE_MAX_ENTRIES = 24
+
 try:
     import pptx  # type: ignore
     PPTX_AVAILABLE = True
@@ -25,7 +28,8 @@ from PySide6.QtGui import QIntValidator, QKeyEvent, QShortcut, QKeySequence
 from icons import icon
 from theme import (
     compact_toolbar_stylesheet, ICON_SIZE_COMPACT,
-    get_active_palette, get_brand_accent,
+    get_active_palette, get_brand_accent, BRAND_BACKGROUND, BRAND_BORDER,
+    BRAND_PANEL, BRAND_PANEL_2, BRAND_PRIMARY, BRAND_MUTED_FG,
 )
 
 
@@ -167,8 +171,40 @@ class PptxViewer(QWidget):
         if file_path:
             self.load_from_path(file_path)
 
+    def _get_render_cache_key(self, file_path):
+        if not file_path or not os.path.exists(file_path):
+            return None
+        try:
+            return (file_path, os.path.getmtime(file_path), os.path.getsize(file_path))
+        except OSError:
+            return None
+
+    def _get_cached_render(self, file_path):
+        key = self._get_render_cache_key(file_path)
+        if key is None:
+            return None
+        return _PPTX_RENDER_CACHE.get(key)
+
+    def _cache_render(self, file_path, slides, html):
+        key = self._get_render_cache_key(file_path)
+        if key is None:
+            return
+        if len(_PPTX_RENDER_CACHE) >= _PPTX_RENDER_CACHE_MAX_ENTRIES:
+            _PPTX_RENDER_CACHE.pop(next(iter(_PPTX_RENDER_CACHE)))
+        _PPTX_RENDER_CACHE[key] = {"slides": slides, "html": html}
+
     def load_from_path(self, file_path):
         self.file_path = file_path
+        cached = self._get_cached_render(file_path)
+        if cached is not None:
+            self.slides = cached["slides"]
+            self._populate_slide_list()
+            self.total_slides = len(self.slides)
+            self.lbl_total.setText(f" / {self.total_slides}")
+            self._render_continuous_html(cached["html"])
+            self.go_to_slide(0)
+            return
+
         self.slides = []
 
         if PPTX_AVAILABLE:
@@ -216,15 +252,12 @@ class PptxViewer(QWidget):
 
         self.total_slides = len(self.slides)
         self.lbl_total.setText(f" / {self.total_slides}")
-
-        self.slide_list.clear()
-        for idx, s in enumerate(self.slides, start=1):
-            title_text = s["title"][:28] + ("…" if len(s["title"]) > 28 else "")
-            item = QListWidgetItem(f"{idx}. {title_text}")
-            self.slide_list.addItem(item)
+        self._populate_slide_list()
 
         if self.total_slides > 0:
-            self._render_continuous_html()
+            html = self._build_continuous_html(self.slides)
+            self._cache_render(file_path, self.slides, html)
+            self._render_continuous_html(html)
             self.go_to_slide(0)
 
     def _fallback_zip_parse(self, file_path):
@@ -308,20 +341,27 @@ class PptxViewer(QWidget):
                 self.viewer.moveCursor(self.viewer.textCursor().Start)
                 self.viewer.find(query)
 
-    def _render_continuous_html(self):
+    def _populate_slide_list(self):
+        self.slide_list.clear()
+        for idx, s in enumerate(self.slides, start=1):
+            title_text = s["title"][:28] + ("…" if len(s["title"]) > 28 else "")
+            item = QListWidgetItem(f"{idx}. {title_text}")
+            self.slide_list.addItem(item)
+
+    def _build_continuous_html(self, slides=None):
         accent = get_brand_accent()
+        slides = slides or self.slides
         html = f"<div style='background: {BRAND_BACKGROUND}; padding-bottom: 40px;'>"
         
-        for index, slide_data in enumerate(self.slides):
+        for index, slide_data in enumerate(slides):
             raw_content = slide_data['content'] or ''
             content_html = raw_content.replace('\n', '<br>') if raw_content else '<i>(No text content on this slide)</i>'
             
-            # Use anchor for scrolling
             html += f"<a name='slide_{index}'></a>"
             html += f"""
             <div style="max-width: 800px; margin: 30px auto; padding: 40px; background: {BRAND_PANEL}; border: 1px solid {BRAND_BORDER}; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">
                 <div style="color: {accent}; font-size: 0.8em; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">
-                    SLIDE {index + 1} OF {self.total_slides}
+                    SLIDE {index + 1} OF {len(slides)}
                 </div>
                 <h1 style="color: {BRAND_PRIMARY}; font-size: 1.5em; margin-top: 0; margin-bottom: 20px; border-bottom: 1px solid {BRAND_BORDER}; padding-bottom: 10px;">
                     {slide_data['title']}
@@ -341,6 +381,11 @@ class PptxViewer(QWidget):
             html += "</div>"
             
         html += "</div>"
+        return html
+
+    def _render_continuous_html(self, html=None):
+        if html is None:
+            html = self._build_continuous_html(self.slides)
         self.viewer.setHtml(html)
 
     def _on_sidebar_click(self, index):

@@ -4,6 +4,8 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Signal, Qt, QEvent, QTimer, QSize, QObject
 from PySide6.QtGui import QMouseEvent, QAction, QTextDocument
+from collections import OrderedDict
+import hashlib
 import markdown
 import re
 try:
@@ -23,6 +25,9 @@ from theme import (
 MODE_VIEW = 0
 MODE_SIMPLE = 1
 MODE_SYNTAX = 2
+
+_RENDER_CACHE_MAX_ENTRIES = 48
+_RENDER_CACHE = OrderedDict()
 
 
 class PreviewEventFilter(QObject):
@@ -83,6 +88,12 @@ class MarkdownViewer(QWidget):
         self.is_modified = False
         self._mode = MODE_VIEW
         self._icon_size = resolve_markdown_icon_size()
+        self._preview_timer = QTimer(self)
+        self._preview_timer.setSingleShot(True)
+        self._preview_timer.setInterval(140)
+        self._preview_timer.timeout.connect(self._render_pending_preview)
+        self._pending_preview_text = None
+        self._preview_dirty = False
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -379,6 +390,26 @@ class MarkdownViewer(QWidget):
 
     # ── Core Modes ───────────────────────────────────────────────────
 
+    def _build_render_cache_key(self, text):
+        digest = hashlib.sha1(text.encode("utf-8", "ignore")).hexdigest()[:16]
+        return (self.is_html, digest)
+
+    def _get_cached_preview(self, text):
+        key = self._build_render_cache_key(text)
+        cached = _RENDER_CACHE.get(key)
+        if cached is not None:
+            _RENDER_CACHE.move_to_end(key)
+        return cached
+
+    def _cache_preview(self, text, html):
+        key = self._build_render_cache_key(text)
+        if key in _RENDER_CACHE:
+            _RENDER_CACHE.move_to_end(key)
+        else:
+            if len(_RENDER_CACHE) >= _RENDER_CACHE_MAX_ENTRIES:
+                _RENDER_CACHE.popitem(last=False)
+        _RENDER_CACHE[key] = html
+
     # SECURITY: sanitize HTML output before rendering to prevent XSS
     def _render_markdown(self, text):
         if self.is_html:
@@ -414,13 +445,48 @@ class MarkdownViewer(QWidget):
                 html_body = bleach.clean(html_body, tags=allowed_tags, attributes=allowed_attrs)
         return f"<html><head><style>{markdown_preview_css()}</style></head><body>{html_body}</body></html>"
 
+    def _render_preview_text(self, text):
+        if text is None:
+            text = self.toPlainText()
+        cached = self._get_cached_preview(text)
+        if cached is not None:
+            self.viewer.setHtml(cached)
+            self._preview_dirty = False
+            return
+        html = self._render_markdown(text)
+        self._cache_preview(text, html)
+        self.viewer.setHtml(html)
+        self._preview_dirty = False
+
+    def _schedule_preview_render(self, text=None, immediate=False):
+        if text is None:
+            text = self.toPlainText()
+        if immediate:
+            self._preview_timer.stop()
+            self._pending_preview_text = None
+            self._render_preview_text(text)
+            return
+        self._pending_preview_text = text
+        self._preview_timer.start()
+
+    def _render_pending_preview(self):
+        text = self._pending_preview_text
+        self._pending_preview_text = None
+        if text is None:
+            text = self.toPlainText()
+        if self._mode == MODE_VIEW:
+            self._render_preview_text(text)
+        else:
+            self._preview_dirty = True
+
     def _sync_from_syntax(self):
         text = self.editor.toPlainText()
         if not self.is_html:
             self.simple_editor.blockSignals(True)
             self.simple_editor.setPlainText(markdown_to_simple(text))
             self.simple_editor.blockSignals(False)
-        self.viewer.setHtml(self._render_markdown(text))
+        self._preview_dirty = True
+        self._schedule_preview_render(text, immediate=True)
 
     def enter_view_mode(self):
         self._sync_from_syntax()
@@ -498,6 +564,9 @@ class MarkdownViewer(QWidget):
     def _on_syntax_changed(self):
         self.is_modified = True
         self.textChanged.emit()
+        self._preview_dirty = True
+        if self._mode == MODE_VIEW:
+            self._schedule_preview_render()
 
     def _on_simple_changed(self):
         if self.is_html:
@@ -507,6 +576,9 @@ class MarkdownViewer(QWidget):
         self.editor.blockSignals(False)
         self.is_modified = True
         self.textChanged.emit()
+        self._preview_dirty = True
+        if self._mode == MODE_VIEW:
+            self._schedule_preview_render()
 
     def toPlainText(self):
         if self._mode == MODE_SIMPLE and not self.is_html:
@@ -519,10 +591,10 @@ class MarkdownViewer(QWidget):
         self.editor.setPlainText(text)
         if not self.is_html:
             self.simple_editor.setPlainText(markdown_to_simple(text))
-        self.viewer.setHtml(self._render_markdown(text))
         self.editor.blockSignals(False)
         self.simple_editor.blockSignals(False)
         self.is_modified = False
+        self._schedule_preview_render(text, immediate=True)
 
     def find_text(self, text, match_case=False, whole_word=False, forward=True):
         if not text:
