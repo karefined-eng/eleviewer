@@ -65,10 +65,12 @@ class TtsReaderBar(QFrame):
                 background-color: {p['BRAND_PANEL_2']};
             }}
             QToolButton#TtsStopBtn:hover {{
-                background-color: rgba(239, 68, 68, 0.25);
+                background-color: {p['BRAND_ERROR']};
+                color: {p['BRAND_BACKGROUND']};
             }}
             QToolButton#TtsStopBtn:pressed {{
-                background-color: rgba(239, 68, 68, 0.6);
+                background-color: {p['BRAND_ERROR']};
+                color: {p['BRAND_BACKGROUND']};
             }}
         """)
 
@@ -95,7 +97,7 @@ class TtsReaderBar(QFrame):
         # Stop button
         self.btn_stop = QToolButton()
         self.btn_stop.setObjectName("TtsStopBtn")
-        self.btn_stop.setIcon(icon("square", size=18, color="#ef4444"))
+        self.btn_stop.setIcon(icon("square", size=18, color=p['BRAND_ERROR']))
         self.btn_stop.setToolTip("Stop reading")
         self.btn_stop.clicked.connect(self.stop_requested.emit)
         layout.addWidget(self.btn_stop)
@@ -109,7 +111,8 @@ class TtsReaderBar(QFrame):
         # Close button
         self.btn_close = QToolButton()
         p = get_active_palette()
-        self.btn_close.setIcon(icon("x", size=14, color=p['BRAND_MUTED_FG']))
+        self.btn_close.setIcon(icon("x", size=16, color=p['BRAND_MUTED_FG']))
+        self.btn_close.setStyleSheet(f"padding: 6px;")
         self.btn_close.setToolTip("Hide reader bar")
         self.btn_close.clicked.connect(self._on_close)
         layout.addWidget(self.btn_close)
@@ -117,7 +120,7 @@ class TtsReaderBar(QFrame):
     def apply_style(self, active=False):
         p = get_active_palette()
         accent = get_active_accent()["accent"]
-        bg = "#121e2b" if active else p['BRAND_PANEL']
+        bg = p['BRAND_PANEL_2'] if active else p['BRAND_PANEL']
         border = f"1.5px solid {accent}" if active else f"1px solid {p['BRAND_BORDER']}"
         self.setStyleSheet(f"""
             QFrame#TtsReaderBar {{
@@ -153,13 +156,15 @@ class TtsReaderBar(QFrame):
                 padding: 3px;
             }}
             QToolButton:hover {{
-                background-color: #2a2a2a;
+                background-color: {p['BRAND_PANEL_2']};
             }}
             QToolButton#TtsStopBtn:hover {{
-                background-color: rgba(239, 68, 68, 0.25);
+                background-color: {p['BRAND_ERROR']};
+                color: {p['BRAND_BACKGROUND']};
             }}
             QToolButton#TtsStopBtn:pressed {{
-                background-color: rgba(239, 68, 68, 0.6);
+                background-color: {p['BRAND_ERROR']};
+                color: {p['BRAND_BACKGROUND']};
             }}
         """)
 
@@ -177,11 +182,12 @@ class TtsReaderBar(QFrame):
     def set_status(self, filename: str, page_info: str = "", is_reading: bool = True):
         """Update status label, e.g. 'Reading aloud: lecture-04.pdf — page 12 of 38'."""
         accent = get_active_accent()["accent"]
+        p = get_active_palette()
         prefix = "Reading aloud:" if is_reading else "Text-To-Speech:"
         if page_info:
-            msg = f"<span style='color:{accent}; font-weight:bold;'>{prefix}</span> <span style='color:#ffffff; font-weight:bold;'>{filename}</span> — <span style='color:#a0a0a0;'>{page_info}</span>"
+            msg = f"<span style='color:{accent}; font-weight:bold;'>{prefix}</span> <span style='color:{p['BRAND_PRIMARY']}; font-weight:bold;'>{filename}</span> — <span style='color:{p['BRAND_MUTED_FG']};'>{page_info}</span>"
         else:
-            msg = f"<span style='color:{accent}; font-weight:bold;'>{prefix}</span> <span style='color:#ffffff; font-weight:bold;'>{filename}</span>"
+            msg = f"<span style='color:{accent}; font-weight:bold;'>{prefix}</span> <span style='color:{p['BRAND_PRIMARY']}; font-weight:bold;'>{filename}</span>"
         self.status_label.setText(msg)
         self.set_active_reading(is_reading)
 

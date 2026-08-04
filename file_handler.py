@@ -3,7 +3,7 @@ from pathlib import Path
 # Heavy viewers are lazily imported inside create_viewer_widget() for <100ms cold start
 
 
-BINARY_FORMATS = {"docx", "xlsx", "pdf", "pptx"}
+BINARY_FORMATS = {"docx", "xlsx", "pdf", "pptx", "epub"}
 TEXT_RESTORE_FORMATS = {"txt", "md", "csv", "tsv", "html", "htm", ""}
 
 
@@ -77,6 +77,12 @@ def create_viewer_widget(file_path, content=None):
     elif ext == "pptx":
         from pptx_viewer import PptxViewer
         viewer = PptxViewer(file_path)
+        viewer.file_path = file_path
+        return viewer
+
+    elif ext == "epub":
+        from epub_viewer import EpubViewer
+        viewer = EpubViewer(file_path)
         viewer.file_path = file_path
         return viewer
 

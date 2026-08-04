@@ -16,7 +16,7 @@ if len(sys.argv) > 1 and sys.argv[1] == "--webview-worker":
     webview_worker.main()
     sys.exit(0)
 
-APP_VERSION = "1.3.0"
+APP_VERSION = "1.3.1"
 
 # Set AppUserModelID so taskbar grouping and jump lists work correctly
 try:
@@ -121,8 +121,19 @@ sys.excepthook = global_exception_handler
 
 # Hardware acceleration toggle must be applied before QApplication starts
 settings = load_settings()
+_chromium_flags = [
+    "--process-per-site",          # one renderer process shared across same-origin pages (saves ~100-200MB)
+    "--disable-background-networking",  # no background prefetch/update pings
+    "--disable-sync",              # no Chrome sync overhead
+    "--no-first-run",              # skip first-run setup checks
+    "--disable-extensions",        # no extension host process
+]
 if not settings.get("hardware_acceleration_enabled", True):
-    os.environ["QTWEBENGINE_CHROMIUM_FLAGS"] = "--disable-gpu"
+    _chromium_flags.append("--disable-gpu")
+os.environ["QTWEBENGINE_CHROMIUM_FLAGS"] = " ".join(_chromium_flags)
+
+# Suppress Chromium renderer font-size noise (harmless QFont::setPointSize(-1) on web font init)
+os.environ.setdefault("QT_LOGGING_RULES", "qt.qpa.fonts.warning=false")
 
 app = QApplication(sys.argv)
 

@@ -16,6 +16,26 @@ def main_window(tmp_path):
     yield win
     win.close()
 
+@pytest.fixture(autouse=True)
+def mock_subprocess(monkeypatch):
+    import subprocess
+    class DummyPopen:
+        def __init__(self, *args, **kwargs):
+            self.args = args[0] if args else "ver"
+        def __enter__(self):
+            return self
+        def __exit__(self, *args):
+            pass
+        def communicate(self, *args, **kwargs):
+            return ("Microsoft Windows [Version 10.0.19045.5487]", "")
+        def poll(self):
+            return 0
+        returncode = 0
+        stdout = "Microsoft Windows [Version 10.0.19045.5487]"
+        stderr = ""
+    monkeypatch.setattr(subprocess, "Popen", lambda *args, **kwargs: DummyPopen(*args, **kwargs))
+
+
 def test_mainwindow_instantiation(main_window):
     assert main_window is not None
     assert main_window.tabs is not None
@@ -41,6 +61,7 @@ def test_mainwindow_tab_operations(main_window, tmp_path):
     main_window.reopen_closed_tab()
 
 def test_mainwindow_toggle_panels(main_window):
+
     # Toggle Vault Panel
     main_window.toggle_vault_panel()
     assert main_window.vault_panel is not None
@@ -60,6 +81,10 @@ def test_mainwindow_dialog_triggers(main_window, monkeypatch):
     # Prevent exec_ modal blocks during automated test
     monkeypatch.setattr("PySide6.QtWidgets.QDialog.exec", lambda self: 0)
     monkeypatch.setattr("PySide6.QtWidgets.QDialog.exec_", lambda self: 0)
+    monkeypatch.setattr("PySide6.QtWidgets.QMessageBox.information", lambda *args, **kwargs: 0)
+    monkeypatch.setattr("PySide6.QtWidgets.QMessageBox.warning", lambda *args, **kwargs: 0)
+    monkeypatch.setattr("PySide6.QtWidgets.QMessageBox.critical", lambda *args, **kwargs: 0)
+    monkeypatch.setattr("PySide6.QtWidgets.QMessageBox.question", lambda *args, **kwargs: 0)
     
     main_window.open_settings()
     main_window.open_feedback_dialog()
@@ -69,6 +94,10 @@ def test_all_menu_actions_and_toolbar_buttons(main_window, monkeypatch):
     # Prevent modal exec blocks
     monkeypatch.setattr("PySide6.QtWidgets.QDialog.exec", lambda self: 0)
     monkeypatch.setattr("PySide6.QtWidgets.QDialog.exec_", lambda self: 0)
+    monkeypatch.setattr("PySide6.QtWidgets.QMessageBox.information", lambda *args, **kwargs: 0)
+    monkeypatch.setattr("PySide6.QtWidgets.QMessageBox.warning", lambda *args, **kwargs: 0)
+    monkeypatch.setattr("PySide6.QtWidgets.QMessageBox.critical", lambda *args, **kwargs: 0)
+    monkeypatch.setattr("PySide6.QtWidgets.QMessageBox.question", lambda *args, **kwargs: 0)
 
     # Test new file creation for all supported extensions
     from editor import EditorTab
@@ -97,6 +126,10 @@ def test_all_menu_actions_and_toolbar_buttons(main_window, monkeypatch):
     main_window.open_vault_search()
     main_window.open_settings()
     main_window.open_quick_switcher()
+    
+    # Mock _new_session to prevent launching a detached subprocess that locks session.json
+
+    # Call original _new_session to reset tabs
     main_window._new_session()
     assert main_window.tabs.count() == 1  # Session cleared to welcome/blank tab
 

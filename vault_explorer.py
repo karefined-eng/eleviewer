@@ -5,9 +5,10 @@ from pathlib import Path
 
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QTreeWidget, QTreeWidgetItem,
-    QLabel, QComboBox, QToolButton,
+    QLabel, QComboBox, QToolButton, QFrame,
 )
-from PySide6.QtCore import Signal, Qt, QSize
+from PySide6.QtCore import Signal, Qt, QSize, QTimer
+from PySide6.QtGui import QColor
 
 from icons import icon
 from settings import (
@@ -47,7 +48,10 @@ class VaultExplorer(QWidget):
         self.vault_selector = QComboBox()
         p = get_active_palette()
         self.vault_selector.setStyleSheet(
-            f"QComboBox {{ background: {p['BRAND_PANEL_2']}; color: {p['BRAND_PRIMARY']}; border: 1px solid {p['BRAND_BORDER']}; padding: 4px; }} QComboBox QAbstractItemView {{ background: {p['BRAND_PANEL']}; color: {p['BRAND_PRIMARY']}; border: 1px solid {p['BRAND_BORDER']}; selection-background-color: {get_brand_accent()}; selection-color: {p['BRAND_BACKGROUND']}; }}"
+            f"QComboBox {{ background: {p['BRAND_PANEL_2']}; color: {p['BRAND_PRIMARY']}; border: 1px solid transparent; padding: 6px 10px; border-radius: 6px; font-weight: bold; }} "
+            f"QComboBox:hover {{ border: 1px solid {p['BRAND_BORDER']}; }} "
+            f"QComboBox::drop-down {{ border: none; width: 20px; }} "
+            f"QComboBox QAbstractItemView {{ background: {p['BRAND_PANEL']}; color: {p['BRAND_PRIMARY']}; border: 1px solid {p['BRAND_BORDER']}; selection-background-color: {get_brand_accent()}; selection-color: {p['BRAND_BACKGROUND']}; }}"
         )
         self.vault_selector.currentIndexChanged.connect(self._on_vault_selected)
 
@@ -90,6 +94,15 @@ class VaultExplorer(QWidget):
 
         layout.addLayout(header_row)
         layout.addWidget(self.tree)
+
+        # Empty state — shown when no vaults are configured
+        self._empty_label = QLabel("No vault open yet.\nClick \u2009\u2009\u2009to add a folder.")
+        self._empty_label.setObjectName("vault_empty")
+        self._empty_label.setAlignment(Qt.AlignCenter)
+        self._empty_label.setWordWrap(True)
+        self._empty_label.hide()
+        layout.addWidget(self._empty_label)
+
         self.reload_theme()
 
     def reload_theme(self):
@@ -97,7 +110,10 @@ class VaultExplorer(QWidget):
         accent = get_brand_accent()
         self.setStyleSheet(f"background-color: {p['BRAND_PANEL']}; color: {p['BRAND_PRIMARY']};")
         self.vault_selector.setStyleSheet(
-            f"QComboBox {{ background: {p['BRAND_PANEL_2']}; color: {p['BRAND_PRIMARY']}; border: 1px solid {p['BRAND_BORDER']}; padding: 4px; border-radius: 4px; }} QComboBox QAbstractItemView {{ background: {p['BRAND_PANEL']}; color: {p['BRAND_PRIMARY']}; border: 1px solid {p['BRAND_BORDER']}; selection-background-color: {accent}; selection-color: {p['BRAND_PRIMARY_FG']}; }}"
+            f"QComboBox {{ background: {p['BRAND_PANEL_2']}; color: {p['BRAND_PRIMARY']}; border: 1px solid transparent; padding: 6px 10px; border-radius: 6px; font-weight: bold; }} "
+            f"QComboBox:hover {{ border: 1px solid {p['BRAND_BORDER']}; }} "
+            f"QComboBox::drop-down {{ border: none; width: 20px; }} "
+            f"QComboBox QAbstractItemView {{ background: {p['BRAND_PANEL']}; color: {p['BRAND_PRIMARY']}; border: 1px solid {p['BRAND_BORDER']}; selection-background-color: {accent}; selection-color: {p['BRAND_BACKGROUND']}; }}"
         )
         self.tree.setStyleSheet(f"""
             QTreeWidget {{
@@ -107,7 +123,7 @@ class VaultExplorer(QWidget):
                 font-size: 13px;
                 outline: none;
             }}
-            QTreeWidget::item {{ padding: 5px 6px; border-left: 2px solid transparent; }}
+            QTreeWidget::item {{ padding: 6px 8px; border-left: 2px solid transparent; }}
             QTreeWidget::item:selected {{ background: {p['BRAND_PANEL_2']}; border-left: 2px solid {accent}; color: {p['BRAND_PRIMARY']}; font-weight: bold; }}
             QTreeWidget::item:hover:!selected {{ background: {p['BRAND_PANEL_2']}; }}
         """)
@@ -128,7 +144,6 @@ class VaultExplorer(QWidget):
         self._refresh_selector()
         if self._vault_paths:
             self._load_vault_tree(self._vault_paths[self._active_index])
-            schedule_vault_index(self._vault_paths)
             schedule_vault_index(self._vault_paths)
 
     def add_vault(self, path):
@@ -154,6 +169,7 @@ class VaultExplorer(QWidget):
             self._load_vault_tree(self._vault_paths[self._active_index])
         else:
             self.tree.clear()
+            self._show_empty_state(True)
         self.vaults_changed.emit()
 
     def _refresh_selector(self):
@@ -175,10 +191,23 @@ class VaultExplorer(QWidget):
     def refresh_active_vault(self):
         idx = self.vault_selector.currentIndex()
         if idx >= 0:
+            # State 1: Loading — swap icon to spinner
+            self.btn_refresh.setIcon(icon("loader", size=ICON_SIZE_COMPACT))
+            self.btn_refresh.setEnabled(False)
             self._on_vault_selected(idx)
             vault_path = self.vault_selector.currentData()
             if vault_path:
                 schedule_vault_index([vault_path])
+            # State 4: Success — restore icon after 600ms
+            QTimer.singleShot(600, self._restore_refresh_btn)
+
+    def _restore_refresh_btn(self):
+        self.btn_refresh.setIcon(icon("rotate-cw", size=ICON_SIZE_COMPACT))
+        self.btn_refresh.setEnabled(True)
+
+    def _show_empty_state(self, visible: bool):
+        self.tree.setVisible(not visible)
+        self._empty_label.setVisible(visible)
 
     def _emit_search(self):
         vault_path = self.vault_selector.currentData()
@@ -186,7 +215,16 @@ class VaultExplorer(QWidget):
             self.search_requested.emit(vault_path)
 
     def _load_vault_tree(self, path):
+        self._show_empty_state(False)
         self.tree.clear()
+        if not path or not os.path.isdir(path):
+            # State 3: Error — path no longer accessible
+            err_item = QTreeWidgetItem(["Couldn't read vault folder"])
+            err_item.setToolTip(0, f"Folder not found or inaccessible: {path}\nTry removing and re-adding this vault.")
+            p = get_active_palette()
+            err_item.setForeground(0, QColor(p["BRAND_MUTED_FG"]))
+            self.tree.addTopLevelItem(err_item)
+            return
         root = Path(path)
         root_item = QTreeWidgetItem([root.name or str(root)])
         root_item.setData(0, Qt.UserRole, str(root))

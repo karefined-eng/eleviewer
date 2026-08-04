@@ -183,7 +183,7 @@ class MarkdownViewer(QWidget):
         self.stack = QStackedWidget()
 
         try:
-            from web_panel import WebViewWrapper, WEB_AVAILABLE
+            from web_panel import _SecureWebView as WebViewWrapper, WEB_AVAILABLE
         except ImportError:
             WEB_AVAILABLE = False
 
@@ -412,7 +412,10 @@ class MarkdownViewer(QWidget):
                 css_san = CSSSanitizer()
                 html_body = bleach.clean(html_body, tags=allowed_tags, attributes=allowed_attrs, css_sanitizer=css_san)
             except Exception:
-                html_body = bleach.clean(html_body, tags=allowed_tags, attributes=allowed_attrs)
+                import warnings
+                with warnings.catch_warnings():
+                    warnings.filterwarnings("ignore", message=".*css_sanitizer.*")
+                    html_body = bleach.clean(html_body, tags=allowed_tags, attributes=allowed_attrs)
         return f"<html><head><style>{markdown_preview_css()}</style></head><body>{html_body}</body></html>"
 
     def _sync_from_syntax(self):

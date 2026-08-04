@@ -4,7 +4,7 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Signal, Qt
 from icons import icon
-from theme import get_active_palette
+from theme import get_active_palette, get_brand_accent
 
 class FindReplaceWidget(QWidget):
     find_next_requested = Signal(str, bool, bool, bool)  # text, match_case, whole_word, forward
@@ -15,40 +15,59 @@ class FindReplaceWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         p = get_active_palette()
+        accent = get_brand_accent()
+        
         self.setStyleSheet(f"""
             QWidget {{
                 background: {p['BRAND_PANEL_2']};
                 color: {p['BRAND_PRIMARY']};
-                border-top: 1px solid {p['BRAND_BORDER']};
+                border-bottom-left-radius: 6px;
+                border-bottom-right-radius: 6px;
+                border-bottom: 1px solid {p['BRAND_BORDER']};
             }}
             QLineEdit {{
                 background: {p['BRAND_PANEL']};
                 border: 1px solid {p['BRAND_BORDER']};
-                padding: 4px;
+                padding: 6px 8px;
+                border-radius: 6px;
                 color: {p['BRAND_PRIMARY']};
             }}
+            QLineEdit:focus {{
+                border: 1px solid {accent};
+            }}
             QPushButton, QToolButton {{
-                background: {p['BRAND_PANEL_2']};
+                background: {p['BRAND_PANEL']};
                 border: 1px solid {p['BRAND_BORDER']};
-                padding: 4px 8px;
-                border-radius: 4px;
+                padding: 6px 12px;
+                border-radius: 6px;
+                font-weight: bold;
+                color: {p['BRAND_PRIMARY']};
             }}
             QPushButton:hover, QToolButton:hover {{
                 background: {p['BRAND_MUTED']};
+                color: {p['BRAND_PRIMARY']};
+            }}
+            QCheckBox {{
+                spacing: 6px;
             }}
         """)
 
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(8, 8, 8, 8)
-        layout.setSpacing(6)
+        layout.setContentsMargins(12, 12, 12, 12)
+        layout.setSpacing(8)
 
         # Find row
         find_layout = QHBoxLayout()
         find_layout.setContentsMargins(0, 0, 0, 0)
+        find_layout.setSpacing(6)
         
         self.find_input = QLineEdit()
         self.find_input.setPlaceholderText("Find...")
+        self.find_input.setMinimumWidth(200)
         self.find_input.returnPressed.connect(self._on_find_next)
+        
+        self.chk_case = QCheckBox("Match Case")
+        self.chk_word = QCheckBox("Whole Word")
         
         self.btn_prev = QToolButton()
         self.btn_prev.setIcon(icon("arrow-up", size=16))
@@ -63,19 +82,25 @@ class FindReplaceWidget(QWidget):
         self.btn_close = QToolButton()
         self.btn_close.setIcon(icon("x", size=16))
         self.btn_close.clicked.connect(self.hide_panel)
+        self.btn_close.setStyleSheet("border: none; background: transparent;")
 
-        find_layout.addWidget(QLabel("Find:"))
         find_layout.addWidget(self.find_input)
         find_layout.addWidget(self.btn_prev)
         find_layout.addWidget(self.btn_next)
+        find_layout.addSpacing(8)
+        find_layout.addWidget(self.chk_case)
+        find_layout.addWidget(self.chk_word)
+        find_layout.addStretch()
         find_layout.addWidget(self.btn_close)
 
         # Replace row
         replace_layout = QHBoxLayout()
         replace_layout.setContentsMargins(0, 0, 0, 0)
+        replace_layout.setSpacing(6)
 
         self.replace_input = QLineEdit()
         self.replace_input.setPlaceholderText("Replace with...")
+        self.replace_input.setMinimumWidth(200)
         self.replace_input.returnPressed.connect(self._on_replace)
 
         self.btn_replace = QPushButton("Replace")
@@ -84,25 +109,13 @@ class FindReplaceWidget(QWidget):
         self.btn_replace_all = QPushButton("Replace All")
         self.btn_replace_all.clicked.connect(self._on_replace_all)
 
-        replace_layout.addWidget(QLabel("Replace:"))
         replace_layout.addWidget(self.replace_input)
         replace_layout.addWidget(self.btn_replace)
         replace_layout.addWidget(self.btn_replace_all)
-
-        # Options row
-        options_layout = QHBoxLayout()
-        options_layout.setContentsMargins(0, 0, 0, 0)
-        
-        self.chk_case = QCheckBox("Match Case")
-        self.chk_word = QCheckBox("Whole Word")
-        
-        options_layout.addWidget(self.chk_case)
-        options_layout.addWidget(self.chk_word)
-        options_layout.addStretch()
+        replace_layout.addStretch()
 
         layout.addLayout(find_layout)
         layout.addLayout(replace_layout)
-        layout.addLayout(options_layout)
 
     def focus_find(self):
         self.find_input.setFocus()

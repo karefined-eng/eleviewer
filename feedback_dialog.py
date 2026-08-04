@@ -69,7 +69,7 @@ FeedbackSubmitWorker = FeedbackSubmitThread  # Alias for backward compatibility
 class FeedbackDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("Report Issue / Feedback")
+        self.setWindowTitle("Share Feedback")
         self.resize(500, 400)
         self._submit_thread = None
         
@@ -97,20 +97,20 @@ class FeedbackDialog(QDialog):
         
         layout.addWidget(QLabel("Description:"))
         self.desc_edit = QTextEdit()
-        self.desc_edit.setPlaceholderText("Please describe the issue or idea...")
+        self.desc_edit.setPlaceholderText("What happened, or what would make EleViewer better for you?")
         layout.addWidget(self.desc_edit)
         
         btn_layout = QHBoxLayout()
         btn_layout.addStretch()
         
-        cancel_btn = QPushButton("Cancel")
-        cancel_btn.clicked.connect(self.reject)
+        close_btn = QPushButton("Close")
+        close_btn.clicked.connect(self.reject)
         
-        self.submit_btn = QPushButton("Submit")
+        self.submit_btn = QPushButton("Send Feedback")
         self.submit_btn.setObjectName("submitBtn")
         self.submit_btn.clicked.connect(self.submit)
         
-        btn_layout.addWidget(cancel_btn)
+        btn_layout.addWidget(close_btn)
         btn_layout.addWidget(self.submit_btn)
         
         layout.addLayout(btn_layout)
@@ -118,13 +118,13 @@ class FeedbackDialog(QDialog):
     def submit(self):
         desc = self.desc_edit.toPlainText().strip()
         if not desc:
-            QMessageBox.warning(self, "Error", "Description cannot be empty.")
+            QMessageBox.warning(self, "Add a description", "Tell us a bit more — what did you see or what would you like to change?")
             return
             
         # SECURITY: Strip PII (User's home directory path) from the description
         desc = strip_pii(desc)
             
-        self.submit_btn.setText("Submitting...")
+        self.submit_btn.setText("Sending...")
         self.submit_btn.setEnabled(False)
         
         data = {
@@ -147,10 +147,10 @@ class FeedbackDialog(QDialog):
 
     def _on_submit_finished(self, success, message):
         if success:
-            QMessageBox.information(self, "Success", message)
+            QMessageBox.information(self, "Feedback sent!", "Got it — thank you. Every submission is reviewed for our next build.")
             self.accept()
         else:
-            QMessageBox.warning(self, "Network Error", f"Failed to send feedback securely to server.\n\nError: {message}")
-            self.submit_btn.setText("Submit Feedback")
+            QMessageBox.warning(self, "Couldn't send feedback", "Your feedback didn't reach us right now, possibly due to a network issue. Please try again in a moment.")
+            self.submit_btn.setText("Try again")
             self.submit_btn.setEnabled(True)
 

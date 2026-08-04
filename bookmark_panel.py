@@ -46,7 +46,7 @@ class BookmarkItemWidget(QWidget):
         self.btn_del.setIcon(icon("square", size=14))
         self.btn_del.setText("X")
         self.btn_del.setToolTip("Delete Bookmark")
-        self.btn_del.setStyleSheet(f"QToolButton {{ color: #f44336; font-weight: bold; padding: 2px; border:none; }} QToolButton:hover {{ background: {p['BRAND_PANEL_2']}; }}")
+        self.btn_del.setStyleSheet(f"QToolButton {{ color: {p['BRAND_ERROR']}; font-weight: bold; padding: 2px; border:none; }} QToolButton:hover {{ background: {p['BRAND_PANEL_2']}; }}")
         self.btn_del.clicked.connect(self._on_delete)
 
         layout.addWidget(self.lbl_text, stretch=1)
@@ -111,6 +111,11 @@ class BookmarkPanel(QWidget):
         self.list_widget.customContextMenuRequested.connect(self._show_context_menu)
         layout.addWidget(self.list_widget)
 
+        self.empty_label = QLabel("No bookmarks yet.\nPress Ctrl+D in a document to add one.")
+        self.empty_label.setAlignment(Qt.AlignCenter)
+        self.empty_label.setWordWrap(True)
+        layout.addWidget(self.empty_label)
+
         self.reload_theme()
         self.refresh()
 
@@ -120,30 +125,52 @@ class BookmarkPanel(QWidget):
         accent = get_brand_accent()
         self.setStyleSheet(f"background-color: {p['BRAND_PANEL']}; color: {p['BRAND_PRIMARY']};")
         self.header.setStyleSheet(f"color: {p['BRAND_MUTED_FG']}; font-size: 11px; font-weight: bold; padding: 4px;")
+        self.empty_label.setStyleSheet(f"color: {p['BRAND_MUTED_FG']}; font-size: 12px; padding: 10px;")
         self.list_widget.setStyleSheet(f"""
             QListWidget {{
                 background: {p['BRAND_PANEL']};
                 color: {p['BRAND_PRIMARY']};
                 border: none;
                 font-size: 13px;
+                outline: none;
             }}
-            QListWidget::item {{ padding: 2px; }}
-            QListWidget::item:selected {{ background: {accent}; color: {p['BRAND_PRIMARY_FG']}; }}
-            QListWidget::item:hover {{ background: {p['BRAND_PANEL_2']}; }}
+            QListWidget::item {{ 
+                padding: 6px; 
+                margin: 2px 4px; 
+                border-radius: 6px; 
+                border: 1px solid transparent;
+            }}
+            QListWidget::item:selected {{ 
+                background: {p['BRAND_PANEL_2']}; 
+                border: 1px solid {accent}; 
+            }}
+            QListWidget::item:hover:!selected {{ 
+                background: {p['BRAND_BACKGROUND']}; 
+            }}
         """)
+
 
     def refresh(self):
         self.list_widget.clear()
-        for bookmark in load_bookmarks():
-            item = QListWidgetItem()
-            item.setData(Qt.UserRole, bookmark)
-            item.setToolTip(bookmark.get("file_path", ""))
+        bookmarks = load_bookmarks()
+        
+        if not bookmarks:
+            self.list_widget.hide()
+            self.empty_label.show()
+        else:
+            self.list_widget.show()
+            self.empty_label.hide()
             
-            widget = BookmarkItemWidget(bookmark, self)
-            item.setSizeHint(widget.sizeHint())
-            
-            self.list_widget.addItem(item)
-            self.list_widget.setItemWidget(item, widget)
+            for bookmark in bookmarks:
+                item = QListWidgetItem()
+                item.setData(Qt.UserRole, bookmark)
+                item.setToolTip(bookmark.get("file_path", ""))
+                
+                widget = BookmarkItemWidget(bookmark, self)
+                item.setSizeHint(widget.sizeHint())
+                
+                self.list_widget.addItem(item)
+                self.list_widget.setItemWidget(item, widget)
 
     def _on_item_double_clicked(self, item):
         bookmark = item.data(Qt.UserRole)

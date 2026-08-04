@@ -6,13 +6,14 @@ from theme import get_active_palette, get_brand_accent
 
 
 class WhatsNewDialog(QDialog):
-    def __init__(self, parent=None, app_version="1.3.0"):
+    def __init__(self, parent=None, app_version="1.3.1"):
         super().__init__(parent)
         self.setWindowTitle(f"What's New in v{app_version}")
         self.resize(550, 450)
         
         accent = get_brand_accent()
         p = get_active_palette()
+        self.setAttribute(Qt.WA_StyledBackground, True)
         self.setStyleSheet(f"""
             QDialog {{ background: {p['BRAND_BACKGROUND']}; color: {p['BRAND_PRIMARY']}; }}
             QLabel {{ color: {p['BRAND_PRIMARY']}; font-family: 'Segoe UI', sans-serif; }}
@@ -29,13 +30,13 @@ class WhatsNewDialog(QDialog):
             }}
             QPushButton {{
                 background: {accent};
-                color: #131313;
+                color: {p['BRAND_BACKGROUND']};
                 border: none;
                 padding: 8px 16px;
                 border-radius: 4px;
                 font-weight: bold;
             }}
-            QPushButton:hover {{ background: #559be6; }}
+            QPushButton:hover {{ opacity: 0.9; }}
         """)
 
         layout = QVBoxLayout(self)
@@ -44,7 +45,7 @@ class WhatsNewDialog(QDialog):
 
         header_layout = QHBoxLayout()
         title_label = QLabel(f"🎉 EleViewer updated to v{app_version}")
-        title_label.setStyleSheet(f"font-size: 22px; font-weight: bold; color: {{p['BRAND_PRIMARY']}};")
+        title_label.setStyleSheet(f"font-size: 22px; font-weight: bold; color: {p['BRAND_PRIMARY']};")
         header_layout.addWidget(title_label)
         header_layout.addStretch()
         

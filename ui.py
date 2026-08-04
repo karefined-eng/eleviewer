@@ -27,15 +27,13 @@ from quick_switcher import QuickSwitcher
 from settings import load_settings, save_settings, DEFAULT_SETTINGS
 from theme import (
     main_window_stylesheet, ICON_SIZE_TOOLBAR, ICON_SIZE_COMPACT,
-    compact_toolbar_stylesheet
+    compact_toolbar_stylesheet, get_active_palette, get_brand_accent
 )
 from save_utils import atomic_write
 from icons import icon
-from vault_explorer import VaultExplorer
 from branding_logo import create_eleviewer_icon, create_eleviewer_pixmap
-from file_handler import get_file_extension
 from tts_reader_bar import TtsReaderBar
-from tts_engine import TtsEngine
+# ponytail: TtsEngine and VaultExplorer lazy-loaded on first use -> saves ~200-400ms cold start
 
 
 # ── File-type icon helper ───────────────────────────────────────────
@@ -265,6 +263,7 @@ class MainWindow(QMainWindow):
         self.vault_panel = None
         self.web_panel = None
         self.bookmarks_panel = None
+        from tts_engine import TtsEngine
         self.tts_engine = TtsEngine()
 
         self.setWindowTitle(f"EleViewer — Untitled")
@@ -426,9 +425,9 @@ class MainWindow(QMainWindow):
         except Exception:
             pass
 
-    def _on_update_found(self, tag_name, release_notes, download_url):
+    def _on_update_found(self, tag_name, release_notes, download_url, hash_url=""):
         from updater import UpdateDialog
-        dlg = UpdateDialog(tag_name, release_notes, download_url, self)
+        dlg = UpdateDialog(tag_name, release_notes, download_url, hash_url, self)
         dlg.exec()
 
     def check_for_updates_manual(self):
@@ -458,7 +457,9 @@ class MainWindow(QMainWindow):
         status_bar.setSizeGripEnabled(False)
         
         from theme import get_active_palette
+        from PySide6.QtWidgets import QProgressBar
         p = get_active_palette()
+        accent = get_brand_accent()
 
         self.status_left = QLabel("0 tabs · session saved")
         self.status_left.setStyleSheet(f"color: {p['BRAND_MUTED_FG']}; font-family: monospace; font-size: 11px; padding-left: 8px;")
@@ -467,11 +468,30 @@ class MainWindow(QMainWindow):
         self.status_center.setStyleSheet(f"color: {p['BRAND_MUTED_FG']}; font-family: monospace; font-size: 11px;")
         self.status_center.setAlignment(Qt.AlignCenter)
 
+        # Compact progress bar — hidden by default, shown during large file loads
+        self.status_progress = QProgressBar()
+        self.status_progress.setFixedSize(120, 8)
+        self.status_progress.setRange(0, 0)  # indeterminate by default
+        self.status_progress.setTextVisible(False)
+        self.status_progress.setStyleSheet(f"""
+            QProgressBar {{
+                background: {p['BRAND_BORDER']};
+                border: none;
+                border-radius: 4px;
+            }}
+            QProgressBar::chunk {{
+                background: {accent};
+                border-radius: 4px;
+            }}
+        """)
+        self.status_progress.hide()
+
         self.status_right = QLabel("md · UTF-8")
         self.status_right.setStyleSheet(f"color: {p['BRAND_MUTED_FG']}; font-family: monospace; font-size: 11px; padding-right: 12px;")
 
         status_bar.addWidget(self.status_left)
         status_bar.addWidget(self.status_center, 1)
+        status_bar.addPermanentWidget(self.status_progress)
         status_bar.addPermanentWidget(self.status_right)
 
         self.shortcut_hints = [
@@ -501,6 +521,7 @@ class MainWindow(QMainWindow):
     def _build_layout(self):
         self.main_splitter = QSplitter(Qt.Horizontal)
 
+        from vault_explorer import VaultExplorer
         self.vault_panel = VaultExplorer()
         self.vault_panel.setMinimumWidth(180)
         self.vault_panel.setMaximumWidth(420)
@@ -834,7 +855,7 @@ class MainWindow(QMainWindow):
             self.update_menus()
             self._add_editor_tab(editor, os.path.basename(path))
         except Exception as e:
-            QMessageBox.critical(self, "Error", f"Failed to open file: {str(e)}")
+            QMessageBox.critical(self, "Couldn't open file", f"EleViewer couldn't open '{os.path.basename(path)}'. The file may be missing, corrupt, or in an unsupported format.\n\nDetail: {str(e)}")
 
     def _wire_editor(self, editor):
         if hasattr(editor, "set_status_callback"):
@@ -890,7 +911,7 @@ class MainWindow(QMainWindow):
                 save_recent_file(path)
                 self._add_editor_tab(editor, os.path.basename(path))
             except Exception as e:
-                QMessageBox.critical(self, "Error", f"Failed to open file: {str(e)}")
+                QMessageBox.critical(self, "Couldn't open file", f"EleViewer couldn't open '{os.path.basename(path)}'. The file may be missing, corrupt, or in an unsupported format.\n\nDetail: {str(e)}")
                 return
         editor = self.current_editor()
         if hasattr(editor, "go_to_bookmark"):
@@ -956,6 +977,18 @@ class MainWindow(QMainWindow):
 
     def show_status_message(self, message, timeout_ms=0):
         self.statusBar().showMessage(message, timeout_ms)
+
+    def show_loading_progress(self, message="Loading..."):
+        """Show the indeterminate progress bar in the status bar during file loads."""
+        if hasattr(self, 'status_progress'):
+            self.status_progress.show()
+        self.statusBar().showMessage(message)
+
+    def hide_loading_progress(self):
+        """Hide the progress bar after a file load completes."""
+        if hasattr(self, 'status_progress'):
+            self.status_progress.hide()
+        self.statusBar().clearMessage()
 
     def update_status_bar(self):
         self._refresh_tab_icons()
@@ -1412,12 +1445,22 @@ class MainWindow(QMainWindow):
         """Terminate any remaining QThreads to avoid "QThread destroyed while running" crashes.
         This is a safety net for threads that might not have been cleaned up via closeEvent.
         """
+        from PySide6.QtCore import QThread
+        
         # Cleanup omnibar worker
         if hasattr(self, "omnibar") and hasattr(self.omnibar, "_search_worker"):
             worker = self.omnibar._search_worker
-            if worker and worker.isRunning():
+            if isinstance(worker, QThread) and worker.isRunning():
                 worker.terminate()
                 worker.wait()
+                
+        # Cleanup draft manager worker
+        if hasattr(self, "draft_manager") and hasattr(self.draft_manager, "_current_worker"):
+            worker = self.draft_manager._current_worker
+            if isinstance(worker, QThread) and worker.isRunning():
+                worker.terminate()
+                worker.wait()
+                
         # Cleanup vault indexer active worker if present
         try:
             from vault_indexer import _active_worker as vault_worker
@@ -1426,8 +1469,18 @@ class MainWindow(QMainWindow):
                 vault_worker.wait()
         except Exception:
             pass
-        # Generic cleanup for any QThread attributes on self
-        from PySide6.QtCore import QThread
+            
+        # Cleanup tab workers (like CsvLoadWorker, PdfTextWorker)
+        if hasattr(self, "tabs"):
+            for i in range(self.tabs.count()):
+                editor = self.tabs.widget(i)
+                if hasattr(editor, "worker"):
+                    worker = editor.worker
+                    if isinstance(worker, QThread) and worker.isRunning():
+                        worker.terminate()
+                        worker.wait()
+
+        # Generic cleanup for any QThread attributes on self (catches _update_thread)
         for attr_name in dir(self):
             try:
                 attr = getattr(self, attr_name)
@@ -1488,7 +1541,15 @@ class MainWindow(QMainWindow):
                 "zoom": zoom,
                 "pdf_page": pdf_page,
             })
-        save_session(tabs_info, bookmarks_panel_visible=self.bookmarks_panel.isVisible())
+        save_session(
+            tabs_info,
+            bookmarks_panel_visible=self.bookmarks_panel.isVisible(),
+            web_url=(
+                self.web_panel.persist_tabs()
+                if getattr(self, 'web_panel', None) and self.web_panel.isVisible()
+                else None
+            )
+        )
 
     # IMPROVEMENT: persist scroll position and PDF zoom across sessions
     def restore_session(self):
@@ -1546,6 +1607,10 @@ class MainWindow(QMainWindow):
             self.bookmarks_panel.show()
             self.bookmarks_panel.refresh()
             self.editor_splitter.setSizes([max(self.width() - 280, 400), 260])
+        # Restore web panel URL from last session
+        web_url = session.get("web_url")
+        if web_url and WEB_AVAILABLE:
+            QTimer.singleShot(400, lambda: self.open_web_tab_with_url(web_url))
 
     def create_menu(self):
         menu = self.menuBar()
@@ -1949,13 +2014,16 @@ class MainWindow(QMainWindow):
         if self.switch_to_tab_if_open(path):
             return
         try:
+            self.show_loading_progress(f"Opening {os.path.basename(path)}...")
             editor = create_viewer_widget(path)
             self._wire_editor(editor)
             save_recent_file(path)
             self.update_menus()
             self._add_editor_tab(editor, os.path.basename(path))
         except Exception as e:
-            QMessageBox.critical(self, "Error", f"Failed to open file: {str(e)}")
+            QMessageBox.critical(self, "Couldn't open file", f"EleViewer couldn't open '{os.path.basename(path)}'. The file may be missing, corrupt, or in an unsupported format.\n\nDetail: {str(e)}")
+        finally:
+            self.hide_loading_progress()
 
     def open_recent_file(self, path):
         if self.switch_to_tab_if_open(path):
@@ -1966,7 +2034,7 @@ class MainWindow(QMainWindow):
             save_recent_file(path)
             self._add_editor_tab(editor, os.path.basename(path))
         except Exception as e:
-            QMessageBox.critical(self, "Error", f"Failed to open file: {str(e)}")
+            QMessageBox.critical(self, "Couldn't open file", f"EleViewer couldn't open '{os.path.basename(path)}'. The file may be missing, corrupt, or in an unsupported format.\n\nDetail: {str(e)}")
 
     def save_file(self):
         editor = self.current_editor()
@@ -2115,7 +2183,7 @@ class MainWindow(QMainWindow):
 
     def toggle_web_panel(self):
         if not WEB_AVAILABLE:
-            QMessageBox.warning(self, "Missing Module", "QtWebEngine not installed.")
+            QMessageBox.warning(self, "Missing Module", "Web module not available.")
             return
         if getattr(self, 'web_panel', None) is not None:
             visible = not self.web_panel.isVisible()
@@ -2127,11 +2195,19 @@ class MainWindow(QMainWindow):
 
     def open_web_tab(self):
         from PySide6.QtWidgets import QMessageBox
+        try:
+            from web_panel import WebPanel, WEB_AVAILABLE as _WEB_AVAILABLE
+        except ImportError:
+            WebPanel = None
+            _WEB_AVAILABLE = False
+
         global WEB_AVAILABLE
+        WEB_AVAILABLE = _WEB_AVAILABLE
+
         if hasattr(self, "onboarding_widget"):
             self.onboarding_widget.check_off("web")
         if not WEB_AVAILABLE:
-            QMessageBox.warning(self, "Missing Module", "QtWebEngine not installed.")
+            QMessageBox.warning(self, "Missing Module", "Web module not available.")
             return
 
         if getattr(self, 'web_panel', None) is not None:
@@ -2140,12 +2216,8 @@ class MainWindow(QMainWindow):
             self.web_panel.add_tab()
             return
 
-        try:
-            from web_panel import WebPanel, WEB_AVAILABLE as _WEB_AVAILABLE
-            WEB_AVAILABLE = _WEB_AVAILABLE
-        except ImportError:
-            WEB_AVAILABLE = False
-            QMessageBox.warning(self, "Missing Module", "QtWebEngine not installed.")
+        if WebPanel is None:
+            QMessageBox.warning(self, "Missing Module", "Web module not available.")
             return
 
         self.web_panel = WebPanel()
@@ -2311,4 +2383,13 @@ class MainWindow(QMainWindow):
             current.tts.stop()
         if hasattr(self, "tts_bar") and self.tts_bar:
             self.tts_bar.set_active_reading(False)
+
+    def closeEvent(self, event):
+        from vault_indexer import stop_vault_indexer
+        stop_vault_indexer()
+        self._stop_tts()
+        if getattr(self, "quick_switcher", None):
+            self.quick_switcher._cleanup_worker()
+        super().closeEvent(event)
+
 

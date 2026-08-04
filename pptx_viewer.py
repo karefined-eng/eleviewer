@@ -5,7 +5,9 @@ Extracts slide text, titles, notes, and bullet points using python-pptx
 Renders clean slide cards with toolbar navigation and TTS read-aloud support.
 """
 
+import html
 import os
+import re
 import zipfile
 import xml.etree.ElementTree as ET
 
@@ -167,6 +169,43 @@ class PptxViewer(QWidget):
         if file_path:
             self.load_from_path(file_path)
 
+    def _extract_shape_text(self, shape):
+        texts = []
+        if getattr(shape, "has_text_frame", False):
+            for paragraph in shape.text_frame.paragraphs:
+                text = paragraph.text.strip()
+                if text:
+                    texts.append(text)
+
+        if getattr(shape, "shape_type", None) == 19 and getattr(shape, "has_table", False):
+            for row in shape.table.rows:
+                for cell in row.cells:
+                    cell_text = self._extract_shape_text(cell)
+                    if cell_text:
+                        texts.extend(cell_text)
+
+        if getattr(shape, "has_table", False):
+            for row in shape.table.rows:
+                for cell in row.cells:
+                    for paragraph in cell.text_frame.paragraphs:
+                        text = paragraph.text.strip()
+                        if text:
+                            texts.append(text)
+
+        if getattr(shape, "shape_type", None) == 13:
+            try:
+                import base64
+                img_bytes = shape.image.blob
+                img_ext = shape.image.ext.lower()
+                if img_bytes and img_ext:
+                    b64_data = base64.b64encode(img_bytes).decode('utf-8')
+                    mime_type = "image/jpeg" if img_ext == "jpg" else f"image/{img_ext}"
+                    texts.append(f'<img src="data:{mime_type};base64,{b64_data}" style="max-width:100%; border-radius:4px; margin-top:10px; margin-bottom:10px;" />')
+            except Exception as e:
+                print(f"Failed to extract image: {e}")
+
+        return texts
+
     def load_from_path(self, file_path):
         self.file_path = file_path
         self.slides = []
@@ -177,28 +216,12 @@ class PptxViewer(QWidget):
                 for idx, slide in enumerate(prs.slides, start=1):
                     title = f"Slide {idx}"
                     texts = []
-                    image_count = 0
                     for shape in slide.shapes:
-                        if shape.has_text_frame:
-                            for paragraph in shape.text_frame.paragraphs:
-                                text = paragraph.text.strip()
-                                if text:
-                                    if not texts and shape == slide.shapes.title:
-                                        title = text
-                                    texts.append(text)
-                        elif getattr(shape, "shape_type", None) == 13:
-                            # MSO_SHAPE_TYPE.PICTURE == 13
-                            try:
-                                import base64
-                                img_bytes = shape.image.blob
-                                img_ext = shape.image.ext.lower()
-                                if img_bytes and img_ext:
-                                    b64_data = base64.b64encode(img_bytes).decode('utf-8')
-                                    mime_type = "image/jpeg" if img_ext == "jpg" else f"image/{img_ext}"
-                                    texts.append(f'<img src="data:{mime_type};base64,{b64_data}" style="max-width:100%; border-radius:4px; margin-top:10px; margin-bottom:10px;" />')
-                                    image_count += 1
-                            except Exception as e:
-                                print(f"Failed to extract image: {e}")
+                        shape_texts = self._extract_shape_text(shape)
+                        if shape_texts:
+                            if not texts and getattr(shape, "is_placeholder", False) and getattr(shape, "placeholder_format", None) is not None:
+                                title = shape_texts[0]
+                            texts.extend(shape_texts)
                     notes = ""
                     if slide.has_notes_slide and slide.notes_slide.notes_text_frame:
                         notes = slide.notes_slide.notes_text_frame.text.strip()
@@ -308,41 +331,62 @@ class PptxViewer(QWidget):
                 self.viewer.moveCursor(self.viewer.textCursor().Start)
                 self.viewer.find(query)
 
+    def _render_text_block(self, text, empty_message=""):
+        if not text:
+            return empty_message
+        return html.escape(text).replace("\n", "<br>").replace("\r", "")
+
+    def _render_slide_content(self, raw_content):
+        if not raw_content:
+            return "<i>(No text content on this slide)</i>"
+
+        fragments = []
+        for chunk in re.split(r"(<img[^>]*>)", raw_content):
+            if not chunk:
+                continue
+            if chunk.startswith("<img"):
+                fragments.append(chunk)
+            else:
+                fragments.append(self._render_text_block(chunk))
+        return "".join(fragments)
+
     def _render_continuous_html(self):
         p = get_active_palette()
         accent = get_brand_accent()
-        html = f"<div style='background: {p['BRAND_BACKGROUND']}; padding-bottom: 40px;'>"
+        html_output = f"<div style='background: {p['BRAND_BACKGROUND']}; padding-bottom: 40px;'>"
         
         for index, slide_data in enumerate(self.slides):
             raw_content = slide_data['content'] or ''
-            content_html = raw_content.replace('\n', '<br>') if raw_content else '<i>(No text content on this slide)</i>'
+            content_html = self._render_slide_content(raw_content)
+            title_text = self._render_text_block(slide_data['title'])
+            notes_text = self._render_text_block(slide_data.get('notes', ''))
             
             # Use anchor for scrolling
-            html += f"<a name='slide_{index}'></a>"
-            html += f"""
+            html_output += f"<a name='slide_{index}'></a>"
+            html_output += f"""
             <div style="max-width: 800px; margin: 30px auto; padding: 40px; background: {p['BRAND_PANEL']}; border: 1px solid {p['BRAND_BORDER']}; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">
                 <div style="color: {accent}; font-size: 0.8em; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">
                     SLIDE {index + 1} OF {self.total_slides}
                 </div>
                 <h1 style="color: {p['BRAND_PRIMARY']}; font-size: 1.5em; margin-top: 0; margin-bottom: 20px; border-bottom: 1px solid {p['BRAND_BORDER']}; padding-bottom: 10px;">
-                    {slide_data['title']}
+                    {title_text}
                 </h1>
                 <div style="font-size: 1.1em; line-height: 1.7; color: {p['BRAND_PRIMARY']};">
                     {content_html}
                 </div>
             """
             
-            if slide_data.get("notes"):
-                html += f"""
+            if notes_text:
+                html_output += f"""
                 <div style="margin-top: 30px; padding: 12px; background: {p['BRAND_PANEL_2']}; border-left: 3px solid {accent}; border-radius: 4px;">
                     <div style="color: {p['BRAND_MUTED_FG']}; font-size: 0.8em; font-weight: bold; margin-bottom: 4px;">SPEAKER NOTES</div>
-                    <div style="font-size: 0.9em; color: {p['BRAND_MUTED_FG']};">{slide_data['notes']}</div>
+                    <div style="font-size: 0.9em; color: {p['BRAND_MUTED_FG']};">{notes_text}</div>
                 </div>
                 """
-            html += "</div>"
+            html_output += "</div>"
             
-        html += "</div>"
-        self.viewer.setHtml(html)
+        html_output += "</div>"
+        self.viewer.setHtml(html_output)
 
     def _on_sidebar_click(self, index):
         if not self._is_jumping:

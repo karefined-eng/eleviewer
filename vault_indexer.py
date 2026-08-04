@@ -160,7 +160,7 @@ def search_index(
         cur = conn.execute(
             """
             SELECT path, vault, filename,
-                   snippet(document_index, 1, '', '', '...', 40) AS snip,
+                   snippet(document_index, 1, '«', '»', '...', 15) AS snip,
                    bm25(document_index) AS rank
             FROM document_index
             WHERE document_index MATCH ?
@@ -218,6 +218,16 @@ class VaultIndexWorker(QThread):
 _active_worker: VaultIndexWorker | None = None
 
 
+def stop_vault_indexer() -> None:
+    """Stop active vault indexing background worker cleanly on exit."""
+    global _active_worker
+    if _active_worker and _active_worker.isRunning():
+        _active_worker.cancel()
+        _active_worker.terminate()
+        _active_worker.wait()
+        _active_worker = None
+
+
 def schedule_vault_index(vault_paths: list[str]) -> None:
     """Start background indexing for one or more vault paths."""
     global _active_worker
@@ -232,7 +242,9 @@ def schedule_vault_index(vault_paths: list[str]) -> None:
 
     if _active_worker and _active_worker.isRunning():
         _active_worker.cancel()
-        _active_worker.wait(1000)
+        _active_worker.terminate()
+        _active_worker.wait()
 
     _active_worker = VaultIndexWorker(paths)
     _active_worker.start()
+

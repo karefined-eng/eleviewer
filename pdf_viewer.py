@@ -231,8 +231,8 @@ class PdfViewer(QWidget):
             # Create overlay label
             self.pdf_view.overlay_label = QLabel(self.pdf_view)
             self.pdf_view.overlay_label.setStyleSheet(
-                "background-color: rgba(30, 30, 30, 0.85); color: #e0e0e0; "
-                "border: 1px solid #555; border-radius: 4px; padding: 4px 8px; "
+                f"background-color: {p['BRAND_PANEL']}; color: {p['BRAND_PRIMARY']}; "
+                f"border: 1px solid {p['BRAND_BORDER']}; border-radius: 4px; padding: 4px 8px; "
                 "font-size: 12px; font-weight: bold;"
             )
             self.pdf_view.overlay_label.setText("")
@@ -245,7 +245,7 @@ class PdfViewer(QWidget):
             self.pdf_doc_qt = None
             self.pdf_view = QLabel("QPdfView not available.\nPlease install PySide6 >= 6.6")
             self.pdf_view.setAlignment(Qt.AlignCenter)
-            self.pdf_view.setStyleSheet("color: #e0e0e0; background: #1e1e1e; font-size: 14px;")
+            self.pdf_view.setStyleSheet(f"color: {p['BRAND_PRIMARY']}; background: {p['BRAND_BACKGROUND']}; font-size: 14px;")
 
         self.content_splitter.addWidget(self.toc_widget)
         self.content_splitter.addWidget(self.pdf_view)
@@ -616,8 +616,46 @@ class PdfViewer(QWidget):
     def _show_context_menu(self, pos):
         menu = QMenu(self)
         menu.addAction("Bookmark This Page", self._add_bookmark_here)
+        menu.addAction("Extract Page Text to Note", self._extract_page_to_note)
         if QTPDF_AVAILABLE:
             menu.exec(self.pdf_view.mapToGlobal(pos))
+
+    # ponytail: QPdfView lacks native selection/highlight APIs in PySide6 without heavy C++ overrides. 
+    # Added 'Extract Page Text to Note' as a minimal offline alternative for Task 5 & 6. 
+    # -> Upgrade to a full PyMuPDF (fitz) rendering pipeline if precise text highlighting is demanded.
+    def _extract_page_to_note(self):
+        text = self._get_page_text(self.current_page)
+        if not text:
+            if self._status_callback:
+                self._status_callback("No text found on this page.", 3000)
+            return
+            
+        from settings import load_settings
+        from paths import APP_DATA_DIR
+        import time
+        
+        vault_path = load_settings().get("vault_path", "")
+        if not vault_path or not os.path.exists(vault_path):
+            vault_path = APP_DATA_DIR
+            
+        # Clean filename from pdf path if possible
+        doc_name = "PDF"
+        if self.file_path:
+            doc_name = os.path.splitext(os.path.basename(self.file_path))[0]
+            
+        safe_name = f"Extract_{doc_name}_Pg{self.current_page + 1}_{int(time.time())}.md"
+        out_path = os.path.join(vault_path, safe_name)
+        
+        try:
+            from save_utils import atomic_write
+            content = f"# Extracted from {doc_name} (Page {self.current_page + 1})\n\n{text}\n"
+            atomic_write(out_path, content)
+            
+            if self._status_callback:
+                self._status_callback(f"Extracted page to {safe_name} in Vault", 5000)
+        except Exception as e:
+            if self._status_callback:
+                self._status_callback(f"Export failed: {e}", 4000)
 
     # ── TTS ──────────────────────────────────────────────────────────
 

@@ -25,7 +25,7 @@ def test_quick_switcher_fuzzy_search():
     qs._do_search()
     assert any("my_secret_doc.txt" in qs.file_list.item(i).text() for i in range(qs.file_list.count()))
     
-    qs.search_input.setText("hw")
+    qs.search_input.setText("hlw")
     qs._do_search()
     assert any("hello_world.md" in qs.file_list.item(i).text() for i in range(qs.file_list.count()))
     

@@ -27,7 +27,7 @@ from syntax_highlighter import HtmlHighlighter
 from paths import APP_DATA_DIR
 
 try:
-    from web_panel import WebViewWrapper, WEB_AVAILABLE
+    from web_panel import _SecureWebView as WebViewWrapper, WEB_AVAILABLE
 except ImportError:
     WEB_AVAILABLE = False
 

@@ -11,6 +11,7 @@ THEME_PALETTES = {
         "BRAND_BORDER": "#2c2c2c",
         "BRAND_MUTED": "#232323",
         "BRAND_MUTED_FG": "#9b9b96",
+        "BRAND_ERROR": "#ef4444",
         "TAB_BAR_BG": "#1a1a1a",
         "TAB_BG": "#242424",
         "TAB_HOVER": "#2a2a2a",
@@ -25,6 +26,7 @@ THEME_PALETTES = {
         "BRAND_BORDER": "#e5e5e5",
         "BRAND_MUTED": "#f9f9f9",
         "BRAND_MUTED_FG": "#616161",
+        "BRAND_ERROR": "#d32f2f",
         "TAB_BAR_BG": "#f3f3f3",
         "TAB_BG": "#e5e5e5",
         "TAB_HOVER": "#d1d1d1",
@@ -41,6 +43,7 @@ BRAND_PANEL_2 = THEME_PALETTES["dark"]["BRAND_PANEL_2"]
 BRAND_BORDER = THEME_PALETTES["dark"]["BRAND_BORDER"]
 BRAND_MUTED = THEME_PALETTES["dark"]["BRAND_MUTED"]
 BRAND_MUTED_FG = THEME_PALETTES["dark"]["BRAND_MUTED_FG"]
+BRAND_ERROR = THEME_PALETTES["dark"]["BRAND_ERROR"]
 
 THEME_ACCENTS = {
     "blue": {"accent": "#6cb6ff", "accent_fg": "#0c1826", "hover": "#7dc5ff", "pressed": "#5aa7ff"},
@@ -112,9 +115,14 @@ def main_window_stylesheet():
         QToolBar QToolButton {{ min-width: 32px; min-height: 28px; padding: 4px 8px; font-size: 12px; }}
         QTabWidget::pane {{ border: 1px solid {p['BRAND_BORDER']}; background-color: {p['BRAND_PANEL']}; }}
         QTabBar {{ background-color: {p['TAB_BAR_BG']}; border-bottom: 1px solid {p['BRAND_BORDER']}; }}
-        QTabBar::tab {{ background-color: {p['TAB_BG']}; color: {p['BRAND_MUTED_FG']}; padding: 6px 14px; margin-right: 1px; font-size: 11px; font-family: 'Segoe UI', sans-serif; border-top: 2px solid transparent; border-top-left-radius: 6px; border-top-right-radius: 6px; }}
+        QTabBar::tab {{ background-color: {p['TAB_BG']}; color: {p['BRAND_MUTED_FG']}; padding: 8px 18px; margin-right: 1px; font-size: 11px; font-family: 'Segoe UI', sans-serif; border-top: 2px solid transparent; border-top-left-radius: 6px; border-top-right-radius: 6px; }}
         QTabBar::tab:selected {{ background-color: {p['BRAND_BACKGROUND']}; color: {p['TAB_SELECTED_FG']}; font-weight: bold; border-top: 2px solid {accent['accent']}; }}
         QTabBar::tab:hover:!selected {{ background-color: {p['TAB_HOVER']}; color: {p['BRAND_PRIMARY']}; }}
+        
+        QSplitter::handle {{ background-color: transparent; }}
+        QSplitter::handle:hover {{ background-color: {accent['accent']}; }}
+        QSplitter::handle:horizontal {{ width: 2px; margin: 0 1px; }}
+        QSplitter::handle:vertical {{ height: 2px; margin: 1px 0; }}
         QTextEdit, QPlainTextEdit {{ background-color: {p['BRAND_PANEL']}; color: {p['BRAND_PRIMARY']}; border: none; padding: 15px; font-family: 'Consolas', monospace; font-size: 14px; }}
         QMenuBar {{ background-color: {p['BRAND_BACKGROUND']}; color: {p['BRAND_PRIMARY']}; border-bottom: 1px solid {p['BRAND_BORDER']}; font-size: 13px; }}
         QMenuBar::item {{ padding: 5px 10px; }}
@@ -135,6 +143,38 @@ def main_window_stylesheet():
         QLabel {{ color: {p['BRAND_PRIMARY']}; }}
         QComboBox {{ background-color: {p['BRAND_PANEL']}; color: {p['BRAND_PRIMARY']}; border: 1px solid {p['BRAND_BORDER']}; padding: 5px; border-radius: 6px; }}
         QComboBox QAbstractItemView {{ background-color: {p['BRAND_PANEL']}; color: {p['BRAND_PRIMARY']}; border: 1px solid {p['BRAND_BORDER']}; selection-background-color: {accent['accent']}; selection-color: {accent['accent_fg']}; }}
+        
+        QScrollBar:vertical {{
+            background: {p['BRAND_BACKGROUND']};
+            width: 8px;
+            margin: 0px;
+        }}
+        QScrollBar::handle:vertical {{
+            background: {p['BRAND_BORDER']};
+            min-height: 30px;
+            border-radius: 4px;
+        }}
+        QScrollBar::handle:vertical:hover {{
+            background: {p['BRAND_MUTED_FG']};
+        }}
+        QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{ height: 0px; }}
+        QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {{ background: none; }}
+        
+        QScrollBar:horizontal {{
+            background: {p['BRAND_BACKGROUND']};
+            height: 8px;
+            margin: 0px;
+        }}
+        QScrollBar::handle:horizontal {{
+            background: {p['BRAND_BORDER']};
+            min-width: 30px;
+            border-radius: 4px;
+        }}
+        QScrollBar::handle:horizontal:hover {{
+            background: {p['BRAND_MUTED_FG']};
+        }}
+        QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {{ width: 0px; }}
+        QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal {{ background: none; }}
     """
 
 

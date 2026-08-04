@@ -1,16 +1,61 @@
 import os
 from pathlib import Path
 from PySide6.QtWidgets import (
-    QDialog, QVBoxLayout, QHBoxLayout, QLineEdit, QListWidget, QListWidgetItem, QLabel
+    QDialog, QVBoxLayout, QHBoxLayout, QLineEdit, QListWidget, QListWidgetItem, QLabel,
+    QStyledItemDelegate, QStyle
 )
-from PySide6.QtCore import Qt, Signal, QEvent, QTimer, Slot
-from PySide6.QtGui import QIcon, QColor
+from PySide6.QtCore import Qt, Signal, QEvent, QTimer, Slot, QRect, QPoint
+from PySide6.QtGui import QIcon, QColor, QPainter, QFont, QPen
 from theme import get_active_palette, get_brand_accent
 from file_icons import file_type_icon
 from icons import icon
 from vault_search import VaultSearchWorker
 from bookmark_manager import load_bookmarks
 from web_history import get_history
+
+
+class _BadgeDelegate(QStyledItemDelegate):
+    """Renders a muted pill badge (Tab / Pin / Bookmark etc.) on the right of each list item."""
+    def paint(self, painter, option, index):
+        super().paint(painter, option, index)
+        badge = index.data(Qt.UserRole + 1)
+        if not badge:
+            return
+
+        p = get_active_palette()
+        is_selected = option.state & QStyle.State_Selected
+
+        painter.save()
+        painter.setRenderHint(QPainter.Antialiasing)
+
+        badge_text = badge
+        font = QFont(option.font)
+        font.setPointSize(max(7, option.font.pointSize() - 2))
+        painter.setFont(font)
+
+        fm = painter.fontMetrics()
+        text_w = fm.horizontalAdvance(badge_text)
+        pill_w = text_w + 12
+        pill_h = fm.height() + 4
+        right_margin = 10
+        pill_x = option.rect.right() - pill_w - right_margin
+        pill_y = option.rect.center().y() - pill_h // 2
+        pill_rect = QRect(pill_x, pill_y, pill_w, pill_h)
+
+        # Background pill
+        bg_color = QColor(p['BRAND_BORDER'])
+        if is_selected:
+            bg_color = QColor(p['BRAND_BACKGROUND'])
+            bg_color.setAlpha(80)
+        painter.setPen(Qt.NoPen)
+        painter.setBrush(bg_color)
+        painter.drawRoundedRect(pill_rect, 4, 4)
+
+        # Badge text
+        text_color = QColor(p['BRAND_MUTED_FG']) if not is_selected else QColor(p['BRAND_BACKGROUND'])
+        painter.setPen(text_color)
+        painter.drawText(pill_rect, Qt.AlignCenter, badge_text)
+        painter.restore()
 
 class QuickSwitcher(QDialog):
     """
@@ -43,12 +88,12 @@ class QuickSwitcher(QDialog):
         self.setWindowTitle("Quick Switcher")
         p = get_active_palette()
         accent = get_brand_accent()
-        self.setWindowFlags(Qt.Popup | Qt.FramelessWindowHint | Qt.NoDropShadowWindowHint)
-        self.setAttribute(Qt.WA_TranslucentBackground)
+        self.setWindowFlags(Qt.Tool | Qt.FramelessWindowHint | Qt.NoDropShadowWindowHint)
+        self.setAttribute(Qt.WA_StyledBackground, True)
         
         self.setStyleSheet(f"""
             QDialog {{
-                background: {p['BRAND_BACKGROUND']};
+                background-color: {p['BRAND_PANEL']};
                 color: {p['BRAND_PRIMARY']};
                 border: 1px solid {p['BRAND_BORDER']};
                 border-radius: 8px;
@@ -96,6 +141,8 @@ class QuickSwitcher(QDialog):
         
         # File list
         self.file_list = QListWidget()
+        self._badge_delegate = _BadgeDelegate(self.file_list)
+        self.file_list.setItemDelegate(self._badge_delegate)
         self.file_list.itemDoubleClicked.connect(self.on_item_selected)
         self.file_list.keyPressEvent = self.list_key_press
         
@@ -133,15 +180,15 @@ class QuickSwitcher(QDialog):
         self.file_list.clear()
         self._add_section_header("📂 Open Tabs")
         for f in [f for f in self.local_files if f in self.open_tabs]:
-            self._add_file_item(f)
+            self._add_file_item(f, badge="Tab")
             
         self._add_section_header("📌 Pinned")
         for f in [f for f in self.local_files if f in self.pinned_files and f not in self.open_tabs]:
-            self._add_file_item(f)
+            self._add_file_item(f, badge="Pin")
             
         self._add_section_header("🕐 Recent")
         for f in [f for f in self.local_files if f in self.recent_files and f not in self.open_tabs and f not in self.pinned_files]:
-            self._add_file_item(f)
+            self._add_file_item(f, badge="Recent")
             
         self._select_first()
 
@@ -152,7 +199,8 @@ class QuickSwitcher(QDialog):
         item.setForeground(QColor(p['BRAND_MUTED_FG']))
         self.file_list.addItem(item)
 
-    def _add_file_item(self, filepath, subtitle=None):
+    def _add_file_item(self, filepath, subtitle=None, badge=None):
+        p = get_active_palette()
         name = Path(filepath).name
         label = name
         if subtitle:
@@ -161,22 +209,31 @@ class QuickSwitcher(QDialog):
         item = QListWidgetItem(label)
         item.setData(Qt.UserRole, {"type": "file", "path": filepath})
         item.setIcon(file_type_icon(Path(filepath).suffix, 16))
+        if badge:
+            item.setData(Qt.UserRole + 1, badge)
         self.file_list.addItem(item)
+        # Render the badge as a tooltip-style suffix in muted color via item data
+        if badge:
+            item.setToolTip(f"{badge}: {filepath}")
 
-    def _add_url_item(self, title, url, icon_name="globe"):
+    def _add_url_item(self, title, url, icon_name="globe", badge="Web"):
         item = QListWidgetItem(f"{title}")
         item.setData(Qt.UserRole, {"type": "url", "url": url})
         item.setIcon(icon(icon_name, size=16))
+        item.setData(Qt.UserRole + 1, badge)
+        item.setToolTip(f"{badge}: {url}")
         self.file_list.addItem(item)
         
     def _add_bookmark_item(self, bookmark):
         title = bookmark.get("label", "Bookmark")
         path = bookmark.get("file_path", "")
         doc_name = Path(path).name
-        # Show document name first, then bookmark label
-        item = QListWidgetItem(f"📑 {doc_name}  →  {title}")
+        # Show document name first, then bookmark label, badge indicates type
+        item = QListWidgetItem(f"{doc_name}  →  {title}")
         item.setData(Qt.UserRole, {"type": "file", "path": path})
         item.setIcon(icon("bookmark", size=16))
+        item.setData(Qt.UserRole + 1, "Bookmark")
+        item.setToolTip(f"Bookmark: {path}")
         self.file_list.addItem(item)
 
     def _select_first(self):
@@ -209,11 +266,12 @@ class QuickSwitcher(QDialog):
         # 2. Local Files (Fuzzy)
         for filepath in self.local_files:
             name = Path(filepath).name.lower()
+            badge = "Tab" if filepath in self.open_tabs else ("Pin" if filepath in self.pinned_files else "Recent")
             
             # Short query -> exact substring only
             if len(query) < 3:
                 if query in name:
-                    self._add_file_item(filepath)
+                    self._add_file_item(filepath, badge=badge)
                     self._pending_results.append(filepath)
                 continue
                 
@@ -230,8 +288,8 @@ class QuickSwitcher(QDialog):
             
             if idx == len(query):
                 span = (last_match - first_match) + 1
-                if span <= len(query) * 3:
-                    self._add_file_item(filepath)
+                if span <= max(len(query) * 4, 12):
+                    self._add_file_item(filepath, badge=badge)
                     self._pending_results.append(filepath)
 
         # 3. Bookmarks
@@ -250,7 +308,7 @@ class QuickSwitcher(QDialog):
         try:
             history = get_history(query, limit=5)
             for h in history:
-                self._add_url_item(f"🕒 {h.get('title', h.get('url'))}", h.get("url"), "clock")
+                self._add_url_item(h.get('title', h.get('url')), h.get("url"), "clock", badge="History")
         except Exception:
             pass
 
@@ -258,22 +316,53 @@ class QuickSwitcher(QDialog):
 
         # 5. Background Vault Search
         if self.vaults:
+            loading_item = QListWidgetItem("Loading vault results…")
+            loading_item.setFlags(loading_item.flags() & ~Qt.ItemIsSelectable)
+            loading_item.setForeground(QColor(get_active_palette()['BRAND_MUTED_FG']))
+            self.file_list.addItem(loading_item)
             self._search_worker = VaultSearchWorker(self.vaults, query)
             self._search_worker.result_found.connect(self._on_vault_result)
+            self._search_worker.finished.connect(self._vault_search_finished)
             self._search_worker.start()
+        elif self.file_list.count() == 0:
+            empty_item = QListWidgetItem("No results found.")
+            empty_item.setFlags(empty_item.flags() & ~Qt.ItemIsSelectable)
+            empty_item.setForeground(QColor(get_active_palette()['BRAND_MUTED_FG']))
+            self.file_list.addItem(empty_item)
 
     @Slot(str, str, str, str, str)
     def _on_vault_result(self, filename, display_dir, vault_name, full_path, snippet):
+        # Remove loading placeholder on first result
+        for i in range(self.file_list.count()):
+            item = self.file_list.item(i)
+            if item and item.text() == "Loading vault results…":
+                self.file_list.takeItem(i)
+                break
+
         if full_path in self._pending_results:
             return
         self._pending_results.append(full_path)
         
         subtitle = f"{display_dir.strip(' ()')} [{vault_name}]" if display_dir.strip(' ()') else f"[{vault_name}]"
         if snippet:
-            subtitle += f" - {snippet}"
+            subtitle += f" — {snippet[:60]}"
             
-        self._add_file_item(full_path, subtitle)
+        self._add_file_item(full_path, subtitle, badge="Vault")
         if self.file_list.currentRow() == -1:
+            self._select_first()
+
+    def _vault_search_finished(self):
+        # Remove loading placeholder if still present
+        for i in range(self.file_list.count()):
+            item = self.file_list.item(i)
+            if item and item.text() == "Loading vault results…":
+                self.file_list.takeItem(i)
+                break
+        if self.file_list.count() == 0:
+            empty_item = QListWidgetItem("No results found.")
+            empty_item.setFlags(empty_item.flags() & ~Qt.ItemIsSelectable)
+            empty_item.setForeground(QColor(get_active_palette()['BRAND_MUTED_FG']))
+            self.file_list.addItem(empty_item)
             self._select_first()
 
     def select_current(self):

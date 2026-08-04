@@ -45,9 +45,10 @@ jobs:
           python -m nuitka `
             --standalone `
             --lto=yes `
+            --jobs=4 `
             --enable-plugin=pyside6 `
             --include-qt-plugins=sensible,styles `
-            --nofollow-import-to=scipy,numpy,pydantic,pandas,torch,transformers,PySide6.QtQml,PySide6.QtQuick,PySide6.QtWebEngineCore,PySide6.QtWebEngineWidgets,PySide6.QtNetworkAuth,webview.platforms.android,webview.platforms.gtk,webview.platforms.cocoa,webview.platforms.cef,webview.platforms.qt `
+            --nofollow-import-to=scipy,numpy,pydantic,pandas,torch,transformers,PySide6.QtQml,PySide6.QtQuick,PySide6.QtWebView,PySide6.QtNetworkAuth,webview `
             --windows-icon-from-ico=icons/eleviewer.ico `
             --windows-company-name="karefined-eng" `
             --windows-product-name="EleViewer" `
@@ -57,7 +58,6 @@ jobs:
             --include-data-dir=icons=icons `
             --include-data-dir=getting_started=getting_started `
             --include-module=eleviewer_native `
-            --include-module=webview `
             --disable-console `
             --assume-yes-for-downloads `
             --output-filename=EleViewer.exe `

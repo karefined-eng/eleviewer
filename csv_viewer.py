@@ -234,8 +234,8 @@ class CsvViewer(QWidget):
                 background-color: {p['BRAND_PANEL']};
                 color: {p['BRAND_PRIMARY']};
                 border: 1px solid {p['BRAND_BORDER']};
-                selection-background-color: #6cb6ff;
-                selection-color: #0c1826;
+                selection-background-color: {p.get('BRAND_ACCENT', p['BRAND_PRIMARY'])};
+                selection-color: {p['BRAND_BACKGROUND']};
             }}
             QComboBox::drop-down {{ border: none; }}
             QPushButton {{

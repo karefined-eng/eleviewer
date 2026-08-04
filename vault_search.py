@@ -234,6 +234,7 @@ class VaultSearchDialog(QDialog):
     def _on_result_found(self, f, display_dir, vault_name, full_path, snippet):
         label = f"{f}{display_dir} — [{vault_name}]"
         if snippet:
+            snippet = snippet.replace('\n', ' ').replace('\r', '').strip()
             label = f"{label}\n  {snippet}"
         item = QListWidgetItem(label)
         item.setData(Qt.UserRole, full_path)

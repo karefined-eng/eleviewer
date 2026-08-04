@@ -119,7 +119,8 @@ class TtsEngine:
                         try:
                             self._run_async(self._speak_edge(text, voice_id))
                         except Exception as e:
-                            print(f"[TTS] Online generation failed ({e}), falling back to offline.")
+                            err_msg = str(e) or type(e).__name__
+                            print(f"[TTS] Online generation failed ({err_msg}), falling back to offline.")
                             if self._local_available:
                                 self._speak_local(text, None)
                             else:

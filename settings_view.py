@@ -27,9 +27,6 @@ class SettingCard(QFrame):
         text_layout.setSpacing(4)
         
         self.title = QLabel(title_text)
-        font = self.title.font()
-        font.setBold(True)
-        self.title.setFont(font)
         
         self.desc = QLabel(desc_text)
         self.desc.setWordWrap(True)
@@ -52,7 +49,7 @@ class SettingCard(QFrame):
                 border-radius: 8px;
             }}
         """)
-        self.title.setStyleSheet(f"color: {p['BRAND_PRIMARY']};")
+        self.title.setStyleSheet(f"color: {p['BRAND_PRIMARY']}; font-weight: bold;")
         self.desc.setStyleSheet(f"color: {p['BRAND_MUTED_FG']};")
 
 

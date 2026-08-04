@@ -2,7 +2,7 @@ from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QFrame, QSpacerItem, QSizePolicy
 )
 from PySide6.QtCore import Qt, Signal
-from theme import get_brand_accent, get_active_palette
+from theme import get_active_accent, get_brand_accent, get_active_palette
 from settings import load_settings, save_settings
 from icons import icon
 
@@ -82,15 +82,17 @@ class InteractiveWelcomeWidget(QWidget):
         super().__init__(parent)
         
         p = get_active_palette()
-        accent = get_brand_accent()
+        accent = get_active_accent()
+        accent_color = accent['accent']
+        hover_color = accent['hover']
         
         # Rule 2 explicit backgrounds
         self.setStyleSheet(f"""
             QWidget {{ background: {p['BRAND_BACKGROUND']}; color: {p['BRAND_PRIMARY']}; }}
             QFrame#panel {{ background: {p['BRAND_PANEL']}; border: 1px solid {p['BRAND_BORDER']}; border-radius: 8px; }}
-            QLabel#title {{ font-size: 28px; font-weight: bold; color: {accent}; margin-bottom: 5px; }}
-            QPushButton#primary {{ background: {accent}; color: {p['BRAND_BACKGROUND']}; font-weight: bold; border-radius: 6px; padding: 10px 20px; border: none; }}
-            QPushButton#primary:hover {{ opacity: 0.8; color: {p['BRAND_PRIMARY']}; background: {p['BRAND_BORDER']}; }}
+            QLabel#title {{ font-size: 28px; font-weight: bold; color: {accent_color}; margin-bottom: 5px; }}
+            QPushButton#primary {{ background: {accent_color}; color: {p['BRAND_BACKGROUND']}; font-weight: bold; border-radius: 6px; padding: 10px 20px; border: none; }}
+            QPushButton#primary:hover {{ background: {hover_color}; }}
         """)
         
         main_layout = QVBoxLayout(self)
@@ -124,7 +126,7 @@ class InteractiveWelcomeWidget(QWidget):
             panel_layout.addWidget(item)
             
         self.complete_lbl = QLabel("🎉 Mission Accomplished!")
-        self.complete_lbl.setStyleSheet(f"font-size: 20px; font-weight: bold; color: {accent};")
+        self.complete_lbl.setStyleSheet(f"font-size: 20px; font-weight: bold; color: {accent_color};")
         self.complete_lbl.setAlignment(Qt.AlignCenter)
         self.complete_lbl.hide()
         
