@@ -847,20 +847,33 @@ class MainWindow(QMainWindow):
         widget_type = type(editor).__name__
         if widget_type in ["EditorTab", "DocxViewer", "MarkdownViewer", "HtmlViewer"]:
             if hasattr(editor, "toPlainText"):
-                text_content = editor.toPlainText()
-                lines = text_content.count('\n') + 1 if text_content else 0
-                count_text = f"{lines:,} lines · "
+                try:
+                    text_content = editor.toPlainText()
+                    if isinstance(text_content, str):
+                        lines = text_content.count('\n') + 1 if text_content else 0
+                        count_text = f"{lines:,} lines · "
+                except Exception:
+                    pass
         elif widget_type in ["CsvViewer", "XlsxViewer"]:
             if hasattr(editor, "model"):
-                rows = editor.model.rowCount()
-                count_text = f"{rows:,} rows · "
+                try:
+                    rows = editor.model.rowCount()
+                    count_text = f"{rows:,} rows · "
+                except Exception:
+                    pass
         elif widget_type == "PptxViewer":
             if hasattr(editor, "total_slides"):
-                count_text = f"{editor.total_slides} slides · "
+                try:
+                    count_text = f"{editor.total_slides} slides · "
+                except Exception:
+                    pass
         elif widget_type == "PdfViewer":
             if hasattr(editor, "document"):
-                pages = editor.document.pageCount() if editor.document else 0
-                count_text = f"{pages} pages · "
+                try:
+                    pages = editor.document.pageCount() if editor.document else 0
+                    count_text = f"{pages} pages · "
+                except Exception:
+                    pass
 
         self.status_right.setText(f"{count_text}{ext_label} · UTF-8")
 
@@ -924,8 +937,14 @@ class MainWindow(QMainWindow):
         title.setStyleSheet(f"font-size: 32px; font-weight: bold; color: {p['BRAND_PRIMARY']};")
         title.setAlignment(Qt.AlignCenter)
         
+        subtitle = QLabel("Open, read, and edit your documents locally on Windows with fast search, bookmarks, and built-in web research.")
+        subtitle.setWordWrap(True)
+        subtitle.setAlignment(Qt.AlignCenter)
+        subtitle.setStyleSheet(f"color: {p['BRAND_MUTED_FG']}; font-size: 14px; max-width: 700px;")
+        
         hero_layout.addWidget(logo_lbl)
         hero_layout.addWidget(title)
+        hero_layout.addWidget(subtitle)
         main_layout.addWidget(hero)
         
         # 2. Omnibar (Search)
@@ -959,7 +978,60 @@ class MainWindow(QMainWindow):
         sc_layout.addWidget(search_btn)
         main_layout.addWidget(search_container)
         
-        # 3. Two Columns: Activity & Actions
+        # 3. Action Buttons
+        action_bar = QWidget()
+        action_bar_layout = QHBoxLayout(action_bar)
+        action_bar_layout.setSpacing(12)
+        action_bar_layout.setAlignment(Qt.AlignCenter)
+        
+        btn_note = QToolButton()
+        btn_note.setText("New Text Note")
+        btn_note.setIcon(icon("file-plus", size=16))
+        btn_note.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+        btn_note.setCursor(Qt.PointingHandCursor)
+        btn_note.setStyleSheet(f"background: {p['BRAND_PANEL']}; color: {p['BRAND_PRIMARY']}; border: 1px solid {p['BRAND_BORDER']}; border-radius: 6px; padding: 10px 14px;")
+        btn_note.clicked.connect(self.new_tab)
+        
+        btn_open = QToolButton()
+        btn_open.setText("Open File")
+        btn_open.setIcon(icon("folder-open", size=16))
+        btn_open.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+        btn_open.setCursor(Qt.PointingHandCursor)
+        btn_open.setStyleSheet(btn_note.styleSheet())
+        btn_open.clicked.connect(self.open_file)
+        
+        btn_vault = QToolButton()
+        btn_vault.setText("Add Vault")
+        btn_vault.setIcon(icon("panel-left", size=16))
+        btn_vault.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+        btn_vault.setCursor(Qt.PointingHandCursor)
+        btn_vault.setStyleSheet(btn_note.styleSheet())
+        btn_vault.clicked.connect(self.add_vault)
+        
+        btn_web = QToolButton()
+        btn_web.setText("Open Web Browser")
+        btn_web.setIcon(icon("globe", size=16))
+        btn_web.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+        btn_web.setCursor(Qt.PointingHandCursor)
+        btn_web.setStyleSheet(btn_note.styleSheet())
+        btn_web.clicked.connect(self.open_web_tab)
+        
+        btn_help = QToolButton()
+        btn_help.setText("Getting Started")
+        btn_help.setIcon(icon("book-open", size=16))
+        btn_help.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+        btn_help.setCursor(Qt.PointingHandCursor)
+        btn_help.setStyleSheet(btn_note.styleSheet())
+        btn_help.clicked.connect(self.open_getting_started)
+        
+        action_bar_layout.addWidget(btn_note)
+        action_bar_layout.addWidget(btn_open)
+        action_bar_layout.addWidget(btn_vault)
+        action_bar_layout.addWidget(btn_web)
+        action_bar_layout.addWidget(btn_help)
+        main_layout.addWidget(action_bar)
+        
+        # 4. Two Columns: Activity & Actions
         columns = QWidget()
         cols_layout = QHBoxLayout(columns)
         cols_layout.setSpacing(40)
