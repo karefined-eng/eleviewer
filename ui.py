@@ -918,10 +918,19 @@ class MainWindow(QMainWindow):
         
         w = QWidget()
         w.is_welcome_tab = True
-        main_layout = QVBoxLayout(w)
-        main_layout.setAlignment(Qt.AlignTop | Qt.AlignHCenter)
+        # Outer layout centers the content container
+        outer_layout = QVBoxLayout(w)
+        outer_layout.setAlignment(Qt.AlignTop | Qt.AlignHCenter)
+        outer_layout.setContentsMargins(0, 0, 0, 0)
+
+        # Constrained content wrapper — stays readable on maximized windows
+        content = QWidget()
+        content.setMaximumWidth(780)
+        main_layout = QVBoxLayout(content)
+        main_layout.setAlignment(Qt.AlignTop)
         main_layout.setContentsMargins(40, 80, 40, 40)
         main_layout.setSpacing(30)
+        outer_layout.addWidget(content, 0, Qt.AlignHCenter)
         
         # 1. Hero Section (Logo + Title)
         hero = QWidget()
@@ -940,11 +949,12 @@ class MainWindow(QMainWindow):
         subtitle = QLabel("Open, read, and edit your documents locally on Windows with fast search, bookmarks, and built-in web research.")
         subtitle.setWordWrap(True)
         subtitle.setAlignment(Qt.AlignCenter)
-        subtitle.setStyleSheet(f"color: {p['BRAND_MUTED_FG']}; font-size: 14px; max-width: 700px;")
+        subtitle.setMaximumWidth(600)
+        subtitle.setStyleSheet(f"color: {p['BRAND_MUTED_FG']}; font-size: 14px;")
         
         hero_layout.addWidget(logo_lbl)
         hero_layout.addWidget(title)
-        hero_layout.addWidget(subtitle)
+        hero_layout.addWidget(subtitle, 0, Qt.AlignHCenter)
         main_layout.addWidget(hero)
         
         # 2. Omnibar (Search)
@@ -968,80 +978,47 @@ class MainWindow(QMainWindow):
                 color: {p['BRAND_PRIMARY']};
             }}
         """)
-        search_btn.setMinimumWidth(600)
-        search_btn.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        search_btn.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         search_btn.clicked.connect(self.open_vault_search)
-        
-        search_container = QWidget()
-        sc_layout = QHBoxLayout(search_container)
-        sc_layout.setAlignment(Qt.AlignCenter)
-        sc_layout.addWidget(search_btn)
-        main_layout.addWidget(search_container)
+        main_layout.addWidget(search_btn)
         
         # 3. Action Buttons
         action_bar = QWidget()
         action_bar_layout = QHBoxLayout(action_bar)
         action_bar_layout.setSpacing(12)
+        action_bar_layout.setContentsMargins(0, 0, 0, 0)
         action_bar_layout.setAlignment(Qt.AlignCenter)
         
-        btn_note = QToolButton()
-        btn_note.setText("New Text Note")
-        btn_note.setIcon(icon("file-plus", size=16))
-        btn_note.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
-        btn_note.setCursor(Qt.PointingHandCursor)
-        btn_note.setStyleSheet(f"background: {p['BRAND_PANEL']}; color: {p['BRAND_PRIMARY']}; border: 1px solid {p['BRAND_BORDER']}; border-radius: 6px; padding: 10px 14px;")
-        btn_note.clicked.connect(self.new_tab)
-        
-        btn_open = QToolButton()
-        btn_open.setText("Open File")
-        btn_open.setIcon(icon("folder-open", size=16))
-        btn_open.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
-        btn_open.setCursor(Qt.PointingHandCursor)
-        btn_open.setStyleSheet(btn_note.styleSheet())
-        btn_open.clicked.connect(self.open_file)
-        
-        btn_vault = QToolButton()
-        btn_vault.setText("Add Vault")
-        btn_vault.setIcon(icon("panel-left", size=16))
-        btn_vault.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
-        btn_vault.setCursor(Qt.PointingHandCursor)
-        btn_vault.setStyleSheet(btn_note.styleSheet())
-        btn_vault.clicked.connect(self.add_vault)
-        
-        btn_web = QToolButton()
-        btn_web.setText("Open Web Browser")
-        btn_web.setIcon(icon("globe", size=16))
-        btn_web.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
-        btn_web.setCursor(Qt.PointingHandCursor)
-        btn_web.setStyleSheet(btn_note.styleSheet())
-        btn_web.clicked.connect(self.open_web_tab)
-        
-        btn_help = QToolButton()
-        btn_help.setText("Getting Started")
-        btn_help.setIcon(icon("book-open", size=16))
-        btn_help.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
-        btn_help.setCursor(Qt.PointingHandCursor)
-        btn_help.setStyleSheet(btn_note.styleSheet())
-        btn_help.clicked.connect(self.open_getting_started)
-        
-        action_bar_layout.addWidget(btn_note)
-        action_bar_layout.addWidget(btn_open)
-        action_bar_layout.addWidget(btn_vault)
-        action_bar_layout.addWidget(btn_web)
-        action_bar_layout.addWidget(btn_help)
+        action_btn_style = f"background: {p['BRAND_PANEL']}; color: {p['BRAND_PRIMARY']}; border: 1px solid {p['BRAND_BORDER']}; border-radius: 6px; padding: 10px 14px;"
+        for label, ico, slot in [
+            ("New Text Note", "file-plus", self.new_tab),
+            ("Open File", "folder-open", self.open_file),
+            ("Add Vault", "panel-left", self.add_vault),
+            ("Web Browser", "globe", self.open_web_tab),
+            ("Getting Started", "book-open", self.open_getting_started),
+        ]:
+            btn = QToolButton()
+            btn.setText(label)
+            btn.setIcon(icon(ico, size=16))
+            btn.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+            btn.setCursor(Qt.PointingHandCursor)
+            btn.setStyleSheet(action_btn_style)
+            btn.clicked.connect(slot)
+            action_bar_layout.addWidget(btn)
         main_layout.addWidget(action_bar)
         
-        # 4. Two Columns: Activity & Actions
+        # 4. Two Columns: Recent Files & Shortcuts
         columns = QWidget()
         cols_layout = QHBoxLayout(columns)
         cols_layout.setSpacing(40)
-        cols_layout.setAlignment(Qt.AlignTop | Qt.AlignHCenter)
+        cols_layout.setContentsMargins(0, 0, 0, 0)
+        cols_layout.setAlignment(Qt.AlignTop)
         
         # LEFT: Activity (Recent & Bookmarks)
         left_col = QWidget()
         left_layout = QVBoxLayout(left_col)
         left_layout.setSpacing(15)
-        left_col.setMinimumWidth(300)
+        left_layout.setContentsMargins(0, 0, 0, 0)
         
         recent_lbl = QLabel("RECENT FILES")
         recent_lbl.setStyleSheet(f"color: {p['BRAND_MUTED_FG']}; font-size: 11px; font-weight: bold; letter-spacing: 1px;")
@@ -1052,7 +1029,7 @@ class MainWindow(QMainWindow):
         recent_list.setSelectionMode(QListWidget.NoSelection)
         recent_list.setCursor(Qt.PointingHandCursor)
         recent_list.setMaximumHeight(150)
-        recent_files = load_recent_files(validate=True)[:3]
+        recent_files = load_recent_files(validate=True)[:5]
         if not recent_files:
             recent_list.addItem(QListWidgetItem("No recent files"))
         else:
@@ -1091,44 +1068,28 @@ class MainWindow(QMainWindow):
         left_layout.addWidget(bm_list)
         left_layout.addStretch()
         
-        # RIGHT: Actions & Shortcuts
+        # RIGHT: Keyboard Shortcuts
         right_col = QWidget()
         right_layout = QVBoxLayout(right_col)
         right_layout.setSpacing(15)
-        right_col.setMinimumWidth(300)
+        right_layout.setContentsMargins(0, 0, 0, 0)
         
-        btn_note = QToolButton()
-        btn_note.setText(" New Text Note")
-        btn_note.setIcon(icon("file-plus", size=16))
-        btn_note.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
-        btn_note.setStyleSheet(f"background: {p['BRAND_PANEL']}; color: {p['BRAND_PRIMARY']}; border: 1px solid {p['BRAND_BORDER']}; border-radius: 4px; padding: 10px;")
-        btn_note.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-        btn_note.clicked.connect(self.new_tab)
-        
-        btn_web = QToolButton()
-        btn_web.setText(" Open Web Browser")
-        btn_web.setIcon(icon("globe", size=16))
-        btn_web.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
-        btn_web.setStyleSheet(f"background: {p['BRAND_PANEL']}; color: {p['BRAND_PRIMARY']}; border: 1px solid {p['BRAND_BORDER']}; border-radius: 4px; padding: 10px;")
-        btn_web.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-        btn_web.clicked.connect(self.new_tab)
-        
-        right_layout.addWidget(btn_note)
-        right_layout.addWidget(btn_web)
-        
-        # Shortcuts Grid
+        shortcuts_lbl = QLabel("KEYBOARD SHORTCUTS")
+        shortcuts_lbl.setStyleSheet(f"color: {p['BRAND_MUTED_FG']}; font-size: 11px; font-weight: bold; letter-spacing: 1px;")
+        right_layout.addWidget(shortcuts_lbl)
+
         shortcuts = [
             ("Ctrl+O", "Open file"),
             ("Ctrl+N", "New note"),
             ("Ctrl+T", "Browser"),
             ("Alt+V", "Vault"),
             ("Ctrl+Q", "Search"),
-            ("F9", "TTS Reader")
+            ("F9", "TTS Reader"),
         ]
         grid = QWidget()
         grid_layout = QGridLayout(grid)
         grid_layout.setSpacing(10)
-        grid_layout.setContentsMargins(0, 20, 0, 0)
+        grid_layout.setContentsMargins(0, 0, 0, 0)
         for i, (key, desc) in enumerate(shortcuts):
             k_lbl = QLabel(key)
             k_lbl.setStyleSheet(f"background: {p['BRAND_PANEL_2']}; padding: 4px 6px; border-radius: 4px; font-family: monospace; color: {get_brand_accent()}; font-size: 11px;")
