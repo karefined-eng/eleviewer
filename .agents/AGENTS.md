@@ -1,7 +1,8 @@
 # EleViewer Python Application Rules & Directives
 
 ## Mandatory Context & Architecture Enforcement
-Before creating or modifying any module in `eleviewer`, you MUST read and strictly adhere to `README.md` and `DEVELOPER_ONBOARDING.md`.
+Before creating or modifying any module in `eleviewer`, you MUST read and strictly adhere to `README.md`, `DEVELOPER_ONBOARDING.md`, and the relevant test files under `tests/`.
+When proposing architecture or implementation changes, review the current coverage and assumptions encoded in `tests/` and `DEVELOPER_ONBOARDING.md`.
 
 ### Key Constraints:
 1. **Zero Telemetry & PII Protection:** No analytics, no tracking, and no phone-home mechanisms. Unhandled exceptions and student feedback submitted via `feedback_dialog.py` MUST strip all user PII (such as Windows home directory paths via `os.path.expanduser("~")` -> `~`) before network transmission.
@@ -61,14 +62,13 @@ Before creating or modifying any module in `eleviewer`, you MUST read and strict
 45. **Strict Pre-Bundling Enforcement Before Marketing:** Never execute distribution, growth, or launch playbooks (such as launch, seo-audit, or  nalytics) on an unbundled or unverified repository. Before initiating any Go-To-Market strategies, you MUST first verify app stability by executing the eleviewer-ui-tester playbook, checking for open telemetry crashes via gh issue list, and confirming the app successfully compiles to a standalone .exe via Nuitka. Marketing an unbundled app is strictly forbidden.
 46. **PySide6 Test Suite Stability:** When executing `pytest` on PySide6 applications, ALWAYS use `pytest -s` to disable standard output capturing. PySide6 teardowns routinely close the stdout pipe abruptly, causing `ValueError: I/O operation on closed file` crashes inside pytest's `capture.py` that mask the actual test results. Additionally, ensure `pyproject.toml` contains `norecursedirs` to exclude unrelated submodules (like `agentic-awesome-skills`) from test collection.
 47. **Unattended Nuitka Builds:** When executing `nuitka` compilation commands (especially as background tasks), you MUST include the `--assume-yes-for-downloads` flag. This prevents the compiler from indefinitely hanging on interactive prompts for tools like Dependency Walker or ccache, which cannot be reliably answered asynchronously.
-48. **Maturin & Pip Corruption Recovery:** This rule is deprecated.
-49. **Strict Search Boundaries & Comprehensive Sourcing (Omnibar/QuickSwitcher):** When implementing or modifying the QuickSwitcher or global search (Omnibar):
+48. **Strict Search Boundaries & Comprehensive Sourcing (Omnibar/QuickSwitcher):** When implementing or modifying the QuickSwitcher or global search (Omnibar):
     - **Comprehensive Data Sources:** The search MUST aggregate results from all context layers: web bookmarks, web history, open editor files, recent files, pinned files, and the Vault (via `vault_indexer`). Do not regress or remove these sources.
     - **Never match against full absolute paths:** Search queries must only evaluate the target filename (`Path(path).name`) and user-facing labels. Matching against full paths causes short queries to over-match structural Windows paths.
     - **Always implement density bounds for fuzzy matching:** Subsequence matchers must enforce a maximum span (e.g., matched characters must span no more than 3x the query length) to prevent short queries from matching completely unrelated long filenames.
     - **Always skip noise directories:** Any recursive file walker (`os.walk`) must explicitly skip common noise directories (e.g., `node_modules`, `.venv`, `__pycache__`, `site-packages`, `.git`, `dist`, `target`) to prevent UI clutter and extreme CPU/I/O churn.
 
-50. **Aggressive Anti-Bloat & Strict 25MB Bundle Limit:** 
+49. **Aggressive Anti-Bloat & Strict 25MB Bundle Limit:** 
     - **Enforce the 25MB Ceiling:** The final compiled installer and standalone executable directory MUST NEVER exceed 25MB in total size. Every new dependency, feature, or UI component must be audited for bundle size impact before implementation.
     - **Chromium Ban (No QWebEngineView):** NEVER use or import `PySide6.QtWebEngineWidgets` or `PySide6.QtWebEngineCore`. The Chromium tax instantly violates the 25MB limit and causes severe disk/CPU thrashing. For web navigation, strictly use native lightweight alternatives such as `QDesktopServices.openUrl()` (launching the default system browser) or `pywebview` (which uses the native 0MB Windows Edge WebView2).
     - **Nuitka Kitchen-Sink Exclusion:** When compiling via Nuitka on GitHub Actions, you MUST aggressively exclude data science packages and unused Qt modules that leak from the `windows-latest` runner environment. The build command MUST include: `--nofollow-import-to=scipy,numpy,pydantic,pandas,torch,transformers,PySide6.QtQml,PySide6.QtQuick,PySide6.QtWebEngineCore,PySide6.QtWebEngineWidgets,PySide6.QtNetworkAuth`

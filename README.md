@@ -123,14 +123,13 @@ For power users, distribution is also managed via the **Winget** package manager
 
 If you're a contributor, here is where you should start navigating the codebase:
 
-- **`main.py`** & **`ui.py`** — Entry point, system tray, and main window tab management.
-- **`file_handler.py`** — Uses a **factory pattern** to route files to the correct viewer module (e.g., `docx_viewer.py`, `xlsx_viewer.py`, `pdf_viewer.py`).
-- **`editor.py`** & **`markdown_renderer.py`** — Text and markdown editors (with XSS sanitization).
-- **`pdf_viewer.py`**, **`docx_viewer.py`**, **`xlsx_viewer.py`** — Format-specific viewers.
-- **`vault_explorer.py`**, **`vault_search.py`**, **`vault_indexer.py`** — Vault browser, live search, and pure-Python SQLite FTS5 full-text indexing.
-- **`draft_recovery.py`**, **`feedback_dialog.py`** — Background `QThread` workers for auto-backup and feedback.
-- **`session_manager.py`**, **`save_utils.py`**, **`settings.py`** — Atomic writes, settings, and session scroll/zoom/page restore.
-- **`tests/`** — All test scripts reside here. Test suites run via `pytest` (e.g., `pytest tests/test_all_ui_actions.py` or `pytest -s tests/`).
+- **`main.py`**, **`ui.py`**, **`file_handler.py`** — The primary contributor entry points. `main.py` boots the app, manages single-instance behavior, and initializes the main window. `ui.py` is the shell, tab manager, and toolbar controller. `file_handler.py` dispatches files to the correct viewer implementation.
+- **`editor.py`** & **`markdown_renderer.py`** — Text and markdown editing, including sanitization and live preview.
+- **`pdf_viewer.py`**, **`docx_viewer.py`**, **`xlsx_viewer.py`** — Format-specific viewers and rendering logic.
+- **`vault_explorer.py`**, **`vault_search.py`**, **`vault_indexer.py`** — Vault browser, live search, and pure-Python SQLite FTS5 background indexing.
+- **`draft_recovery.py`** & **`feedback_dialog.py`** — Background `QThread` workers for auto-save and feedback submission.
+- **`session_manager.py`**, **`save_utils.py`**, **`settings.py`** — Atomic disk writes, session persistence, and settings storage.
+- **`tests/`** — The current regression and integration coverage. Use this directory to understand existing behavior and validate changes before submitting.
 - **Data storage:** User data is stored in `%APPDATA%\EleViewer\` (`recent_files.json`, `settings.json`, `session.json`, `vault_index.db`, etc.)
 
 ## 🧪 Testing
@@ -147,8 +146,13 @@ To run a specific test suite:
 pytest -s tests/test_all_ui_actions.py
 pytest -s tests/test_markdown_renderer.py
 ```
-- **ModuleNotFoundError (e.g., 'PySide6', 'docx')**: Ensure you've run `pip install -r requirements.txt`.
-- **Web panel not available**: Run `pip install PySide6-WebEngine`.
+
+If a test fails due to missing dependencies, ensure you've run `pip install -r requirements.txt`.
+- **`ModuleNotFoundError` (e.g., 'PySide6', 'docx')**: Install missing packages from `requirements.txt`.
+- **Web panel not available**: Install the optional web engine dependency:
+  ```bash
+  pip install PySide6-WebEngine
+  ```
 - **PDF read-aloud not working**: Ensure `pyttsx3` is installed and Windows speech voices are enabled in OS settings. For higher quality neural voices, install `edge-tts` (requires internet connection). Audio plays natively via Windows MCI without heavy third-party packages.
 
 ## 🛡️ The Offline-First Philosophy

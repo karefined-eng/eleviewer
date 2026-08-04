@@ -53,9 +53,9 @@ release_hash.py: Standalone script for computing executable SHA-256 release hash
 
 Contributing Workflow
 
-Check the Context: Read README.md before starting work. It contains historical context and the main repository map.
+Check the Context: Read `README.md` and this `DEVELOPER_ONBOARDING.md` before starting work. They contain the current architecture, contributor flow, and validation conventions.
 Design System: Ensure UI changes match the modern aesthetics described in the README and use variables from theme.py.
-Testing: Run main.py directly for manual validation, or execute test suites located in the tests/ directory.
+Testing: Run `main.py` directly for manual validation, or execute test suites located in the `tests/` directory.
 Pull Requests: Explain why a feature is needed, not just what it does. Ensure it doesn't break the "Offline First" or "Zero Telemetry" rules.
 
 Welcome aboard!
