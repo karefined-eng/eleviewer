@@ -113,28 +113,40 @@ Opens & edits **DOCX, XLSX, PPTX, PDF, MD, TXT, CSV and HTML** — all in one wo
 
 EleViewer v1.3.0 utilizes a fully automated GitHub Actions pipeline. When a new semantic version tag (`vX.Y.Z`) is pushed, the cloud runner automatically:
 
-1. **Compiles the Rust extensions** (`eleviewer-native`) into a `.whl` package using `maturin build`.
-2. **Compiles the core application** to native C++ machine code using **Nuitka LTO** (`--standalone --lto=yes`), yielding a tiny, zero-dependency executable.
-3. **Packages the Installer** via **Inno Setup** (`iscc`), which compresses the assets, executable, and registry scripts into `EleViewer_Setup_vX.Y.Z.exe`.
-4. **Publishes the Release** directly to GitHub.
+1. **Compiles the core application** to native C++ machine code using **Nuitka LTO** (`--standalone --lto=yes --assume-yes-for-downloads`), yielding a tiny, zero-dependency executable.
+2. **Packages the Installer** via **Inno Setup** (`iscc`), which compresses the assets, executable, and registry scripts into `EleViewer_Setup_vX.Y.Z.exe`.
+3. **Publishes the Release** directly to GitHub.
 
 For power users, distribution is also managed via the **Winget** package manager.
 
 ## 📁 Architecture & Structure
 
-EleViewer uses a **factory pattern** for file handling. `file_handler.py` routes files to the correct viewer module (e.g., `docx_viewer.py`, `xlsx_viewer.py`, `pdf_viewer.py`).
+If you're a contributor, here is where you should start navigating the codebase:
 
-Key directories and modules:
-- `main.py` & `ui.py` — Entry point, system tray, and main window tab management.
-- `editor.py` & `markdown_renderer.py` — Text and markdown editors (with XSS sanitization).
-- `pdf_viewer.py`, `docx_viewer.py`, `xlsx_viewer.py` — Format-specific viewers.
-- `vault_explorer.py`, `vault_search.py`, `vault_indexer.py` — Vault browser, live search, and SQLite FTS5 indexer.
-- `draft_recovery.py`, `feedback_dialog.py` — Background `QThread` workers for auto-backup and feedback.
-- `session_manager.py`, `save_utils.py`, `settings.py` — Atomic writes, settings, and session scroll/zoom/page restore.
-- `release_hash.py` — Automated SHA-256 release manifest generator.
-- Test suites run via `pytest` directly in the project root.
-- Data is stored in `%APPDATA%\EleViewer\` (`recent_files.json`, `settings.json`, `session.json`, `vault_index.db`, etc.)
+- **`main.py`** & **`ui.py`** — Entry point, system tray, and main window tab management.
+- **`file_handler.py`** — Uses a **factory pattern** to route files to the correct viewer module (e.g., `docx_viewer.py`, `xlsx_viewer.py`, `pdf_viewer.py`).
+- **`editor.py`** & **`markdown_renderer.py`** — Text and markdown editors (with XSS sanitization).
+- **`pdf_viewer.py`**, **`docx_viewer.py`**, **`xlsx_viewer.py`** — Format-specific viewers.
+- **`vault_explorer.py`**, **`vault_search.py`**, **`vault_indexer.py`** — Vault browser, live search, and pure-Python SQLite FTS5 full-text indexing.
+- **`draft_recovery.py`**, **`feedback_dialog.py`** — Background `QThread` workers for auto-backup and feedback.
+- **`session_manager.py`**, **`save_utils.py`**, **`settings.py`** — Atomic writes, settings, and session scroll/zoom/page restore.
+- **`tests/`** — All test scripts reside here. Test suites run via `pytest` (e.g., `pytest tests/test_all_ui_actions.py` or `pytest -s tests/`).
+- **Data storage:** User data is stored in `%APPDATA%\EleViewer\` (`recent_files.json`, `settings.json`, `session.json`, `vault_index.db`, etc.)
 
+## 🧪 Testing
+
+We use `pytest` for all tests. Test scripts are located in the `tests/` directory.
+
+To run all tests (with standard output enabled, which is recommended for PySide6 stability):
+```bash
+pytest -s tests/
+```
+
+To run a specific test suite:
+```bash
+pytest -s tests/test_all_ui_actions.py
+pytest -s tests/test_markdown_renderer.py
+```
 - **ModuleNotFoundError (e.g., 'PySide6', 'docx')**: Ensure you've run `pip install -r requirements.txt`.
 - **Web panel not available**: Run `pip install PySide6-WebEngine`.
 - **PDF read-aloud not working**: Ensure `pyttsx3` is installed and Windows speech voices are enabled in OS settings. For higher quality neural voices, install `edge-tts` (requires internet connection). Audio plays natively via Windows MCI without heavy third-party packages.

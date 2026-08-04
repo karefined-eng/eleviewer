@@ -43,7 +43,7 @@ htmlviewer.py & webpanel.py: Dedicated HTML/XML workstation with an integrated C
 Sub-systems & Concurrency
 file_icons.py & icons.py: Minimalist Lucide line-art SVG icon engine supporting two-tone state rendering (#6cb6ff active focus vs #888888 inactive).
 instance_lock.py: Local socket IPC server (QLocalSocket) enforcing single-instance execution, --new/-n CLI flag routing, and system-wide hotkey interception (Alt+E for Quick Note scratchpad).
-vaultexplorer.py & vaultindexer.py: The left sidebar for file navigation (filtering out system junk files like desktop.ini). The Vault Indexer is powered by a native Rust/Maturin extension for zero-copy memory handoff and high-speed asynchronous I/O (SQLite FTS5 full-text background search).
+vaultexplorer.py & vaultindexer.py: The left sidebar for file navigation (filtering out system junk files like desktop.ini). The Vault Indexer is powered by a pure-Python SQLite FTS5 implementation for full-text background search.
 quick_switcher.py: The Ctrl+Q fuzzy finder for fast file switching.
 draft_recovery.py: Saves auto-snapshots of text using a background DraftWorker(QThread) to prevent UI stutter and data loss.
 saveutils.py, sessionmanager.py, settings.py: Enforces atomic disk writes (tempfile.mkstemp + os.fsync + os.replace) to strictly guarantee physical disk writes and eliminate 0-byte corruption on crash, while persisting scroll position, zoom, and PDF page numbers across sessions.
@@ -53,9 +53,9 @@ release_hash.py: Standalone script for computing executable SHA-256 release hash
 
 Contributing Workflow
 
-Check the Ledger: Read PROJECT_LOG.md before starting work. It contains historical context on why certain decisions were made (e.g., why we dropped fitz for PDF).
-Design System: Ensure UI changes match eleviewer-site/app/globals.css.
-Testing: Run main.py directly for manual validation, or execute test suites archived in OneDrive\Documents\EleViewer\tests\.
+Check the Context: Read README.md before starting work. It contains historical context and the main repository map.
+Design System: Ensure UI changes match the modern aesthetics described in the README and use variables from theme.py.
+Testing: Run main.py directly for manual validation, or execute test suites located in the tests/ directory.
 Pull Requests: Explain why a feature is needed, not just what it does. Ensure it doesn't break the "Offline First" or "Zero Telemetry" rules.
 
 Welcome aboard!
