@@ -54,6 +54,11 @@ Opens & edits **DOCX, XLSX, PPTX, PDF, MD, TXT, CSV and HTML** — all in one wo
 1. Download `EleViewer.exe` from the [releases](https://github.com/karefined-eng/eleviewer/releases) page.
 2. Run it — no installation needed!
 
+### What’s new
+- Faster preview refreshes for Markdown and HTML content while you type, with less wasted work and smoother updates.
+- Reused rendered output for unchanged documents in the main preview paths, which helps reopen or revisit content more quickly.
+- Cleaner guidance in this repo so the docs and agent instructions match the actual Python + PySide6 implementation.
+
 ### For Developers
 
 **Prerequisites:** Windows 10/11, Python 3.9+, Git.
@@ -108,21 +113,33 @@ Opens & edits **DOCX, XLSX, PPTX, PDF, MD, TXT, CSV and HTML** — all in one wo
 - **Vaults**: Add multiple project folders. Switch between them via the sidebar dropdown. Set up vaults via the **+** icon.
 - **Web Panel**: Persists URLs between sessions. Configure the default new tab URL in the Settings menu.
 
-## 🛠️ Building the Executable & SHA-256 Release Hashing
+## 🛠️ Building Locally
 
-EleViewer v1.3.0 utilizes **Nuitka LTO** to compile Python directly to C++ machine code, paired with a **Rust/PyO3** extension for native asynchronous I/O (Vault Indexing).
+The current desktop build path is a standard Python + PySide6 workflow.
 
 ```bash
-# 1. Compile the Rust extensions
-maturin develop --release
+# 1. Create and activate a virtual environment
+python -m venv .venv
+.venv\Scripts\activate
 
-# 2. Compile the core application to C++ via Nuitka
-nuitka --standalone --lto=yes --plugin-enable=pyside6 main.py
+# 2. Install the app dependencies
+pip install -r requirements.txt
 
-# 3. Generate SHA-256 hashes
+# 3. Start the app
+python main.py
+```
+
+If you want a packaged build, the repo also supports Nuitka-based standalone builds when that tool is available:
+
+```bash
+nuitka --standalone --plugin-enable=pyside6 main.py
+```
+
+Release hashes can still be generated with:
+
+```bash
 python release_hash.py
 ```
-The executable will be generated in the `dist/` directory alongside `EleViewer_SHA256.txt`.
 
 ## 📁 Architecture & Structure
 
@@ -130,13 +147,13 @@ EleViewer uses a **factory pattern** for file handling. `file_handler.py` routes
 
 Key directories and modules:
 - `main.py` & `ui.py` — Entry point, system tray, and main window tab management.
-- `editor.py` & `markdown_renderer.py` — Text and markdown editors (with XSS sanitization).
-- `pdf_viewer.py`, `docx_viewer.py`, `xlsx_viewer.py` — Format-specific viewers.
+- `editor.py` & `markdown_renderer.py` — Text and markdown editors with sanitized preview rendering.
+- `pdf_viewer.py`, `docx_viewer.py`, `pptx_viewer.py`, `xlsx_viewer.py`, `csv_viewer.py` — Format-specific viewers.
 - `vault_explorer.py`, `vault_search.py`, `vault_indexer.py` — Vault browser, live search, and SQLite FTS5 indexer.
 - `draft_recovery.py`, `feedback_dialog.py` — Background `QThread` workers for auto-backup and feedback.
 - `session_manager.py`, `save_utils.py`, `settings.py` — Atomic writes, settings, and session scroll/zoom/page restore.
 - `release_hash.py` — Automated SHA-256 release manifest generator.
-- Test suites are archived in `OneDrive\Documents\EleViewer\tests\`.
+- Tests live in the repository root as `test_*.py` files.
 - Data is stored in `%APPDATA%\EleViewer\` (`recent_files.json`, `settings.json`, `session.json`, `vault_index.db`, etc.)
 
 - **ModuleNotFoundError (e.g., 'PySide6', 'docx')**: Ensure you've run `pip install -r requirements.txt`.

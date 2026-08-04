@@ -34,16 +34,16 @@ EleViewer relies heavily on standard PySide6 widgets and custom components to ke
 - `file_handler.py`: The heart of the viewer. It reads a file extension and dynamically instantiates the correct viewer (e.g., `MarkdownViewer`, `XlsxViewer`, `PdfViewer`).
 
 ### The Viewers
-- `pdf_viewer.py`: Uses `QPdfView` (native Qt module, not PyMuPDF). Features Text-to-Speech integration via `tts_engine.py`.
-- `editor.py`: The text/Markdown editor. Now uses native C++ `QTextBrowser` to eliminate the Chromium RAM tax, providing live syntax highlighting and markdown preview.
-- `xlsx_viewer.py` & `csv_viewer.py`: Uses `openpyxl` and standard library `csv` to render spreadsheets natively into `QTableWidget` with cell/row/column insertion and F9 TTS table summaries.
-- `docx_viewer.py` & `pptx_viewer.py`: Converts Word docs (`python-docx`) and PowerPoint presentations (`win32com` silent PDF conversion) for rich visual rendering and F9 Universal TTS reading.
-- `html_viewer.py` & `web_panel.py`: Dedicated HTML/XML workstation with an integrated Chromium browser dock that is **strictly lazy-loaded** to preserve memory, featuring Obsidian-inspired reload/bookmark controls and global hyperlink interception.
+- `pdf_viewer.py`: Uses `QPdfView` (native Qt module, not PyMuPDF) and caches loaded documents to reduce repeated render cost when the same file is reopened.
+- `editor.py`: The text/Markdown editor. Uses a PySide6-based preview path with debounced refreshes and cached render output to keep typing responsive.
+- `xlsx_viewer.py` & `csv_viewer.py`: Use `openpyxl` and standard library `csv` to render spreadsheets natively into `QTableWidget` with cell/row/column insertion and F9 TTS table summaries.
+- `docx_viewer.py` & `pptx_viewer.py`: Render Word and PowerPoint content into lightweight HTML previews using the available parser libraries or XML fallbacks, with caching for repeated loads.
+- `html_viewer.py` & `web_panel.py`: Dedicated HTML/XML workstation with a lazy-loaded web dock when the feature is available, plus reload/bookmark controls and global hyperlink interception.
 
 ### Sub-systems & Concurrency
 - `file_icons.py` & `icons.py`: Minimalist Lucide line-art SVG icon engine supporting two-tone state rendering (`#6cb6ff` active focus vs `#888888` inactive).
 - `instance_lock.py`: Local socket IPC server (`QLocalSocket`) enforcing single-instance execution, `--new`/`-n` CLI flag routing, and system-wide hotkey interception (`Alt+E` for Quick Note scratchpad).
-- `vault_explorer.py` & `vault_indexer.py`: The left sidebar for file navigation (filtering out system junk files like `desktop.ini`). The **Vault Indexer** is powered by a native **Rust/Maturin extension** for zero-copy memory handoff and high-speed asynchronous I/O (SQLite FTS5 full-text background search).
+- `vault_explorer.py` & `vault_indexer.py`: The left sidebar for file navigation (filtering out system junk files like `desktop.ini`). The current indexer is a Python/SQLite-based background search flow rather than a Rust extension.
 - `quick_switcher.py`: The `Ctrl+Q` fuzzy finder for fast file switching.
 - `draft_recovery.py`: Saves auto-snapshots of text using a background `DraftWorker(QThread)` to prevent UI stutter and data loss.
 - `save_utils.py`, `session_manager.py`, `settings.py`: Enforces atomic disk writes (`tempfile.mkstemp` + `os.fsync` + `os.replace`) to strictly guarantee physical disk writes and eliminate 0-byte corruption on crash, while persisting scroll position, zoom, and PDF page numbers across sessions.
@@ -53,9 +53,9 @@ EleViewer relies heavily on standard PySide6 widgets and custom components to ke
 
 ## Contributing Workflow
 
-1. **Check the Ledger**: Read `PROJECT_LOG.md` before starting work. It contains historical context on why certain decisions were made (e.g., why we dropped `fitz` for PDF).
-2. **Design System**: Ensure UI changes match `eleviewer-site/app/globals.css`. 
-3. **Testing**: Run `main.py` directly for manual validation, or execute test suites archived in `OneDrive\Documents\EleViewer\tests\`.
+1. **Read the code first**: Start with the relevant viewer or UI module, then update the docs if behavior changes.
+2. **Keep the app lightweight**: Prefer smaller rendering changes, response-time improvements, and cache reuse over new dependencies.
+3. **Testing**: Run `python main.py` for manual smoke checks, or execute the repository's `test_*.py` suites with `pytest`.
 4. **Pull Requests**: Explain *why* a feature is needed, not just *what* it does. Ensure it doesn't break the "Offline First" or "Zero Telemetry" rules.
 
 Welcome aboard!
