@@ -76,8 +76,10 @@ Root: HKCU; Subkey: "Software\EleViewer\Capabilities\FileAssociations"; ValueTyp
 Root: HKCU; Subkey: "Software\EleViewer\Capabilities\FileAssociations"; ValueType: string; ValueName: ".xlsx"; ValueData: "EleViewer.Xlsx"; Flags: uninsdeletevalue; Tasks: associate
 Root: HKCU; Subkey: "Software\EleViewer\Capabilities\FileAssociations"; ValueType: string; ValueName: ".pptx"; ValueData: "EleViewer.Pptx"; Flags: uninsdeletevalue; Tasks: associate
 Root: HKCU; Subkey: "Software\EleViewer\Capabilities\FileAssociations"; ValueType: string; ValueName: ".csv"; ValueData: "EleViewer.Csv"; Flags: uninsdeletevalue; Tasks: associate
+Root: HKCU; Subkey: "Software\EleViewer\Capabilities\FileAssociations"; ValueType: string; ValueName: ".tsv"; ValueData: "EleViewer.Csv"; Flags: uninsdeletevalue; Tasks: associate
 Root: HKCU; Subkey: "Software\EleViewer\Capabilities\FileAssociations"; ValueType: string; ValueName: ".txt"; ValueData: "EleViewer.Txt"; Flags: uninsdeletevalue; Tasks: associate
 Root: HKCU; Subkey: "Software\EleViewer\Capabilities\FileAssociations"; ValueType: string; ValueName: ".html"; ValueData: "EleViewer.Html"; Flags: uninsdeletevalue; Tasks: associate
+Root: HKCU; Subkey: "Software\EleViewer\Capabilities\FileAssociations"; ValueType: string; ValueName: ".htm"; ValueData: "EleViewer.Html"; Flags: uninsdeletevalue; Tasks: associate
 
 ; ProgID: Markdown (.md)
 Root: HKCU; Subkey: "Software\Classes\.md\OpenWithProgids"; ValueType: string; ValueName: "EleViewer.Markdown"; ValueData: ""; Flags: uninsdeletevalue; Tasks: associate
