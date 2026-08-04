@@ -47,7 +47,12 @@ EleViewer relies heavily on standard PySide6 widgets and custom components to ke
 - `quick_switcher.py`: The `Ctrl+Q` fuzzy finder for fast file switching.
 - `draft_recovery.py`: Saves auto-snapshots of text using a background `DraftWorker(QThread)` to prevent UI stutter and data loss.
 - `save_utils.py`, `session_manager.py`, `settings.py`: Enforces atomic disk writes (`tempfile.mkstemp` + `os.fsync` + `os.replace`) to strictly guarantee physical disk writes and eliminate 0-byte corruption on crash, while persisting scroll position, zoom, and PDF page numbers across sessions.
-- `release_hash.py`: Standalone script for computing executable SHA-256 release hashes for Winget and package manager distribution.
+- `release_hash.py`: Standalone script for computing SHA-256 hashes for the packaged installer or bundled executable used in GitHub Releases, Winget, and other package-manager distribution flows.
+
+### Release Distribution
+- The release pipeline is a Windows-only GitHub Actions flow that builds EleViewer with Nuitka, packages it with Inno Setup, and publishes an installer to GitHub Releases.
+- The Winget manifest targets the release installer artifact rather than a stale `latest/download/EleViewer.exe` path.
+- The installer script and release helper are intentionally aligned with the same artifact naming so the packaged output is easier to verify.
 
 ---
 
