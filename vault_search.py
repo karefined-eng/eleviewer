@@ -80,6 +80,8 @@ class VaultSearchDialog(QDialog):
         
         accent = get_brand_accent()
         p = get_active_palette()
+        # keep a reference for use in instance methods
+        self._palette = p
         self.setStyleSheet(f"""
             QDialog {{ background: {p['BRAND_BACKGROUND']}; color: {p['BRAND_PRIMARY']}; }}
             QLineEdit {{ background: {p['BRAND_PANEL']}; color: {p['BRAND_PRIMARY']}; border: 1px solid {p['BRAND_BORDER']}; padding: 8px; font-size: 14px; selection-background-color: {accent}; }}
@@ -210,9 +212,9 @@ class VaultSearchDialog(QDialog):
         text_layout.setContentsMargins(6, 0, 0, 0)
         title = QLabel(f)
         # make filename stand out
-        title.setStyleSheet(f"color: {p['BRAND_PRIMARY']}; font-weight: 600; font-size: 13px;")
+        title.setStyleSheet(f"color: {self._palette['BRAND_PRIMARY']}; font-weight: 600; font-size: 13px;")
         subtitle = QLabel(f"{display_dir} — [{vault_name}]")
-        subtitle.setStyleSheet(f"color: {p['BRAND_MUTED_FG']}; font-size: 11px;")
+        subtitle.setStyleSheet(f"color: {self._palette['BRAND_MUTED_FG']}; font-size: 11px;")
         text_layout.addWidget(title)
         text_layout.addWidget(subtitle)
         h.addWidget(text_block, stretch=1)
@@ -247,6 +249,20 @@ class VaultSearchDialog(QDialog):
     def reject(self):
         self._cleanup_worker()
         super().reject()
+
+    def _on_search_finished(self, worker):
+        # only react if this finished worker is the active one
+        if worker is not self._search_worker:
+            return
+        # hide spinner and show final result state
+        self.spinner_label.setVisible(False)
+        if getattr(self, '_result_count', 0) == 0:
+            self.result_count_label.setText("No results")
+        elif getattr(self, '_result_count', 0) >= 100:
+            self.result_count_label.setText("100+ results (showing first 100) — refine to narrow")
+        else:
+            n = self._result_count
+            self.result_count_label.setText(f"{n} result{'s' if n != 1 else ''}")
 
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_Escape:
