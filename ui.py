@@ -554,8 +554,8 @@ class MainWindow(QMainWindow):
 
         if WEB_AVAILABLE:
             web_btn = QAction(icon("globe", size=ICON_SIZE_TOOLBAR), "Web Panel", self)
-            web_btn.setToolTip("Open Web Browser Panel / New Web Tab (Ctrl+T)")
-            web_btn.triggered.connect(self.open_web_tab)
+            web_btn.setToolTip("Toggle Web Browser Panel (Ctrl+Shift+W)")
+            web_btn.triggered.connect(self.toggle_web_panel)
             self.toolbar.register_action("web", web_btn)
 
         settings_btn = QAction(icon("settings", size=ICON_SIZE_TOOLBAR), "Settings", self)
@@ -979,10 +979,10 @@ class MainWindow(QMainWindow):
         search_icon = QLabel()
         search_icon.setPixmap(icon("search", size=18).pixmap(18, 18))
         
-        search_text = QLabel("Search files in vault...")
+        search_text = QLabel("Search files, content, bookmarks, or type a URL...")
         search_text.setStyleSheet(f"color: {p['BRAND_MUTED_FG']}; font-size: 15px;")
         
-        shortcut_badge = QLabel("Ctrl+Q")
+        shortcut_badge = QLabel("Ctrl+Shift+F")
         shortcut_badge.setStyleSheet(f"""
             background: {p['BRAND_BACKGROUND']};
             color: {p['BRAND_MUTED_FG']};

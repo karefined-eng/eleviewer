@@ -47,7 +47,7 @@ FinishedLabelNoIcons=Setup has finished installing EleViewer on your computer.%n
 
 [Tasks]
 Name: "desktopicon"; Description: "Create a shortcut on my desktop"; GroupDescription: "Desktop Shortcut"; Flags: unchecked
-Name: "associate"; Description: "Open my study files (PDFs, Word docs, Excel, PowerPoint, Markdown, CSV, TXT, HTML) with EleViewer by default"; GroupDescription: "Default File Associations"
+Name: "associate"; Description: "Open my study files (PDFs, Word docs, Excel, PowerPoint, Markdown, CSV, TSV, TXT, HTML) with EleViewer by default"; GroupDescription: "Default File Associations"
 Name: "contextmenu"; Description: "Add 'Open with EleViewer' to my right-click menu in Windows Explorer"; GroupDescription: "Windows Explorer Integration"
 
 [Files]
