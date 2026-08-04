@@ -1,7 +1,10 @@
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QTextBrowser, QToolButton,
 )
-from PySide6.QtCore import Signal, QSize
+from PySide6.QtCore import Signal, QSize, QUrl
+
+# Lazy WebEngine flag — checked once on first instantiation
+_WEB_AVAILABLE: bool | None = None
 
 import base64
 import io
@@ -64,10 +67,25 @@ class DocxViewer(QWidget):
         self.btn_bookmark.clicked.connect(self._add_bookmark_here)
         toolbar.addWidget(self.btn_bookmark)
 
-        self.editor = QTextBrowser()
-        self.editor.setOpenExternalLinks(True)
-        self.editor.setStyleSheet(editor_stylesheet())
-        self.editor.textChanged.connect(self._on_text_changed)
+        # ── Lazy-load WebEngine (Rule 25: no module-level import) ────────────
+        global _WEB_AVAILABLE
+        if _WEB_AVAILABLE is None:
+            try:
+                from web_panel import WEB_AVAILABLE as _WA
+                _WEB_AVAILABLE = _WA
+            except Exception:
+                _WEB_AVAILABLE = False
+
+        if _WEB_AVAILABLE:
+            from web_panel import _SecureWebView
+            self.editor = _SecureWebView()
+            self._use_webengine = True
+        else:
+            self.editor = QTextBrowser()
+            self.editor.setOpenExternalLinks(True)
+            self.editor.setStyleSheet(editor_stylesheet())
+            self.editor.textChanged.connect(self._on_text_changed)
+            self._use_webengine = False
 
         layout.addLayout(toolbar)
         layout.addWidget(self.editor)
@@ -82,7 +100,14 @@ class DocxViewer(QWidget):
     # ── In-document search (Ctrl+F via global FindReplaceWidget) ──────
 
     def find_text(self, text, match_case=False, whole_word=False, forward=True):
-        """Delegate to QTextBrowser.find(); returns True if match found."""
+        """Find text; delegates to WebEngine or QTextBrowser API."""
+        if self._use_webengine:
+            from PySide6.QtWebEngineCore import QWebEnginePage
+            flags = QWebEnginePage.FindFlag(0)
+            if not forward:
+                flags |= QWebEnginePage.FindFlag.FindBackward
+            self.editor.findText(text, flags)
+            return True
         from PySide6.QtGui import QTextDocument
         flags = QTextDocument.FindFlag(0)
         if match_case:
@@ -123,7 +148,10 @@ class DocxViewer(QWidget):
                     )
                     html_content = result.value
                     styled_html = self._wrap_html(html_content)
-                    self.editor.setHtml(styled_html)
+                    if self._use_webengine:
+                        self.editor.setHtml(styled_html, QUrl())
+                    else:
+                        self.editor.setHtml(styled_html)
                     self.editor.blockSignals(False)
                     self.is_modified = False
                     return
@@ -135,7 +163,10 @@ class DocxViewer(QWidget):
             try:
                 html = self._build_html_from_docx(self.docx_content)
                 styled_html = self._wrap_html(html)
-                self.editor.setHtml(styled_html)
+                if self._use_webengine:
+                    self.editor.setHtml(styled_html, QUrl())
+                else:
+                    self.editor.setHtml(styled_html)
                 self.editor.blockSignals(False)
                 self.is_modified = False
                 return
@@ -146,7 +177,10 @@ class DocxViewer(QWidget):
         if self.file_path and os.path.exists(self.file_path):
             html = self._fallback_zip_parse(self.file_path)
             styled_html = self._wrap_html(html)
-            self.editor.setHtml(styled_html)
+            if self._use_webengine:
+                self.editor.setHtml(styled_html, QUrl())
+            else:
+                self.editor.setHtml(styled_html)
 
         self.editor.blockSignals(False)
         self.is_modified = False
