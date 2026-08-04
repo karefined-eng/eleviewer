@@ -958,29 +958,49 @@ class MainWindow(QMainWindow):
         main_layout.addWidget(hero)
         
         # 2. Omnibar (Search)
-        search_btn = QToolButton()
-        search_btn.setText("   Search vault, type a URL, or press 'Ctrl+Q'...")
-        search_btn.setIcon(icon("search", size=18))
-        search_btn.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
-        search_btn.setCursor(Qt.PointingHandCursor)
-        search_btn.setStyleSheet(f"""
-            QToolButton {{
+        search_container = QWidget()
+        search_container.setCursor(Qt.PointingHandCursor)
+        search_container.setObjectName("SearchContainer")
+        search_container.setStyleSheet(f"""
+            QWidget#SearchContainer {{
                 background: {p['BRAND_PANEL_2']};
-                color: {p['BRAND_MUTED_FG']};
                 border: 1px solid {p['BRAND_BORDER']};
                 border-radius: 8px;
-                padding: 12px 20px;
-                font-size: 15px;
-                text-align: left;
             }}
-            QToolButton:hover {{
+            QWidget#SearchContainer:hover {{
                 border: 1px solid {get_brand_accent()};
-                color: {p['BRAND_PRIMARY']};
+                background: {p['BRAND_PANEL']};
             }}
         """)
-        search_btn.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-        search_btn.clicked.connect(self.open_vault_search)
-        main_layout.addWidget(search_btn)
+        search_layout = QHBoxLayout(search_container)
+        search_layout.setContentsMargins(16, 12, 16, 12)
+        search_layout.setSpacing(12)
+        
+        search_icon = QLabel()
+        search_icon.setPixmap(icon("search", size=18).pixmap(18, 18))
+        
+        search_text = QLabel("Search files in vault...")
+        search_text.setStyleSheet(f"color: {p['BRAND_MUTED_FG']}; font-size: 15px;")
+        
+        shortcut_badge = QLabel("Ctrl+Q")
+        shortcut_badge.setStyleSheet(f"""
+            background: {p['BRAND_BACKGROUND']};
+            color: {p['BRAND_MUTED_FG']};
+            border: 1px solid {p['BRAND_BORDER']};
+            border-radius: 4px;
+            padding: 4px 8px;
+            font-size: 12px;
+            font-weight: bold;
+        """)
+        
+        search_layout.addWidget(search_icon)
+        search_layout.addWidget(search_text, 1) # stretch
+        search_layout.addWidget(shortcut_badge)
+        
+        # Make the container clickable
+        search_container.mousePressEvent = lambda e: self.open_vault_search()
+        
+        main_layout.addWidget(search_container)
         
         # 3. Action Buttons
         action_bar = QWidget()
