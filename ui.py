@@ -957,50 +957,137 @@ class MainWindow(QMainWindow):
         hero_layout.addWidget(subtitle, 0, Qt.AlignHCenter)
         main_layout.addWidget(hero)
         
-        # 2. Omnibar (Search)
-        search_container = QWidget()
-        search_container.setCursor(Qt.PointingHandCursor)
-        search_container.setObjectName("SearchContainer")
-        search_container.setStyleSheet(f"""
-            QWidget#SearchContainer {{
+        # 2. Smart Omnibar (inline — URL routing + live vault file search)
+        omni_wrapper = QWidget()
+        omni_wrapper.setObjectName("OmniWrapper")
+        omni_wrapper_layout = QVBoxLayout(omni_wrapper)
+        omni_wrapper_layout.setContentsMargins(0, 0, 0, 0)
+        omni_wrapper_layout.setSpacing(4)
+
+        omni_bar_row = QWidget()
+        omni_bar_row.setObjectName("OmniBarRow")
+        omni_bar_row.setStyleSheet(f"""
+            QWidget#OmniBarRow {{
                 background: {p['BRAND_PANEL_2']};
                 border: 1px solid {p['BRAND_BORDER']};
                 border-radius: 8px;
             }}
-            QWidget#SearchContainer:hover {{
-                border: 1px solid {get_brand_accent()};
-                background: {p['BRAND_PANEL']};
+        """)
+        omni_row_layout = QHBoxLayout(omni_bar_row)
+        omni_row_layout.setContentsMargins(14, 0, 14, 0)
+        omni_row_layout.setSpacing(10)
+
+        omni_search_icon = QLabel()
+        omni_search_icon.setPixmap(icon("search", size=18).pixmap(18, 18))
+
+        omni_input = QLineEdit()
+        omni_input.setPlaceholderText("Search vault files, or paste a URL to open in browser...")
+        omni_input.setStyleSheet(f"""
+            QLineEdit {{
+                background: transparent;
+                border: none;
+                color: {p['BRAND_PRIMARY']};
+                font-size: 15px;
+                padding: 12px 0;
             }}
+            QLineEdit::placeholder {{ color: {p['BRAND_MUTED_FG']}; }}
         """)
-        search_layout = QHBoxLayout(search_container)
-        search_layout.setContentsMargins(16, 12, 16, 12)
-        search_layout.setSpacing(12)
-        
-        search_icon = QLabel()
-        search_icon.setPixmap(icon("search", size=18).pixmap(18, 18))
-        
-        search_text = QLabel("Search files, content, bookmarks, or type a URL...")
-        search_text.setStyleSheet(f"color: {p['BRAND_MUTED_FG']}; font-size: 15px;")
-        
-        shortcut_badge = QLabel("Ctrl+Shift+F")
-        shortcut_badge.setStyleSheet(f"""
-            background: {p['BRAND_BACKGROUND']};
-            color: {p['BRAND_MUTED_FG']};
-            border: 1px solid {p['BRAND_BORDER']};
-            border-radius: 4px;
-            padding: 4px 8px;
-            font-size: 12px;
-            font-weight: bold;
+
+        omni_row_layout.addWidget(omni_search_icon)
+        omni_row_layout.addWidget(omni_input, 1)
+
+        # Live results list (hidden by default)
+        omni_results = QListWidget()
+        omni_results.setObjectName("OmniResults")
+        omni_results.setStyleSheet(f"""
+            QListWidget#OmniResults {{
+                background: {p['BRAND_PANEL']};
+                border: 1px solid {p['BRAND_BORDER']};
+                border-radius: 6px;
+                color: {p['BRAND_PRIMARY']};
+                font-size: 13px;
+                outline: none;
+            }}
+            QListWidget#OmniResults::item:hover {{ background: {p['BRAND_PANEL_2']}; }}
+            QListWidget#OmniResults::item:selected {{ background: {get_brand_accent()}22; }}
         """)
-        
-        search_layout.addWidget(search_icon)
-        search_layout.addWidget(search_text, 1) # stretch
-        search_layout.addWidget(shortcut_badge)
-        
-        # Make the container clickable
-        search_container.mousePressEvent = lambda e: self.open_vault_search()
-        
-        main_layout.addWidget(search_container)
+        omni_results.setMaximumHeight(200)
+        omni_results.hide()
+
+        omni_wrapper_layout.addWidget(omni_bar_row)
+        omni_wrapper_layout.addWidget(omni_results)
+
+        def _is_url(text):
+            t = text.strip()
+            return t.startswith(("http://", "https://")) or ("." in t and " " not in t and len(t) > 4)
+
+        def _omni_changed(text):
+            text = text.strip()
+            if not text:
+                omni_results.hide()
+                return
+            if _is_url(text):
+                omni_results.hide()
+                return
+            # Vault file search
+            from settings import load_settings as _ls
+            import os as _os
+            vaults = _ls().get("vault_paths", [])
+            matches = []
+            for vault in vaults:
+                if not _os.path.isdir(vault):
+                    continue
+                for root, _, files in _os.walk(vault):
+                    for f in files:
+                        if text.lower() in f.lower():
+                            matches.append(_os.path.join(root, f))
+                        if len(matches) >= 10:
+                            break
+                    if len(matches) >= 10:
+                        break
+            omni_results.clear()
+            if matches:
+                for path in matches:
+                    item = QListWidgetItem(icon("file", size=14), _os.path.basename(path))
+                    item.setData(Qt.UserRole, path)
+                    item.setToolTip(path)
+                    omni_results.addItem(item)
+                omni_results.show()
+            else:
+                omni_results.hide()
+
+        def _omni_activated():
+            text = omni_input.text().strip()
+            if not text:
+                return
+            if _is_url(text):
+                url = text if text.startswith("http") else f"https://{text}"
+                self.open_web_tab_with_url(url)
+                omni_input.clear()
+            else:
+                # Open top result or fall back to vault search dialog
+                if omni_results.count() > 0:
+                    item = omni_results.item(0)
+                    path = item.data(Qt.UserRole)
+                    if path:
+                        self._open_vault_file(path)
+                        omni_input.clear()
+                        omni_results.hide()
+                else:
+                    self.open_vault_search()
+
+        def _omni_item_clicked(item):
+            path = item.data(Qt.UserRole)
+            if path:
+                self._open_vault_file(path)
+                omni_input.clear()
+                omni_results.hide()
+
+        omni_input.textChanged.connect(_omni_changed)
+        omni_input.returnPressed.connect(_omni_activated)
+        omni_results.itemClicked.connect(_omni_item_clicked)
+
+        main_layout.addWidget(omni_wrapper)
         
         # 3. Action Buttons
         action_bar = QWidget()
@@ -1914,8 +2001,8 @@ class MainWindow(QMainWindow):
             | QDockWidget.DockWidgetFloatable
         )
         self.addDockWidget(Qt.RightDockWidgetArea, self._web_dock)
-        
-        # Auto-maximize if no editor tabs are open (ponytail)
+
+        # Auto-maximize when no doc tabs open; side-by-side otherwise
         if self.tabs.count() == 0:
             self.editor_splitter.hide()
 
@@ -1924,7 +2011,7 @@ class MainWindow(QMainWindow):
         title_bar.setStyleSheet(f"background: {p['BRAND_PANEL']}; border-bottom: 1px solid {p['BRAND_BORDER']};")
         tb_layout = QHBoxLayout(title_bar)
         tb_layout.setContentsMargins(10, 6, 10, 6)
-        
+
         lbl_title = QLabel("Web Browser")
         lbl_title.setStyleSheet(f"color: {p['BRAND_MUTED_FG']}; font-weight: bold; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;")
         tb_layout.addWidget(lbl_title)
@@ -1937,15 +2024,15 @@ class MainWindow(QMainWindow):
         btn_max = QToolButton()
         btn_max.setIcon(icon("maximize", size=icon_sz))
         btn_max.setIconSize(icon_qsize)
-        btn_max.setToolTip("Maximize Web Panel")
+        btn_max.setToolTip("Expand to Full Window")
         btn_max.setStyleSheet(compact_toolbar_stylesheet())
-        
+
         btn_float = QToolButton()
         btn_float.setIcon(icon("external-link", size=icon_sz))
         btn_float.setIconSize(icon_qsize)
         btn_float.setToolTip("Pop Out Web Panel")
         btn_float.setStyleSheet(compact_toolbar_stylesheet())
-        
+
         btn_close = QToolButton()
         btn_close.setIcon(icon("x", size=icon_sz))
         btn_close.setIconSize(icon_qsize)
@@ -1958,24 +2045,29 @@ class MainWindow(QMainWindow):
 
         self._web_dock.setTitleBarWidget(title_bar)
 
-        # Maximize logic: hide the editor splitter so the dock takes full width
+        # Maximize/restore toggle: hides editor so web panel takes full width
         def _toggle_maximize():
             if self.editor_splitter.isVisible():
                 self.editor_splitter.hide()
                 btn_max.setIcon(icon("minimize", size=icon_sz))
-                btn_max.setToolTip("Restore Web Panel")
+                btn_max.setToolTip("Restore Side-by-Side")
             else:
                 self.editor_splitter.show()
                 btn_max.setIcon(icon("maximize", size=icon_sz))
-                btn_max.setToolTip("Maximize Web Panel")
-                
+                btn_max.setToolTip("Expand to Full Window")
+
         btn_max.clicked.connect(_toggle_maximize)
-        
+
         def _toggle_float():
             self._web_dock.setFloating(not self._web_dock.isFloating())
-            
+
         btn_float.clicked.connect(_toggle_float)
-        btn_close.clicked.connect(self._web_dock.hide)
+
+        def _close_web_panel():
+            self._web_dock.hide()
+            self.editor_splitter.show()  # always restore docs when web panel closes
+
+        btn_close.clicked.connect(_close_web_panel)
 
     @Slot(QUrl)
     @Slot(str)
