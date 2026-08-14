@@ -108,7 +108,7 @@ class UpdateDialog(QDialog):
 
         layout = QVBoxLayout(self)
 
-        title = QLabel(f"🎉 A new version of EleViewer ({tag_name}) is available!")
+        title = QLabel(f"A new version of EleViewer ({tag_name}) is available!")
         title.setStyleSheet("font-size: 15px; font-weight: bold; margin-bottom: 5px;")
         layout.addWidget(title)
 
@@ -131,7 +131,7 @@ class UpdateDialog(QDialog):
         layout.addWidget(self.status_label)
 
         btn_layout = QHBoxLayout()
-        self.update_btn = QPushButton("🚀 Update Now")
+        self.update_btn = QPushButton("Update Now")
         self.update_btn.setStyleSheet("background-color: #2563eb; color: white; font-weight: bold; padding: 8px 16px; border-radius: 6px;")
         self.update_btn.clicked.connect(self._start_download)
 

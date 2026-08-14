@@ -1258,7 +1258,7 @@ class MainWindow(QMainWindow):
     def _show_whatsapp_invite(self):
         msg = QMessageBox(self)
         msg.setIcon(QMessageBox.Information)
-        msg.setWindowTitle("EleViewer — Join Nightly Insiders 🚀")
+        msg.setWindowTitle("EleViewer — Join Nightly Insiders")
         msg.setText("Enjoying EleViewer?")
         msg.setInformativeText(
             "What is 'Nightly Insiders'?\n\n"
