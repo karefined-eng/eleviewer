@@ -100,9 +100,9 @@ class QuickSwitcher(QDialog):
         
         if show_sections:
             groups = [
-                ("📂 Open Tabs", [f for f in files if f in self.open_tabs]),
-                ("📌 Pinned", [f for f in files if f in self.pinned_files and f not in self.open_tabs]),
-                ("🕐 Recent", [f for f in files if f in self.recent_files and f not in self.open_tabs and f not in self.pinned_files])
+                ("Open Tabs", [f for f in files if f in self.open_tabs]),
+                ("Pinned", [f for f in files if f in self.pinned_files and f not in self.open_tabs]),
+                ("Recent", [f for f in files if f in self.recent_files and f not in self.open_tabs and f not in self.pinned_files])
             ]
             
             for header, group_files in groups:
@@ -125,9 +125,9 @@ class QuickSwitcher(QDialog):
                 ext = Path(file_path).suffix
                 item.setIcon(file_type_icon(ext, 16))
                 if file_path in self.open_tabs:
-                    item.setText("📂 " + item.text())
+                    item.setText("[Open] " + item.text())
                 elif file_path in self.pinned_files:
-                    item.setText("📌 " + item.text())
+                    item.setText("[Pinned] " + item.text())
                 self.file_list.addItem(item)
         
         # Select first selectable item

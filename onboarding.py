@@ -32,14 +32,14 @@ class OnboardingDialog(QDialog):
             "There's no telemetry, no forced cloud accounts, and no loading screens."
         ))
         self.stack.addWidget(self._create_slide(
-            "Survival Shortcuts ⚡",
+            "Survival Shortcuts",
             "Master these three shortcuts to fly through your homework and notes:\n\n"
             "• Alt+V : Toggle Vault Sidebar\n"
             "• Ctrl+Q : Quick Switcher (fuzzy find files)\n"
             "• Ctrl+T : Split View Web Browser"
         ))
         self.stack.addWidget(self._create_slide(
-            "Safety Net Active 🛡️",
+            "Safety Net Active",
             "We've got your back.\n\n"
             "Draft Auto-Save silently backs up your unsaved text every 60 seconds "
             "so you never lose a fleeting thought to a crash or an accidental 'Don't Save'."
