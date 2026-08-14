@@ -61,6 +61,10 @@ Name: "{autoprograms}\EleViewer"; Filename: "{app}\EleViewer.exe"
 Name: "{autodesktop}\EleViewer"; Filename: "{app}\EleViewer.exe"; Tasks: desktopicon
 
 [Registry]
+; Command Line Support (Allows launching via Win+R or terminal by typing "eleviewer")
+Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\App Paths\EleViewer.exe"; ValueType: string; ValueName: ""; ValueData: "{app}\EleViewer.exe"; Flags: uninsdeletekey
+Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\App Paths\EleViewer.exe"; ValueType: string; ValueName: "Path"; ValueData: "{app}"; Flags: uninsdeletekey
+
 ; Context Menu (Right-Click "Open with EleViewer") — Per-User
 Root: HKCU; Subkey: "Software\Classes\*\shell\EleViewer"; ValueType: string; ValueName: ""; ValueData: "Open with EleViewer"; Flags: uninsdeletekey; Tasks: contextmenu
 Root: HKCU; Subkey: "Software\Classes\*\shell\EleViewer"; ValueType: string; ValueName: "Icon"; ValueData: """{app}\EleViewer.exe"""; Flags: uninsdeletekey; Tasks: contextmenu
@@ -139,3 +143,29 @@ Root: HKCU; Subkey: "Software\Classes\EleViewer.Html"; ValueType: string; ValueN
 Root: HKCU; Subkey: "Software\Classes\EleViewer.Html\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: "{app}\EleViewer.exe,0"; Tasks: associate
 Root: HKCU; Subkey: "Software\Classes\EleViewer.Html\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\EleViewer.exe"" ""%1"""; Tasks: associate
 
+[Run]
+Filename: "{app}\EleViewer.exe"; Description: "Launch EleViewer"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\EleViewer.exe"; Parameters: ""; Flags: nowait; Check: IsSilentRelaunch
+
+[Code]
+function IsSilentRelaunch(): Boolean;
+begin
+  Result := CmdLineParamExists('/RESTARTAPP');
+end;
+
+procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
+var
+  AppDataPath: String;
+begin
+  if CurUninstallStep = usPostUninstall then
+  begin
+    AppDataPath := ExpandConstant('{userappdata}\EleViewer');
+    if DirExists(AppDataPath) then
+    begin
+      if MsgBox('Do you want to permanently delete your EleViewer settings, bookmarks, and recent files?', mbConfirmation, MB_YESNO) = idYes then
+      begin
+        DelTree(AppDataPath, True, True, True);
+      end;
+    end;
+  end;
+end;
