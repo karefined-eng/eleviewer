@@ -190,7 +190,7 @@ class DraggableToolBar(QToolBar):
         from PySide6.QtGui import QPainter, QPen
         from theme import get_active_accent
         painter = QPainter(self)
-        pen = QPen(get_active_accent()["accent"], 2)
+        pen = QPen(QColor(get_active_accent()["accent"]), 2)
         painter.setPen(pen)
         painter.drawLine(self._drop_indicator_x, 4, self._drop_indicator_x, self.height() - 4)
         painter.end()

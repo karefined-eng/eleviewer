@@ -11,7 +11,7 @@ A lightweight Windows document editor supporting **DOCX**, **XLSX**, **PPTX**, *
 ### 📁 File Support
 Opens & edits **DOCX, XLSX, PPTX, PDF, MD, TXT, CSV, TSV and HTML/HTM** — all in one workspace.
 - **XLSX View-Only Mode** — displays computed formula values (not raw formulas) in a read-only grid, protecting spreadsheet integrity while letting you study the data.
-- **Image Placeholders** — DOCX and PPTX files with embedded images display `📷 [Image]` markers so you know where visuals exist, even in text-only rendering.
+- **Inline Image Rendering** — DOCX and PPTX files natively extract and render actual embedded pictures directly inside your study documents using a zero-dependency byte extractor.
 - **CSV Smart Encoding** — automatically detects file encoding via `chardet` so Excel-exported CSVs in Windows-1252, Latin-1, or UTF-8 render without garbled characters.
 - **CSV Table Workstation** — dual Table Grid View ⇄ Raw Text View with interactive cell editing, row/column insertion, delimiter overrides, and non-destructive text preservation.
 - **HTML Live Workstation** — split-screen syntax editor with debounced live preview, compact monochromatic styling, and 1-click migration into the right-hand Web Panel.
@@ -38,6 +38,7 @@ Opens & edits **DOCX, XLSX, PPTX, PDF, MD, TXT, CSV, TSV and HTML/HTM** — all 
 - **Off-Thread Concurrency** — draft recovery autosave, live vault search, and feedback submissions run on background `QThread` workers.
 - **Dynamic UI Accents** — Status bar and active icons pop with your chosen theme color.
 - **Lucide Icon Set** — clean, consistent, professional SVG icons throughout the UI, replacing legacy bulky glyphs.
+- **Automatic Updates** — Integrated GitHub release checker automatically notifies you of new versions and seamlessly handles installer downloads.
 
 ### 💻 Specs
 - **< 45 MB** compiled Native C++ executable — no heavy installer needed.
