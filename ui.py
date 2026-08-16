@@ -187,10 +187,10 @@ class DraggableToolBar(QToolBar):
         super().paintEvent(event)
         if self._drop_indicator_x < 0:
             return
-        from PySide6.QtGui import QPainter, QPen
+        from PySide6.QtGui import QPainter, QPen, QColor
         from theme import get_active_accent
         painter = QPainter(self)
-        pen = QPen(get_active_accent()["accent"], 2)
+        pen = QPen(QColor(get_active_accent()["accent"]), 2)
         painter.setPen(pen)
         painter.drawLine(self._drop_indicator_x, 4, self._drop_indicator_x, self.height() - 4)
         painter.end()
@@ -1258,7 +1258,7 @@ class MainWindow(QMainWindow):
     def _show_whatsapp_invite(self):
         msg = QMessageBox(self)
         msg.setIcon(QMessageBox.Information)
-        msg.setWindowTitle("EleViewer — Join Nightly Insiders 🚀")
+        msg.setWindowTitle("EleViewer — Join Nightly Insiders")
         msg.setText("Enjoying EleViewer?")
         msg.setInformativeText(
             "What is 'Nightly Insiders'?\n\n"

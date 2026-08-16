@@ -291,13 +291,13 @@ class CsvViewer(QWidget):
 
         tb_layout.addStretch()
 
-        self.btn_bookmark = QPushButton("🔖 Bookmark")
+        self.btn_bookmark = QPushButton("Bookmark")
         self.btn_bookmark.setToolTip("Bookmark current scroll position")
         self.btn_bookmark.clicked.connect(self._add_bookmark_here)
         tb_layout.addWidget(self.btn_bookmark)
 
         # View Switcher
-        self.btn_toggle_view = QPushButton("📄 Raw Text")
+        self.btn_toggle_view = QPushButton("Raw Text")
         self.btn_toggle_view.setToolTip("Toggle between Table Grid View and Raw CSV Text View")
         self.btn_toggle_view.clicked.connect(self.toggle_view_mode)
         tb_layout.addWidget(self.btn_toggle_view)
