@@ -187,7 +187,7 @@ class DraggableToolBar(QToolBar):
         super().paintEvent(event)
         if self._drop_indicator_x < 0:
             return
-        from PySide6.QtGui import QPainter, QPen
+        from PySide6.QtGui import QPainter, QPen, QColor
         from theme import get_active_accent
         painter = QPainter(self)
         pen = QPen(QColor(get_active_accent()["accent"]), 2)
