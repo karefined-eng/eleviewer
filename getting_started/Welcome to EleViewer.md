@@ -91,7 +91,7 @@ The CSV workstation gives you dual-view control over tabular datasets and experi
 
 ### Office Documents (DOCX, XLSX, PPTX)
 EleViewer natively parses and renders Microsoft Office document formats locally without requiring Microsoft Office or Microsoft 365 licenses installed on your machine.
-- **DOCX & PPTX:** Inspect formatting, text content, tables, and presentation slides with clean pagination and scroll support.
+- **DOCX & PPTX:** Inspect formatting, text content, tables, presentation slides, and inline embedded images natively, with clean pagination and scroll support.
 - **XLSX Spreadsheets:** View multi-tab Excel workbooks, inspect cell formulas and data rows, and search large spreadsheets with zero lag.
 
 ### HTML Live Workstation & Web Panel
@@ -148,6 +148,11 @@ When closing the main window, EleViewer can minimize to the Windows System Tray 
 - **Global Quick Note (`Alt + E`):** Remains active in background tray mode so you can summon scratchpads while working in other Windows applications.
 - **Double-Click Restore:** Double-click the tray icon to instantly restore your workspace window.
 - Toggle tray minimization behavior in `Alt + S` under **Window Preferences**.
+
+### Automatic Updates & First-Run
+To keep you focused on studying, EleViewer handles updates silently:
+- **Auto-Updater:** A lightweight background check securely queries the latest release on GitHub. When an update is available, it gracefully notifies you and seamlessly downloads the installer without forcing an immediate restart.
+- **Interactive Onboarding:** On your first run or major feature updates, EleViewer displays an interactive onboarding and release notes dialog so you are always up to speed with new reflexes and capabilities.
 
 ---
 
