@@ -1135,7 +1135,7 @@ class MainWindow(QMainWindow):
         recent_list.setStyleSheet(f"background: transparent; border: none; color: {p['BRAND_PRIMARY']}; outline: none; font-size: 13px;")
         recent_list.setSelectionMode(QListWidget.NoSelection)
         recent_list.setCursor(Qt.PointingHandCursor)
-        recent_list.setMaximumHeight(150)
+        recent_list.setMinimumHeight(120)
         recent_files = load_recent_files(validate=True)[:5]
         if not recent_files:
             recent_list.addItem(QListWidgetItem("No recent files"))
@@ -1155,7 +1155,7 @@ class MainWindow(QMainWindow):
         bm_list.setStyleSheet(f"background: transparent; border: none; color: {p['BRAND_PRIMARY']}; outline: none; font-size: 13px;")
         bm_list.setSelectionMode(QListWidget.NoSelection)
         bm_list.setCursor(Qt.PointingHandCursor)
-        bm_list.setMaximumHeight(150)
+        bm_list.setMinimumHeight(90)
         bms = load_bookmarks()[:3]
         if not bms:
             bm_list.addItem(QListWidgetItem("No bookmarks"))

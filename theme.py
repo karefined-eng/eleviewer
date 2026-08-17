@@ -70,10 +70,10 @@ def get_active_accent():
     try:
         from settings import load_settings
         settings = load_settings()
-        theme_accent = settings.get("theme_accent", "blue")
-        return THEME_ACCENTS.get(theme_accent, THEME_ACCENTS["blue"])
+        theme_accent = settings.get("theme_accent", "grey")
+        return THEME_ACCENTS.get(theme_accent, THEME_ACCENTS["grey"])
     except Exception:
-        return THEME_ACCENTS["blue"]
+        return THEME_ACCENTS["grey"]
 
 def get_brand_accent():
     return get_active_accent()["accent"]
