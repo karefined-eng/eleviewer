@@ -1,4 +1,4 @@
-﻿---
+---
 title: EleViewer Workstation Reference Manual
 description: Official technical documentation, shortcut index, and workstation guide for the EleViewer local study workspace.
 ---
@@ -19,7 +19,7 @@ EleViewer operates on a strict **local-first, Local File Privacy architecture**.
 The Vault Explorer is your project sidebar for indexing and navigating local document directories.
 
 1. Press `Alt + V` or click the Folder icon on the left sidebar to toggle the **Vault Explorer**.
-2. Click the **Settings icon** (âš™ï¸) at the top of the sidebar or press `Alt + S` to open the **Settings Dialog**.
+2. Click the **Settings icon** (⚙️) at the top of the sidebar or press `Alt + S` to open the **Settings Dialog**.
 3. Under **Vault Configuration**, click **Add Folder** and select any local directory containing your study materials, lecture slides, or project notes.
 4. Once added, EleViewer's background **SQLite FTS5 full-text indexer** automatically scans your documents. Your files immediately appear in the sidebar tree and become searchable across their full text.
 5. Use the dropdown selector at the top of the sidebar to instantly switch between multiple registered vault directories.
@@ -85,7 +85,7 @@ The Markdown workstation features split-screen syntax editing with a debounced r
 
 ### CSV Table Workstation
 The CSV workstation gives you dual-view control over tabular datasets and experimental logs.
-- **Table Grid View â‡„ Raw Text View:** Toggle between an interactive spreadsheet grid and a syntax-highlighted raw text editor. Edits made in either view synchronize instantly without data loss.
+- **Table Grid View ↔ Raw Text View:** Toggle between an interactive spreadsheet grid and a syntax-highlighted raw text editor. Edits made in either view synchronize instantly without data loss.
 - **Cell & Structure Editing:** Double-click any cell in Grid View to edit contents. Right-click column headers or row indexes to insert or delete rows and columns.
 - **Delimiter Overrides:** Use the toolbar selector to force custom column delimiters (Comma `,`, Tab `\t`, Semicolon `;`, or Pipe `|`). EleViewer preserves non-standard encapsulation and text formatting non-destructively.
 
@@ -155,7 +155,7 @@ When closing the main window, EleViewer can minimize to the Windows System Tray 
 
 ### Why is Universal Text-to-Speech (`F9`) silent or not reading?
 EleViewer uses Windows native speech synthesis via `pyttsx3`. If TTS is silent:
-1. Open Windows **Settings â†’ Time & Language â†’ Speech**.
+1. Open Windows **Settings → Time & Language → Speech**.
 2. Verify that at least one **Installed voice package** (e.g., Microsoft David, Zira, or Mark) is installed and enabled.
 3. In EleViewer, ensure your system audio is unmuted and check the TTS speech rate slider on the top toolbar.
 

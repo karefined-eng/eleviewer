@@ -236,8 +236,34 @@ class WebPanel(QWidget):
 
         QShortcut(QKeySequence("Ctrl+R"), self, self._reload_current)
         QShortcut(QKeySequence("F5"), self, self._reload_current)
+        QShortcut(QKeySequence("F12"), self, self._toggle_devtools)
 
         self.restore_tabs()
+
+    def _toggle_devtools(self):
+        view = self._current_view()
+        if not view:
+            return
+        if hasattr(self, "_devtools_window") and self._devtools_window:
+            self._devtools_window.close()
+            self._devtools_window = None
+            return
+
+        from PySide6.QtWebEngineWidgets import QWebEngineView
+        from PySide6.QtWidgets import QDialog, QVBoxLayout
+        
+        self._devtools_window = QDialog(self.window())
+        self._devtools_window.setWindowTitle("Developer Tools")
+        self._devtools_window.resize(800, 600)
+        layout = QVBoxLayout(self._devtools_window)
+        layout.setContentsMargins(0, 0, 0, 0)
+        
+        inspector_view = QWebEngineView(self._devtools_window)
+        view.page().setDevToolsPage(inspector_view.page())
+        layout.addWidget(inspector_view)
+        
+        self._devtools_window.finished.connect(lambda *args: setattr(self, "_devtools_window", None))
+        self._devtools_window.show()
 
     def restore_tabs(self):
         settings = load_settings()
