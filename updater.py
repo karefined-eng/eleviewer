@@ -4,6 +4,7 @@ import json
 import urllib.request
 import tempfile
 import subprocess
+from urllib.parse import urlparse
 from PySide6.QtCore import QThread, Signal, Qt, QUrl
 from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel, 
@@ -13,6 +14,15 @@ from PySide6.QtWidgets import (
 REPO_OWNER = "karefined-eng"
 REPO_NAME = "eleviewer"
 CURRENT_VERSION = "1.3.0"  # Fallback current version
+TRUSTED_DOWNLOAD_HOSTS = {
+    "github.com",
+    "objects.githubusercontent.com",
+    "release-assets.githubusercontent.com",
+}
+
+def is_trusted_download_url(url: str) -> bool:
+    parsed = urlparse(url)
+    return parsed.scheme == "https" and (parsed.hostname or "").lower() in TRUSTED_DOWNLOAD_HOSTS
 
 def parse_version(v_str: str):
     """Clean version string like 'v1.3.0' -> (1, 3, 0)."""
@@ -75,6 +85,8 @@ class DownloadThread(QThread):
 
     def run(self):
         try:
+            if not is_trusted_download_url(self.download_url):
+                raise ValueError("Update URL is not a trusted HTTPS GitHub download")
             req = urllib.request.Request(self.download_url, headers={"User-Agent": "EleViewer-AutoUpdater"})
             temp_dir = tempfile.gettempdir()
             dest_path = os.path.join(temp_dir, "EleViewer_Setup_Update.exe")

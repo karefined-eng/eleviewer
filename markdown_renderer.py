@@ -391,7 +391,7 @@ class MarkdownViewer(QWidget):
     # ── Core Modes ───────────────────────────────────────────────────
 
     def _build_render_cache_key(self, text):
-        digest = hashlib.sha1(text.encode("utf-8", "ignore")).hexdigest()[:16]
+        digest = hashlib.sha1(text.encode("utf-8", "ignore"), usedforsecurity=False).hexdigest()[:16]
         return (self.is_html, digest)
 
     def _get_cached_preview(self, text):

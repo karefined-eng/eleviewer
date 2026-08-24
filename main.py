@@ -1,7 +1,7 @@
 import sys
 import os
 
-from PySide6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication, QDialog
 
 from ui import MainWindow
 from autosave import AutoSaver
@@ -126,6 +126,33 @@ if len(sys.argv) > 1:
 
 window.show()
 
-
+if not settings.get("onboarding_completed", False):
+    from onboarding import OnboardingDialog
+    from settings import save_settings
+    from pathlib import Path
+    
+    dlg = OnboardingDialog(window)
+    dlg.exec()
+    
+    settings["onboarding_completed"] = True
+    settings["last_run_version"] = APP_VERSION
+    save_settings(settings)
+    
+    from paths import BASE_DIR
+    welcome_file = BASE_DIR / "getting_started" / "Welcome to EleViewer.md"
+    if welcome_file.exists():
+        window.open_file(str(welcome_file))
+else:
+    # Check for updates to show What's New
+    last_ver = settings.get("last_run_version", "0.0.0")
+    if last_ver != APP_VERSION:
+        from whats_new import WhatsNewDialog
+        from settings import save_settings
+        
+        dlg = WhatsNewDialog(window, APP_VERSION)
+        dlg.exec()
+        
+        settings["last_run_version"] = APP_VERSION
+        save_settings(settings)
 
 sys.exit(app.exec())

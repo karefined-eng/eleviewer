@@ -37,7 +37,7 @@ EleViewer relies heavily on standard PySide6 widgets and custom components to ke
 - `pdf_viewer.py`: Uses `QPdfView` (native Qt module, not PyMuPDF) and caches loaded documents to reduce repeated render cost when the same file is reopened.
 - `editor.py`: The text/Markdown editor. Uses a PySide6-based preview path with debounced refreshes and cached render output to keep typing responsive.
 - `xlsx_viewer.py` & `csv_viewer.py`: Use `openpyxl` and standard library `csv` to render spreadsheets natively into `QTableWidget` with cell/row/column insertion and F9 TTS table summaries.
-- `docx_viewer.py` & `pptx_viewer.py`: Render Word and PowerPoint content into lightweight HTML previews using the available parser libraries or XML fallbacks, with caching for repeated loads.
+- `docx_viewer.py` & `pptx_viewer.py`: Render Word and PowerPoint content into lightweight HTML previews using available parser libraries and pure Python native byte extraction for inline images, with caching for repeated loads.
 - `html_viewer.py` & `web_panel.py`: Dedicated HTML/XML workstation with a lazy-loaded web dock when the feature is available, plus reload/bookmark controls and global hyperlink interception.
 
 ### Sub-systems & Concurrency
@@ -46,6 +46,8 @@ EleViewer relies heavily on standard PySide6 widgets and custom components to ke
 - `vault_explorer.py` & `vault_indexer.py`: The left sidebar for file navigation (filtering out system junk files like `desktop.ini`). The current indexer is a Python/SQLite-based background search flow rather than a Rust extension.
 - `quick_switcher.py`: The `Ctrl+Q` fuzzy finder for fast file switching.
 - `draft_recovery.py`: Saves auto-snapshots of text using a background `DraftWorker(QThread)` to prevent UI stutter and data loss.
+- `updater.py`: Background thread to query GitHub API for latest releases, parse version tags, and present download progress dialogs.
+- `onboarding.py` & `whats_new.py`: First-run configuration guides and interactive release note dialogs to keep users informed without friction.
 - `save_utils.py`, `session_manager.py`, `settings.py`: Enforces atomic disk writes (`tempfile.mkstemp` + `os.fsync` + `os.replace`) to strictly guarantee physical disk writes and eliminate 0-byte corruption on crash, while persisting scroll position, zoom, and PDF page numbers across sessions.
 - `release_hash.py`: Standalone script for computing SHA-256 hashes for the packaged installer or bundled executable used in GitHub Releases, Winget, and other package-manager distribution flows.
 

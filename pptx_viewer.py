@@ -11,7 +11,7 @@ import html
 import os
 import re
 import zipfile
-import xml.etree.ElementTree as ET
+from defusedxml import ElementTree as ET
 
 try:
     import pptx  # type: ignore

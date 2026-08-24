@@ -43,7 +43,7 @@ class WhatsNewDialog(QDialog):
         layout.setSpacing(20)
 
         header_layout = QHBoxLayout()
-        title_label = QLabel(f"🎉 EleViewer updated to v{app_version}")
+        title_label = QLabel(f"EleViewer updated to v{app_version}")
         title_label.setStyleSheet("font-size: 22px; font-weight: bold; color: #ffffff;")
         header_layout.addWidget(title_label)
         header_layout.addStretch()

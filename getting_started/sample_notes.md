@@ -1,18 +1,18 @@
-# 📝 Sample Notes — EleViewer
+# Try EleViewer with this note
 
-Welcome to the live Markdown editor & previewer in **EleViewer**.
+This is a safe sample note to help you learn the basic study workflow.
 
-## Key Features
-- **Live Preview & Syntax Highlighting**: Edit plain text or view rich formatted HTML.
-- **Text-to-Speech (F9)**: Highlight text or press `F9` to listen to your notes.
-- **Session Auto-Save**: Your tab states and scroll positions are automatically restored.
+## Try this now
 
-```python
-# Example Code Block
-def calculate_grade(score):
-    if score >= 90:
-        return "A"
-    return "B"
-```
+1. Select this paragraph with your mouse.
+2. Press `F9` to open **Read Aloud**.
+3. Press `Ctrl+O` when you are ready to open one of your own course files.
+4. Press `Alt+V` to add your course folder when you want its files close by.
 
-> **Pro Tip**: Use `Ctrl+1` through `Ctrl+9` to switch between open tabs instantly!
+## What you can do next
+
+- Use `Ctrl+F` to find a word in this note or another text document.
+- Press `Ctrl+D` to bookmark your place in a reading.
+- Close EleViewer and reopen it later to restore your session.
+
+> **Tip:** You do not need to learn every shortcut today. Start with `Ctrl+O` and `F9`.
