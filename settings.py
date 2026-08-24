@@ -24,6 +24,7 @@ DEFAULT_SETTINGS = {
     "pdf_fit_mode": "width",
     "pdf_render_quality": "high",
     "launch_behavior": "remembered",
+    "fresh_session_behavior": "welcome",
     "window_geometry": None,
     "draft_autosave_enabled": True,
     "draft_autosave_interval_seconds": 60,
