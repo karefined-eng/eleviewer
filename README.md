@@ -41,7 +41,7 @@ Opens & edits **DOCX, XLSX, PPTX, PDF, MD, TXT, CSV, TSV and HTML/HTM** — all 
 - **Automatic Updates** — Integrated GitHub release checker notifies you when a new release is available and links you to the official download.
 
 ### 💻 Specs
-- **~212 MB** compiled portable Windows executable — no traditional installation required.
+- **~129 MB** compiled one-file portable Windows executable — no traditional installation required.
 - **< 100 ms** cold-start latency.
 - Windows 10/11 native integration (Jump Lists, AppUserModelID, ProgIDs).
 - No account, **zero telemetry** — your files stay local. Includes an opt-in, **PII-stripped secure crash reporter** that automatically copies technical logs to your clipboard without exposing your personal username or file paths.
@@ -130,10 +130,10 @@ pip install -r requirements.txt
 python main.py
 ```
 
-If you want a packaged build, the release workflow uses Nuitka plus Inno Setup to produce a Windows installer and a bundled `EleViewer.exe` inside the build directory.
+If you want a packaged build, the release workflow uses Nuitka `--onefile` plus Inno Setup to produce a standalone portable `EleViewer.exe` and a Windows installer.
 
 ```bash
-nuitka --standalone --plugin-enable=pyside6 --include-qt-plugins=sensible,styles --disable-console main.py
+nuitka --onefile --plugin-enable=pyside6 --include-qt-plugins=sensible,styles --disable-console main.py
 ```
 
 Release hashes can still be generated from the packaged artifact with:
