@@ -36,6 +36,21 @@ jobs:
           echo "VERSION=$ver" >> $env:GITHUB_OUTPUT
           echo "TAG=$tag" >> $env:GITHUB_OUTPUT
 
+      - name: Install Dependency Walker for Nuitka
+        shell: pwsh
+        run: |
+          $cacheDir = Join-Path $env:USERPROFILE "AppData\Local\Nuitka\Nuitka\Cache\downloads\depends\x86_64"
+          $zipPath = Join-Path $env:RUNNER_TEMP "depends22_x64.zip"
+          New-Item -ItemType Directory -Force -Path $cacheDir | Out-Null
+          Invoke-WebRequest -Uri "https://dependencywalker.com/depends22_x64.zip" -OutFile $zipPath
+          $extractDir = Join-Path $env:RUNNER_TEMP "depends22_x64"
+          if (Test-Path $extractDir) { Remove-Item -Recurse -Force $extractDir }
+          Expand-Archive -Path $zipPath -DestinationPath $extractDir -Force
+          $depends = Get-ChildItem -Path $extractDir -Recurse -Filter "depends.exe" | Select-Object -First 1
+          if (-not $depends) { throw "Dependency Walker executable was not found in the downloaded archive." }
+          Copy-Item $depends.FullName (Join-Path $cacheDir "depends.exe") -Force
+          Write-Output "Installed Dependency Walker at $(Join-Path $cacheDir 'depends.exe')"
+
       - name: Compile with Nuitka (Native C++ with LTO)
         run: |
           python -m nuitka `
@@ -70,6 +85,9 @@ jobs:
 
       - name: Verify release assets
         run: |
+          if (-not (Test-Path "dist/EleViewer.exe")) {
+            throw "Expected portable executable was not produced."
+          }
           if (-not (Test-Path "dist/EleViewer_Setup_v${{ steps.version.outputs.VERSION }}.exe")) {
             throw "Expected installer was not produced."
           }
@@ -106,6 +124,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
+            dist/EleViewer.exe
             dist/EleViewer_Setup_*.exe
             dist/winget-installer.yaml
           name: EleViewer ${{ steps.version.outputs.TAG }}
