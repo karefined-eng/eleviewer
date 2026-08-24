@@ -162,7 +162,6 @@ begin
   end;
   Result := Pos(';' + Param + ';', ';' + OrigPath + ';') = 0;
 end;
-
 function IsSilentRelaunch(): Boolean;
 begin
   Result := CmdLineParamExists('/RESTARTAPP');

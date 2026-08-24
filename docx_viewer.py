@@ -4,10 +4,11 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Signal, QSize
 
 import base64
+import html
 import io
 import os
 import zipfile
-import xml.etree.ElementTree as ET
+from defusedxml import ElementTree as ET
 
 _DOCX_RENDER_CACHE = {}
 _DOCX_RENDER_CACHE_MAX_ENTRIES = 24
@@ -209,7 +210,7 @@ class DocxViewer(QWidget):
                         p_texts = []
                         for elem in p.iter():
                             if elem.tag.endswith("}t") and elem.text:
-                                p_texts.append(elem.text)
+                                p_texts.append(html.escape(elem.text))
                             elif elem.tag.endswith("}blip"):
                                 embed_id = elem.attrib.get("{http://schemas.openxmlformats.org/officeDocument/2006/relationships}embed")
                                 if embed_id and embed_id in image_map:
@@ -291,6 +292,8 @@ class DocxViewer(QWidget):
                 # Add text content
                 text = run.text
                 if text:
+                    # Escape document text before applying safe formatting tags.
+                    text = html.escape(text)
                     # Apply basic formatting
                     if run.bold:
                         text = f"<b>{text}</b>"
@@ -311,7 +314,7 @@ class DocxViewer(QWidget):
                 table_html.append("<tr>")
                 cell_tag = "th" if row_idx == 0 else "td"
                 for cell in row.cells:
-                    cell_text = cell.text.strip()
+                    cell_text = html.escape(cell.text.strip())
                     table_html.append(
                         f'<{cell_tag} style="border:1px solid {BRAND_BORDER}; '
                         f'padding:6px 10px;">{cell_text}</{cell_tag}>'

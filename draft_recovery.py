@@ -64,7 +64,7 @@ class DraftManager(QObject):
                 content = editor.toPlainText()
                 
                 stable_id = path if path else f"untitled_{id(editor)}"
-                file_hash = hashlib.md5(stable_id.encode()).hexdigest()
+                file_hash = hashlib.md5(stable_id.encode(), usedforsecurity=False).hexdigest()
                 
                 draft_path = DRAFTS_DIR / f"{file_hash}.draft.txt"
                 meta_path = DRAFTS_DIR / f"{file_hash}.draft.meta.json"
@@ -93,7 +93,7 @@ class DraftManager(QObject):
         else:
             return
             
-        file_hash = hashlib.md5(stable_id.encode()).hexdigest()
+        file_hash = hashlib.md5(stable_id.encode(), usedforsecurity=False).hexdigest()
         draft_path = DRAFTS_DIR / f"{file_hash}.draft.txt"
         meta_path = DRAFTS_DIR / f"{file_hash}.draft.meta.json"
         

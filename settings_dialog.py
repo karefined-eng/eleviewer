@@ -48,14 +48,20 @@ class SettingsDialog(QDialog):
         w = QWidget()
         form = QFormLayout(w)
         self.launch_combo = QComboBox()
-        self.launch_combo.addItems(["remembered", "maximized", "default"])
-        self.launch_combo.setCurrentText(self.settings.get("launch_behavior", "remembered"))
-        form.addRow("Launch window size:", self.launch_combo)
+        self.launch_combo.addItem("Use my last window size", "remembered")
+        self.launch_combo.addItem("Always open maximized", "maximized")
+        self.launch_combo.addItem("Use the default window size", "default")
+        launch_value = self.settings.get("launch_behavior", "remembered")
+        self.launch_combo.setCurrentIndex(max(0, self.launch_combo.findData(launch_value)))
+        form.addRow("When EleViewer opens:", self.launch_combo)
         
         self.theme_mode_combo = QComboBox()
-        self.theme_mode_combo.addItems(["dark", "light", "system"])
-        self.theme_mode_combo.setCurrentText(self.settings.get("theme_mode", "dark"))
-        form.addRow("Theme mode:", self.theme_mode_combo)
+        self.theme_mode_combo.addItem("Dark", "dark")
+        self.theme_mode_combo.addItem("Light", "light")
+        self.theme_mode_combo.addItem("Match Windows", "system")
+        theme_mode = self.settings.get("theme_mode", "dark")
+        self.theme_mode_combo.setCurrentIndex(max(0, self.theme_mode_combo.findData(theme_mode)))
+        form.addRow("Appearance:", self.theme_mode_combo)
 
         self.theme_combo = QComboBox()
         self.theme_combo.addItems(["blue", "grey"])
@@ -63,9 +69,12 @@ class SettingsDialog(QDialog):
         form.addRow("Theme accent color:", self.theme_combo)
         
         self.fresh_session_combo = QComboBox()
-        self.fresh_session_combo.addItems(["welcome", "blank_tab", "empty"])
-        self.fresh_session_combo.setCurrentText(self.settings.get("fresh_session_behavior", "welcome"))
-        form.addRow("On fresh session:", self.fresh_session_combo)
+        self.fresh_session_combo.addItem("Show the welcome screen", "welcome")
+        self.fresh_session_combo.addItem("Open a blank note", "blank_tab")
+        self.fresh_session_combo.addItem("Open an empty workspace", "empty")
+        fresh_session = self.settings.get("fresh_session_behavior", "welcome")
+        self.fresh_session_combo.setCurrentIndex(max(0, self.fresh_session_combo.findData(fresh_session)))
+        form.addRow("When no session is saved:", self.fresh_session_combo)
 
         self.autosave_check = QCheckBox("Enable background auto-save to file")
         self.autosave_check.setChecked(self.settings.get("autosave_enabled", True))
@@ -118,7 +127,7 @@ class SettingsDialog(QDialog):
         folder_layout = QHBoxLayout()
         self.save_folder_input = QLineEdit()
         self.save_folder_input.setText(self.settings.get("default_save_folder", ""))
-        self.save_folder_input.setPlaceholderText("(Current Working Directory)")
+        self.save_folder_input.setPlaceholderText("(Use the current folder)")
         browse_btn = QPushButton("Browse...")
         def _browse():
             from PySide6.QtWidgets import QFileDialog
@@ -128,7 +137,7 @@ class SettingsDialog(QDialog):
         browse_btn.clicked.connect(_browse)
         folder_layout.addWidget(self.save_folder_input)
         folder_layout.addWidget(browse_btn)
-        form.addRow("Default Save Folder:", folder_layout)
+        form.addRow("Default folder for new notes:", folder_layout)
 
         self.vault_list = QListWidget()
         paths = self.settings.get("vault_paths", [])
@@ -169,7 +178,7 @@ class SettingsDialog(QDialog):
         vault_layout.addWidget(self.vault_list)
         vault_layout.addLayout(vault_controls)
         
-        form.addRow("Open vaults:", vault_layout)
+        form.addRow("Course folders:", vault_layout)
         return w
 
     def _build_web_tab(self):
@@ -190,10 +199,10 @@ class SettingsDialog(QDialog):
             vaults.append(self.vault_list.item(i).text())
             
         self.settings.update({
-            "launch_behavior": self.launch_combo.currentText(),
-            "theme_mode": self.theme_mode_combo.currentText(),
+            "launch_behavior": self.launch_combo.currentData(),
+            "theme_mode": self.theme_mode_combo.currentData(),
             "theme_accent": self.theme_combo.currentText(),
-            "fresh_session_behavior": self.fresh_session_combo.currentText(),
+            "fresh_session_behavior": self.fresh_session_combo.currentData(),
             "autosave_enabled": self.autosave_check.isChecked(),
             "autosave_interval_seconds": self.interval_spin.value(),
             "draft_autosave_enabled": self.draft_autosave_check.isChecked(),

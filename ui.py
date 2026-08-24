@@ -792,11 +792,21 @@ class MainWindow(QMainWindow):
         # Add the specific URL as a new tab in the web panel
         self._web_dock.widget()._add_tab_widget("https://eleviewer.vercel.app/review", "Leave a Review")
 
+    def open_sample_note(self):
+        from paths import BASE_DIR
+        sample_file = BASE_DIR / "getting_started" / "sample_notes.md"
+        if sample_file.exists():
+            self._open_vault_file(str(sample_file))
+            self.show_status_message("Sample note opened — select text and press F9 to read aloud", 5000)
+        else:
+            self.show_status_message("Sample note not found", 3000)
+
     def open_getting_started(self):
         from paths import BASE_DIR
         welcome_file = BASE_DIR / "getting_started" / "Welcome to EleViewer.md"
         if welcome_file.exists():
             self._open_vault_file(str(welcome_file))
+            self.show_status_message("Getting Started opened — press Ctrl+O to open your own course file", 5000)
         else:
             self.show_status_message("Getting Started guide not found", 3000)
 
@@ -946,7 +956,7 @@ class MainWindow(QMainWindow):
         title.setStyleSheet(f"font-size: 32px; font-weight: bold; color: {p['BRAND_PRIMARY']};")
         title.setAlignment(Qt.AlignCenter)
         
-        subtitle = QLabel("Open, read, and edit your documents locally on Windows with fast search, bookmarks, and built-in web research.")
+        subtitle = QLabel("Open a course file, listen to a reading aloud, and keep your study session together locally on Windows.")
         subtitle.setWordWrap(True)
         subtitle.setAlignment(Qt.AlignCenter)
         subtitle.setMaximumWidth(600)
@@ -981,7 +991,7 @@ class MainWindow(QMainWindow):
         omni_search_icon.setPixmap(icon("search", size=18).pixmap(18, 18))
 
         omni_input = QLineEdit()
-        omni_input.setPlaceholderText("Search vault files, or paste a URL to open in browser...")
+        omni_input.setPlaceholderText("Search your course files, or paste a web address...")
         omni_input.setStyleSheet(f"""
             QLineEdit {{
                 background: transparent;
@@ -1089,7 +1099,7 @@ class MainWindow(QMainWindow):
 
         main_layout.addWidget(omni_wrapper)
         
-        # 3. Action Buttons
+        # 3. First actions
         action_bar = QWidget()
         action_bar_layout = QHBoxLayout(action_bar)
         action_bar_layout.setSpacing(12)
@@ -1098,10 +1108,9 @@ class MainWindow(QMainWindow):
         
         action_btn_style = f"background: {p['BRAND_PANEL']}; color: {p['BRAND_PRIMARY']}; border: 1px solid {p['BRAND_BORDER']}; border-radius: 6px; padding: 10px 14px;"
         for label, ico, slot in [
-            ("New Text Note", "file-plus", self.new_tab),
-            ("Open File", "folder-open", self.open_file),
-            ("Add Vault", "panel-left", self.add_vault),
-            ("Web Browser", "globe", self.open_web_tab),
+            ("Try the Sample Note", "play", self.open_sample_note),
+            ("Open a Course File", "folder-open", self.open_file),
+            ("Add a Course Folder", "panel-left", self.add_vault),
             ("Getting Started", "book-open", self.open_getting_started),
         ]:
             btn = QToolButton()
@@ -1113,6 +1122,12 @@ class MainWindow(QMainWindow):
             btn.clicked.connect(slot)
             action_bar_layout.addWidget(btn)
         main_layout.addWidget(action_bar)
+
+        action_hint = QLabel("Start with the sample or open your own file. You can add a course folder whenever you are ready.")
+        action_hint.setAlignment(Qt.AlignCenter)
+        action_hint.setWordWrap(True)
+        action_hint.setStyleSheet(f"color: {p['BRAND_MUTED_FG']}; font-size: 12px;")
+        main_layout.addWidget(action_hint)
         
         # 4. Two Columns: Recent Files & Shortcuts
         columns = QWidget()
@@ -1138,7 +1153,7 @@ class MainWindow(QMainWindow):
         recent_list.setMinimumHeight(120)
         recent_files = load_recent_files(validate=True)[:5]
         if not recent_files:
-            recent_list.addItem(QListWidgetItem("No recent files"))
+            recent_list.addItem(QListWidgetItem("Open a file to see it here"))
         else:
             for path in recent_files:
                 item = QListWidgetItem(icon("file", size=14), os.path.basename(path))
@@ -1158,7 +1173,7 @@ class MainWindow(QMainWindow):
         bm_list.setMinimumHeight(90)
         bms = load_bookmarks()[:3]
         if not bms:
-            bm_list.addItem(QListWidgetItem("No bookmarks"))
+            bm_list.addItem(QListWidgetItem("Bookmark a page to see it here"))
         else:
             for b in bms:
                 item = QListWidgetItem(icon("bookmark", size=14), b.get("label", "Bookmark"))
@@ -1189,9 +1204,9 @@ class MainWindow(QMainWindow):
             ("Ctrl+O", "Open file"),
             ("Ctrl+N", "New note"),
             ("Ctrl+T", "Browser"),
-            ("Alt+V", "Vault"),
-            ("Ctrl+Q", "Search"),
-            ("F9", "TTS Reader"),
+            ("Alt+V", "Course folder"),
+            ("Ctrl+Q", "Find a file"),
+            ("F9", "Read Aloud"),
         ]
         grid = QWidget()
         grid_layout = QGridLayout(grid)

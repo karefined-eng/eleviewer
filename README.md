@@ -11,7 +11,7 @@ A lightweight Windows document editor supporting **DOCX**, **XLSX**, **PPTX**, *
 ### 📁 File Support
 Opens & edits **DOCX, XLSX, PPTX, PDF, MD, TXT, CSV, TSV and HTML/HTM** — all in one workspace.
 - **XLSX View-Only Mode** — displays computed formula values (not raw formulas) in a read-only grid, protecting spreadsheet integrity while letting you study the data.
-- **Image Placeholders** — DOCX and PPTX files with embedded images display `📷 [Image]` markers so you know where visuals exist, even in text-only rendering.
+- **Inline Image Rendering** — DOCX and PPTX files natively extract and render actual embedded pictures directly inside your study documents using a zero-dependency byte extractor.
 - **CSV Smart Encoding** — automatically detects file encoding via `chardet` so Excel-exported CSVs in Windows-1252, Latin-1, or UTF-8 render without garbled characters.
 - **CSV Table Workstation** — dual Table Grid View ⇄ Raw Text View with interactive cell editing, row/column insertion, delimiter overrides, and non-destructive text preservation.
 - **HTML Live Workstation** — split-screen syntax editor with debounced live preview, compact monochromatic styling, and 1-click migration into the right-hand Web Panel.
@@ -38,9 +38,10 @@ Opens & edits **DOCX, XLSX, PPTX, PDF, MD, TXT, CSV, TSV and HTML/HTM** — all 
 - **Off-Thread Concurrency** — draft recovery autosave, live vault search, and feedback submissions run on background `QThread` workers.
 - **Dynamic UI Accents** — Status bar and active icons pop with your chosen theme color.
 - **Lucide Icon Set** — clean, consistent, professional SVG icons throughout the UI, replacing legacy bulky glyphs.
+- **Automatic Updates** — Integrated GitHub release checker notifies you when a new release is available and links you to the official download.
 
 ### 💻 Specs
-- **< 45 MB** compiled Native C++ executable — no heavy installer needed.
+- **~212 MB** compiled portable Windows executable — no traditional installation required.
 - **< 100 ms** cold-start latency.
 - Windows 10/11 native integration (Jump Lists, AppUserModelID, ProgIDs).
 - No account, **zero telemetry** — your files stay local. Includes an opt-in, **PII-stripped secure crash reporter** that automatically copies technical logs to your clipboard without exposing your personal username or file paths.
@@ -51,8 +52,8 @@ Opens & edits **DOCX, XLSX, PPTX, PDF, MD, TXT, CSV, TSV and HTML/HTM** — all 
 ## 🚀 Quick Start
 
 ### For End Users
-1. Download the latest `EleViewer_Setup_vX.Y.Z.exe` installer from the [releases](https://github.com/karefined-eng/eleviewer/releases) page.
-2. Run the installer and follow the prompts.
+1. Download the latest `EleViewer.exe` from the [releases](https://github.com/karefined-eng/eleviewer/releases) page.
+2. Run `EleViewer.exe`. The current published release is portable and does not require a traditional installation.
 
 ### What’s new
 - Faster preview refreshes for Markdown and HTML content while you type, with less wasted work and smoother updates.

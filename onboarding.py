@@ -7,8 +7,8 @@ from theme import BRAND_BACKGROUND, BRAND_PANEL, BRAND_BORDER, BRAND_PRIMARY, ge
 class OnboardingDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("Welcome to EleViewer")
-        self.resize(600, 400)
+        self.setWindowTitle("Start studying with EleViewer")
+        self.resize(640, 440)
         
         accent = get_brand_accent()
         self.setStyleSheet(f"""
@@ -26,23 +26,23 @@ class OnboardingDialog(QDialog):
         
         self.stack = QStackedWidget()
         self.stack.addWidget(self._create_slide(
-            "Welcome to EleViewer 🐘",
-            "Your Zero-Friction, Offline-First Study Workspace.\n\n"
-            "EleViewer is designed to stay out of your way. Everything is saved locally. "
-            "There's no telemetry, no forced cloud accounts, and no loading screens."
+            "Open your course files in one place",
+            "EleViewer brings readings, notes, slides, spreadsheets, and PDFs into one Windows workspace.\n\n"
+            "Your files stay on your computer. No account, cloud upload, or subscription is required."
         ))
         self.stack.addWidget(self._create_slide(
-            "Survival Shortcuts ⚡",
-            "Master these three shortcuts to fly through your homework and notes:\n\n"
-            "• Alt+V : Toggle Vault Sidebar\n"
-            "• Ctrl+Q : Quick Switcher (fuzzy find files)\n"
-            "• Ctrl+T : Split View Web Browser"
+            "Make your first reading useful",
+            "Try the sample note or open one of your own files. In a PDF, select a passage and press F9 to hear it aloud.\n\n"
+            "You can add your course folder after you have seen the basic workflow."
         ))
         self.stack.addWidget(self._create_slide(
-            "Safety Net Active 🛡️",
-            "We've got your back.\n\n"
-            "Draft Auto-Save silently backs up your unsaved text every 60 seconds "
-            "so you never lose a fleeting thought to a crash or an accidental 'Don't Save'."
+            "Keep your place and find files fast",
+            "Add a course folder with Alt+V, find files with Ctrl+Q, and use bookmarks and session restore to return to the same study session.\n\n"
+            "You do not need to learn every shortcut today. Start with Ctrl+O and F9."
+        ))
+        self.stack.addWidget(self._create_slide(
+            "Choose your first action",
+            "Try the sample note for a guided first step, or open one of your own course files. You can reopen this guide later from Help → Getting Started Guide."
         ))
         
         layout.addWidget(self.stack)
@@ -52,11 +52,21 @@ class OnboardingDialog(QDialog):
         self.prev_btn.clicked.connect(self._prev)
         self.prev_btn.setEnabled(False)
         
+        self.sample_btn = QPushButton("Try the Sample Note")
+        self.sample_btn.clicked.connect(self._open_sample)
+        self.sample_btn.setObjectName("primary")
+        self.sample_btn.setVisible(False)
+
+        self.open_file_btn = QPushButton("Open My File")
+        self.open_file_btn.clicked.connect(self._open_file)
+        self.open_file_btn.setVisible(False)
+
         self.next_btn = QPushButton("Next")
-        self.next_btn.setObjectName("primary")
         self.next_btn.clicked.connect(self._next)
         
         btn_layout.addWidget(self.prev_btn)
+        btn_layout.addWidget(self.sample_btn)
+        btn_layout.addWidget(self.open_file_btn)
         btn_layout.addStretch()
         btn_layout.addWidget(self.next_btn)
         
@@ -96,10 +106,25 @@ class OnboardingDialog(QDialog):
         else:
             self.accept()
             
+    def _open_sample(self):
+        parent = self.parent()
+        if parent is not None and hasattr(parent, "open_sample_note"):
+            parent.open_sample_note()
+            self.accept()
+
+    def _open_file(self):
+        parent = self.parent()
+        if parent is not None and hasattr(parent, "open_file"):
+            parent.open_file()
+            self.accept()
+
     def _update_buttons(self):
         idx = self.stack.currentIndex()
         self.prev_btn.setEnabled(idx > 0)
-        if idx == self.stack.count() - 1:
-            self.next_btn.setText("Get Started")
+        is_final = idx == self.stack.count() - 1
+        self.sample_btn.setVisible(is_final)
+        self.open_file_btn.setVisible(is_final)
+        if is_final:
+            self.next_btn.setText("Finish")
         else:
             self.next_btn.setText("Next")
