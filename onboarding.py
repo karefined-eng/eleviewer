@@ -26,23 +26,23 @@ class OnboardingDialog(QDialog):
         
         self.stack = QStackedWidget()
         self.stack.addWidget(self._create_slide(
-            "Welcome to EleViewer 🐘",
-            "Your Zero-Friction, Offline-First Study Workspace.\n\n"
-            "EleViewer is designed to stay out of your way. Everything is saved locally. "
-            "There's no telemetry, no forced cloud accounts, and no loading screens."
+            "Open your course files in one place",
+            "EleViewer is a lightweight Windows study workspace for PDFs, Word files, slides, spreadsheets, Markdown, and notes.\n\n"
+            "Your files stay on your computer. No account, cloud upload, or subscription is required."
         ))
         self.stack.addWidget(self._create_slide(
-            "Survival Shortcuts",
-            "Master these three shortcuts to fly through your homework and notes:\n\n"
-            "• Alt+V : Toggle Vault Sidebar\n"
-            "• Ctrl+Q : Quick Switcher (fuzzy find files)\n"
-            "• Ctrl+T : Split View Web Browser"
+            "Start with a real reading",
+            "Use the sample note to see the workflow immediately.\n\n"
+            "Open a document, select text, and press F9 to hear it aloud. Then add your course folder so your files are one click away."
         ))
         self.stack.addWidget(self._create_slide(
-            "Safety Net Active",
-            "We've got your back.\n\n"
-            "Draft Auto-Save silently backs up your unsaved text every 60 seconds "
-            "so you never lose a fleeting thought to a crash or an accidental 'Don't Save'."
+            "Keep your place automatically",
+            "Bookmarks, session restore, and draft recovery help you return to the same study session.\n\n"
+            "The shortcuts are here when you are ready: Alt+V for your folder, Ctrl+Q to find a file, and F9 to read aloud."
+        ))
+        self.stack.addWidget(self._create_slide(
+            "You are ready to study",
+            "Open the sample note now, or close this guide and use the welcome screen to open your own files."
         ))
         
         layout.addWidget(self.stack)
@@ -52,11 +52,16 @@ class OnboardingDialog(QDialog):
         self.prev_btn.clicked.connect(self._prev)
         self.prev_btn.setEnabled(False)
         
+        self.sample_btn = QPushButton("Open Sample Note")
+        self.sample_btn.clicked.connect(self._open_sample)
+        self.sample_btn.setVisible(False)
+
         self.next_btn = QPushButton("Next")
         self.next_btn.setObjectName("primary")
         self.next_btn.clicked.connect(self._next)
         
         btn_layout.addWidget(self.prev_btn)
+        btn_layout.addWidget(self.sample_btn)
         btn_layout.addStretch()
         btn_layout.addWidget(self.next_btn)
         
@@ -96,10 +101,17 @@ class OnboardingDialog(QDialog):
         else:
             self.accept()
             
+    def _open_sample(self):
+        parent = self.parent()
+        if parent is not None and hasattr(parent, "open_sample_note"):
+            parent.open_sample_note()
+            self.accept()
+
     def _update_buttons(self):
         idx = self.stack.currentIndex()
         self.prev_btn.setEnabled(idx > 0)
+        self.sample_btn.setVisible(idx == self.stack.count() - 1)
         if idx == self.stack.count() - 1:
-            self.next_btn.setText("Get Started")
+            self.next_btn.setText("Finish")
         else:
             self.next_btn.setText("Next")

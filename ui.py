@@ -792,6 +792,15 @@ class MainWindow(QMainWindow):
         # Add the specific URL as a new tab in the web panel
         self._web_dock.widget()._add_tab_widget("https://eleviewer.vercel.app/review", "Leave a Review")
 
+    def open_sample_note(self):
+        from paths import BASE_DIR
+        sample_file = BASE_DIR / "getting_started" / "sample_notes.md"
+        if sample_file.exists():
+            self._open_vault_file(str(sample_file))
+            self.show_status_message("Sample note opened — select text and press F9 to read aloud", 5000)
+        else:
+            self.show_status_message("Sample note not found", 3000)
+
     def open_getting_started(self):
         from paths import BASE_DIR
         welcome_file = BASE_DIR / "getting_started" / "Welcome to EleViewer.md"
@@ -946,7 +955,7 @@ class MainWindow(QMainWindow):
         title.setStyleSheet(f"font-size: 32px; font-weight: bold; color: {p['BRAND_PRIMARY']};")
         title.setAlignment(Qt.AlignCenter)
         
-        subtitle = QLabel("Open, read, and edit your documents locally on Windows with fast search, bookmarks, and built-in web research.")
+        subtitle = QLabel("Open your course files, listen to readings aloud, and keep your study session together locally on Windows.")
         subtitle.setWordWrap(True)
         subtitle.setAlignment(Qt.AlignCenter)
         subtitle.setMaximumWidth(600)
@@ -1098,9 +1107,9 @@ class MainWindow(QMainWindow):
         
         action_btn_style = f"background: {p['BRAND_PANEL']}; color: {p['BRAND_PRIMARY']}; border: 1px solid {p['BRAND_BORDER']}; border-radius: 6px; padding: 10px 14px;"
         for label, ico, slot in [
-            ("New Text Note", "file-plus", self.new_tab),
+            ("Try Sample Note", "play", self.open_sample_note),
             ("Open File", "folder-open", self.open_file),
-            ("Add Vault", "panel-left", self.add_vault),
+            ("Add Course Folder", "panel-left", self.add_vault),
             ("Web Browser", "globe", self.open_web_tab),
             ("Getting Started", "book-open", self.open_getting_started),
         ]:

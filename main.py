@@ -138,10 +138,8 @@ if not settings.get("onboarding_completed", False):
     settings["last_run_version"] = APP_VERSION
     save_settings(settings)
     
-    from paths import BASE_DIR
-    welcome_file = BASE_DIR / "getting_started" / "Welcome to EleViewer.md"
-    if welcome_file.exists():
-        window.open_file(str(welcome_file))
+    # Keep the welcome dashboard visible so the user can choose a first action.
+    # The full reference manual remains available from the welcome screen and Help menu.
 else:
     # Check for updates to show What's New
     last_ver = settings.get("last_run_version", "0.0.0")
