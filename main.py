@@ -1,7 +1,7 @@
 import sys
 import os
 
-from PySide6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication, QDialog
 
 from ui import MainWindow
 from autosave import AutoSaver
@@ -132,14 +132,14 @@ if not settings.get("onboarding_completed", False):
     from pathlib import Path
     
     dlg = OnboardingDialog(window)
-    dlg.exec()
-    
-    settings["onboarding_completed"] = True
-    settings["last_run_version"] = APP_VERSION
-    save_settings(settings)
+    onboarding_result = dlg.exec()
+    if onboarding_result == QDialog.Accepted:
+        settings["onboarding_completed"] = True
+        settings["last_run_version"] = APP_VERSION
+        save_settings(settings)
     
     # Keep the welcome dashboard visible so the user can choose a first action.
-    # The full reference manual remains available from the welcome screen and Help menu.
+    # Closing the guide leaves onboarding available on the next launch.
 else:
     # Check for updates to show What's New
     last_ver = settings.get("last_run_version", "0.0.0")
