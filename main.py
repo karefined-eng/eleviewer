@@ -93,6 +93,8 @@ def global_exception_handler(exc_type, exc_value, exc_traceback):
 sys.excepthook = global_exception_handler
 
 app = QApplication(sys.argv)
+from branding_logo import create_eleviewer_icon
+app.setWindowIcon(create_eleviewer_icon(64))
 
 # Attempt to lock single instance
 instance_server = SingleInstanceServer()

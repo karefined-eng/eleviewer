@@ -15,7 +15,7 @@ def create_eleviewer_icon(size: int = 32) -> QIcon:
     - Bottom bar: white (#f2f2f0)
     """
     pixmap = QPixmap(size, size)
-    pixmap.fill(QColor(BRAND_PANEL))
+    pixmap.fill(Qt.transparent)
 
     painter = QPainter(pixmap)
     painter.setRenderHint(QPainter.RenderHint.Antialiasing)
@@ -26,11 +26,9 @@ def create_eleviewer_icon(size: int = 32) -> QIcon:
     def scaled(val):
         return val * scale
 
-    # Background is already filled with BRAND_PANEL
-    
-    # Border (optional but good for consistency with SVG)
+    # Draw rounded background
     painter.setPen(QColor("#2c2c2c"))
-    painter.setBrush(Qt.NoBrush)
+    painter.setBrush(QColor(BRAND_PANEL))
     painter.drawRoundedRect(
         QRectF(scaled(0.5), scaled(0.5), scaled(31), scaled(31)),
         scaled(6.5), scaled(6.5)

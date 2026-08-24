@@ -928,19 +928,31 @@ class MainWindow(QMainWindow):
         
         w = QWidget()
         w.is_welcome_tab = True
-        # Outer layout centers the content container
+        # Outer layout
         outer_layout = QVBoxLayout(w)
-        outer_layout.setAlignment(Qt.AlignTop | Qt.AlignHCenter)
+        outer_layout.setAlignment(Qt.AlignTop)
         outer_layout.setContentsMargins(0, 0, 0, 0)
+
+        wrapper = QWidget()
+        wrapper_layout = QHBoxLayout(wrapper)
+        wrapper_layout.setContentsMargins(0, 0, 0, 0)
+        wrapper_layout.addStretch()
 
         # Constrained content wrapper — stays readable on maximized windows
         content = QWidget()
         content.setMaximumWidth(780)
+        content.setMinimumWidth(650)
+        content.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+        
         main_layout = QVBoxLayout(content)
         main_layout.setAlignment(Qt.AlignTop)
         main_layout.setContentsMargins(40, 80, 40, 40)
-        main_layout.setSpacing(30)
-        outer_layout.addWidget(content, 0, Qt.AlignHCenter)
+        main_layout.setSpacing(40)
+        
+        wrapper_layout.addWidget(content, 1)
+        wrapper_layout.addStretch()
+        
+        outer_layout.addWidget(wrapper)
         
         # 1. Hero Section (Logo + Title)
         hero = QWidget()
@@ -956,7 +968,7 @@ class MainWindow(QMainWindow):
         title.setStyleSheet(f"font-size: 32px; font-weight: bold; color: {p['BRAND_PRIMARY']};")
         title.setAlignment(Qt.AlignCenter)
         
-        subtitle = QLabel("Open a course file, listen to a reading aloud, and keep your study session together locally on Windows.")
+        subtitle = QLabel("Open a course file, listen to it read aloud, and organize your studies offline on Windows.")
         subtitle.setWordWrap(True)
         subtitle.setAlignment(Qt.AlignCenter)
         subtitle.setMaximumWidth(600)
@@ -991,7 +1003,7 @@ class MainWindow(QMainWindow):
         omni_search_icon.setPixmap(icon("search", size=18).pixmap(18, 18))
 
         omni_input = QLineEdit()
-        omni_input.setPlaceholderText("Search your course files, or paste a web address...")
+        omni_input.setPlaceholderText("Search course files or paste a web link...")
         omni_input.setStyleSheet(f"""
             QLineEdit {{
                 background: transparent;
@@ -1115,7 +1127,7 @@ class MainWindow(QMainWindow):
         action_bar_layout.setContentsMargins(0, 0, 0, 0)
         action_bar_layout.setAlignment(Qt.AlignCenter)
         
-        action_btn_style = f"background: {p['BRAND_PANEL']}; color: {p['BRAND_PRIMARY']}; border: 1px solid {p['BRAND_BORDER']}; border-radius: 6px; padding: 10px 14px;"
+        action_btn_style = f"background: {p['BRAND_PANEL']}; color: {p['BRAND_PRIMARY']}; border: 1px solid {p['BRAND_BORDER']}; border-radius: 8px; padding: 12px 18px; font-size: 13px;"
         for label, ico, slot in [
             ("Try the Sample Note", "play", self.open_sample_note),
             ("Open a Course File", "folder-open", self.open_file),
@@ -1132,7 +1144,7 @@ class MainWindow(QMainWindow):
             action_bar_layout.addWidget(btn)
         main_layout.addWidget(action_bar)
 
-        action_hint = QLabel("Start with the sample or open your own file. You can add a course folder whenever you are ready.")
+        action_hint = QLabel("Start with the sample or open your own file. Add a course folder when you're ready.")
         action_hint.setAlignment(Qt.AlignCenter)
         action_hint.setWordWrap(True)
         action_hint.setStyleSheet(f"color: {p['BRAND_MUTED_FG']}; font-size: 12px;")
