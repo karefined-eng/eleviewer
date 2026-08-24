@@ -108,7 +108,8 @@ jobs:
           Write-Output "Generated $manifestPath"
           Get-Content $manifestPath
 
-      - name: Azure Trusted Signing (SmartScreen Bypass)
+      - name: Azure Trusted Signing (when enabled)
+        if: ${{ vars.AZURE_TRUSTED_SIGNING_ENABLED == 'true' }}
         uses: azure/trusted-signing-action@v0.5.0
         with:
           azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
