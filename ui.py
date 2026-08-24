@@ -1029,7 +1029,16 @@ class MainWindow(QMainWindow):
 
         def _is_url(text):
             t = text.strip()
-            return t.startswith(("http://", "https://")) or ("." in t and " " not in t and len(t) > 4)
+            if t.startswith(("http://", "https://", "localhost:")):
+                return True
+            if t.startswith("www."):
+                return True
+            doc_exts = (".pdf", ".md", ".docx", ".doc", ".xlsx", ".xls", ".pptx", ".ppt", ".csv", ".tsv", ".txt", ".html", ".htm", ".json", ".xml", ".py")
+            if any(t.lower().endswith(ext) for ext in doc_exts):
+                return False
+            common_tlds = (".com", ".org", ".edu", ".net", ".io", ".gov", ".app", ".dev", ".ai", ".co", ".gh", ".uk", ".de", ".ca", ".me")
+            host = t.split("/", 1)[0].lower()
+            return any(host.endswith(tld) for tld in common_tlds)
 
         def _omni_changed(text):
             text = text.strip()
