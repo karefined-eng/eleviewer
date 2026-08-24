@@ -7,8 +7,8 @@ from theme import BRAND_BACKGROUND, BRAND_PANEL, BRAND_BORDER, BRAND_PRIMARY, ge
 class OnboardingDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("Welcome to EleViewer")
-        self.resize(600, 400)
+        self.setWindowTitle("Start studying with EleViewer")
+        self.resize(640, 440)
         
         accent = get_brand_accent()
         self.setStyleSheet(f"""
@@ -27,22 +27,22 @@ class OnboardingDialog(QDialog):
         self.stack = QStackedWidget()
         self.stack.addWidget(self._create_slide(
             "Open your course files in one place",
-            "EleViewer is a lightweight Windows study workspace for PDFs, Word files, slides, spreadsheets, Markdown, and notes.\n\n"
+            "EleViewer brings readings, notes, slides, spreadsheets, and PDFs into one Windows workspace.\n\n"
             "Your files stay on your computer. No account, cloud upload, or subscription is required."
         ))
         self.stack.addWidget(self._create_slide(
-            "Start with a real reading",
-            "Use the sample note to see the workflow immediately.\n\n"
-            "Open a document, select text, and press F9 to hear it aloud. Then add your course folder so your files are one click away."
+            "Make your first reading useful",
+            "Try the sample note or open one of your own files. In a PDF, select a passage and press F9 to hear it aloud.\n\n"
+            "You can add your course folder after you have seen the basic workflow."
         ))
         self.stack.addWidget(self._create_slide(
-            "Keep your place automatically",
-            "Bookmarks, session restore, and draft recovery help you return to the same study session.\n\n"
-            "The shortcuts are here when you are ready: Alt+V for your folder, Ctrl+Q to find a file, and F9 to read aloud."
+            "Keep your place and find files fast",
+            "Add a course folder with Alt+V, find files with Ctrl+Q, and use bookmarks and session restore to return to the same study session.\n\n"
+            "You do not need to learn every shortcut today. Start with Ctrl+O and F9."
         ))
         self.stack.addWidget(self._create_slide(
-            "You are ready to study",
-            "Open the sample note now, or close this guide and use the welcome screen to open your own files."
+            "Choose your first action",
+            "Try the sample note for a guided first step, or open one of your own course files. You can reopen this guide later from Help → Getting Started Guide."
         ))
         
         layout.addWidget(self.stack)
@@ -52,16 +52,21 @@ class OnboardingDialog(QDialog):
         self.prev_btn.clicked.connect(self._prev)
         self.prev_btn.setEnabled(False)
         
-        self.sample_btn = QPushButton("Open Sample Note")
+        self.sample_btn = QPushButton("Try the Sample Note")
         self.sample_btn.clicked.connect(self._open_sample)
+        self.sample_btn.setObjectName("primary")
         self.sample_btn.setVisible(False)
 
+        self.open_file_btn = QPushButton("Open My File")
+        self.open_file_btn.clicked.connect(self._open_file)
+        self.open_file_btn.setVisible(False)
+
         self.next_btn = QPushButton("Next")
-        self.next_btn.setObjectName("primary")
         self.next_btn.clicked.connect(self._next)
         
         btn_layout.addWidget(self.prev_btn)
         btn_layout.addWidget(self.sample_btn)
+        btn_layout.addWidget(self.open_file_btn)
         btn_layout.addStretch()
         btn_layout.addWidget(self.next_btn)
         
@@ -107,11 +112,19 @@ class OnboardingDialog(QDialog):
             parent.open_sample_note()
             self.accept()
 
+    def _open_file(self):
+        parent = self.parent()
+        if parent is not None and hasattr(parent, "open_file"):
+            parent.open_file()
+            self.accept()
+
     def _update_buttons(self):
         idx = self.stack.currentIndex()
         self.prev_btn.setEnabled(idx > 0)
-        self.sample_btn.setVisible(idx == self.stack.count() - 1)
-        if idx == self.stack.count() - 1:
+        is_final = idx == self.stack.count() - 1
+        self.sample_btn.setVisible(is_final)
+        self.open_file_btn.setVisible(is_final)
+        if is_final:
             self.next_btn.setText("Finish")
         else:
             self.next_btn.setText("Next")

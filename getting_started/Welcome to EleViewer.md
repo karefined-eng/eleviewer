@@ -1,37 +1,43 @@
 ---
-title: EleViewer Workstation Reference Manual
-description: Official technical documentation, shortcut index, and workstation guide for the EleViewer local study workspace.
+title: Start Studying with EleViewer
+description: A short first-session guide for opening course files, listening to readings, and organizing local study folders.
 ---
 
-# EleViewer Workstation: Official Reference Manual
+# Start studying with EleViewer
 
-EleViewer is a lightweight, local-first Windows study workstation for reading, editing, and organizing academic and professional documents. It natively supports **DOCX, XLSX, PPTX, PDF, MD, TXT, CSV, and HTML/HTM** files within a unified, high-speed tabbed interface.
+EleViewer is a portable Windows workspace for opening course files, listening to readings aloud, taking notes, and keeping your study session together. Your files stay on your computer, and no account is required.
 
-This manual is your exhaustive technical reference for operating the workstation, mastering keyboard reflexes, managing local vaults, and understanding data protection mechanisms.
+## Your first three actions
+
+1. Press `Ctrl + O` and open a PDF, Word document, presentation, spreadsheet, or note.
+2. In a PDF or text document, select a passage and press `F9` to show **Read Aloud**.
+3. Press `Alt + V`, open Settings with `Alt + S`, and add your course folder when you want its files one click away.
+
+You can return to this guide at any time with `F1` or from **Help → Getting Started Guide**. The reference sections below explain the rest of the workspace when you are ready.
 
 ---
 
-## 1. Workstation Overview & Vault Setup
+## 1. Course folders & file search
 
 EleViewer operates on a strict **local-first, data sovereignty architecture**. Your study materials, index databases, and application settings remain entirely on your local hard drive. There are no cloud accounts, mandatory logins, or background telemetry services.
 
 ### Setting Up Your Vault Explorer (`Alt + V`)
-The Vault Explorer is your project sidebar for indexing and navigating local document directories.
+The Vault Explorer is your course-folder sidebar for navigating and searching local study files.
 
 1. Press `Alt + V` or click the Folder icon on the left sidebar to toggle the **Vault Explorer**.
 2. Click the **Settings icon** (⚙️) at the top of the sidebar or press `Alt + S` to open the **Settings Dialog**.
 3. Under **Vault Configuration**, click **Add Folder** and select any local directory containing your study materials, lecture slides, or project notes.
 4. Once added, EleViewer's background **SQLite FTS5 full-text indexer** automatically scans your documents. Your files immediately appear in the sidebar tree and become searchable across their full text.
-5. Use the dropdown selector at the top of the sidebar to instantly switch between multiple registered vault directories.
+5. Use the dropdown selector at the top of the sidebar to switch between registered course folders.
 
 > [!TIP]
 > While in the Settings Dialog (`Alt + S`), navigate to the **Theme** section to select a dynamic accent color that matches your visual workflow while preserving high-contrast readability.
 
 ---
 
-## 2. Master Reflex Shortcut & Command Index
+## 2. Shortcuts you can learn later
 
-To maximize reading and editing velocity, EleViewer is engineered around hotkeys called **Reflexes**. Keep your hands on the keyboard and execute commands without mouse friction.
+You do not need to memorize every shortcut to begin. These commands become useful as your study sessions grow longer:
 
 ### File Navigation & Vault Management
 | Shortcut | Command | Action Description |
@@ -68,7 +74,7 @@ To maximize reading and editing velocity, EleViewer is engineered around hotkeys
 
 ---
 
-## 3. Document Workstations Guide
+## 3. Reading, notes, and other file types
 
 EleViewer routes file formats to specialized workstation modules designed for specific academic tasks.
 
@@ -102,7 +108,7 @@ The workstation bridges local HTML development and online web research.
 
 ---
 
-## 4. Data Sovereignty, Auto-Save & Crash Protection
+## 4. Your files, drafts, and privacy
 
 EleViewer incorporates defensive file engineering to prevent work loss during system failures, power outages, or battery drain.
 
@@ -130,7 +136,7 @@ EleViewer contains **zero background telemetry, analytics trackers, or advertisi
 
 ---
 
-## 5. Configuration & Customization (`Alt + S`)
+## 5. Settings and customization (`Alt + S`)
 
 The Settings Dialog allows you to tailor the workstation's behavior and aesthetics to your study environment.
 
@@ -156,7 +162,7 @@ To keep you focused on studying, EleViewer handles updates silently:
 
 ---
 
-## 6. Troubleshooting & Support FAQ
+## 6. Troubleshooting and support
 
 ### Why is Universal Text-to-Speech (`F9`) silent or not reading?
 EleViewer uses Windows native speech synthesis via `pyttsx3`. If TTS is silent:
