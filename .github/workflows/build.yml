@@ -54,7 +54,7 @@ jobs:
       - name: Compile with Nuitka (Native C++ with LTO)
         run: |
           python -m nuitka `
-            --standalone `
+            --onefile `
             --lto=yes `
             --enable-plugin=pyside6 `
             --include-qt-plugins=sensible,styles `
@@ -76,9 +76,10 @@ jobs:
 
       - name: Compile Inno Setup Installer
         run: |
-          # Copy Nuitka standalone distribution to dist/
-          mkdir dist
-          cp main.dist/EleViewer.exe dist/
+          # Stage the one-file Nuitka executable for the installer and release.
+          if (Test-Path "dist") { Remove-Item -Recurse -Force dist }
+          New-Item -ItemType Directory -Force -Path dist | Out-Null
+          Copy-Item "EleViewer.exe" "dist/EleViewer.exe" -Force
           
           # Compile setup.iss with dynamic version from git tag
           iscc /DAppVersion=${{ steps.version.outputs.VERSION }} setup.iss
@@ -108,7 +109,8 @@ jobs:
           Write-Output "Generated $manifestPath"
           Get-Content $manifestPath
 
-      - name: Azure Trusted Signing (SmartScreen Bypass)
+      - name: Azure Trusted Signing (when enabled)
+        if: ${{ vars.AZURE_TRUSTED_SIGNING_ENABLED == 'true' }}
         uses: azure/trusted-signing-action@v0.5.0
         with:
           azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
@@ -131,3 +133,4 @@ jobs:
           draft: false
           prerelease: false
           generate_release_notes: true
+          overwrite_files: true
