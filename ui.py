@@ -275,17 +275,20 @@ class MainWindow(QMainWindow):
 
     def nativeEvent(self, eventType, message):
         """Catch Windows native WM_HOTKEY events (Alt+E) anywhere on the system."""
-        if sys.platform == "win32" and eventType == b"windows_generic_MSG":
-            try:
-                import ctypes
-                import ctypes.wintypes
-                msg = ctypes.wintypes.MSG.from_address(int(message))
-                WM_HOTKEY = 0x0312
-                if msg.message == WM_HOTKEY and getattr(msg, "wParam", None) == getattr(self, "_hotkey_id", 0x454C):
-                    self.bring_to_front_and_new_note()
-                    return True, 0
-            except Exception:
-                pass
+        if sys.platform == "win32":
+            # In PySide6, eventType can be QByteArray, which might not equate to bytes directly
+            e_type = eventType.data() if hasattr(eventType, "data") else eventType
+            if e_type == b"windows_generic_MSG":
+                try:
+                    import ctypes
+                    import ctypes.wintypes
+                    msg = ctypes.wintypes.MSG.from_address(int(message))
+                    WM_HOTKEY = 0x0312
+                    if msg.message == WM_HOTKEY and getattr(msg, "wParam", None) == getattr(self, "_hotkey_id", 0x454C):
+                        self.bring_to_front_and_new_note()
+                        return True, 0
+                except Exception:
+                    pass
         return super().nativeEvent(eventType, message)
 
     def show_and_raise(self):
