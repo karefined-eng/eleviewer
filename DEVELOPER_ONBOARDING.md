@@ -1,6 +1,6 @@
-# Developer Onboarding: Welcome to the Sovereignty Workstation
+﻿# Developer Onboarding: Welcome to the Free Windows Document Reader
 
-If you are reading this, you are contributing to **EleViewer**—a minimalist, multi-tabbed study workstation built on PySide6. 
+If you are reading this, you are contributing to **EleViewer**â€”a minimalist, multi-tabbed study workstation built on PySide6. 
 
 Before you write a single line of code, you must understand our philosophy.
 
@@ -13,9 +13,9 @@ Before you write a single line of code, you must understand our philosophy.
 
 ## Copywriting & Communication Standards (The Paul Graham / Ogilvy Framework)
 To maintain our distraction-free student workflow, all user-facing copy (in desktop UI widgets, modals, feedback dialogs, and website components) must adhere to globally praised copywriting principles:
-1. **Middle-Grader Readability (Flesch-Kincaid Grade 6–8 Rule)**: Keep vocabulary accessible to a 6th-to-8th grade reading level (ages 11–13). Avoid bloated corporate jargon, obscure acronyms, and convoluted sentence structures.
+1. **Middle-Grader Readability (Flesch-Kincaid Grade 6â€“8 Rule)**: Keep vocabulary accessible to a 6th-to-8th grade reading level (ages 11â€“13). Avoid bloated corporate jargon, obscure acronyms, and convoluted sentence structures.
 2. **Write Like You Talk**: Follow the Paul Graham and David Ogilvy principle of direct, conversational English. Speak to the user as a respected peer and fellow builder.
-3. **Outcome-Driven Intake**: When soliciting feedback or reporting errors, focus on user empowerment rather than system failure. Use inviting, direct prompts (e.g., *"Is there something you wish EleViewer could do? Share your idea directly with the developer — every submission is reviewed for our upcoming builds."*).
+3. **Outcome-Driven Intake**: When soliciting feedback or reporting errors, focus on user empowerment rather than system failure. Use inviting, direct prompts (e.g., *"Is there something you wish EleViewer could do? Share your idea directly with the developer â€” every submission is reviewed for our upcoming builds."*).
 
 ---
 
@@ -64,3 +64,4 @@ EleViewer relies heavily on standard PySide6 widgets and custom components to ke
 4. **Pull Requests**: Explain *why* a feature is needed, not just *what* it does. Ensure it doesn't break the "Offline First" or "Zero Telemetry" rules.
 
 Welcome aboard!
+

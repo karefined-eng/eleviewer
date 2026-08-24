@@ -1,20 +1,20 @@
-# 🏛️ EleViewer Sovereignty Workstation — Current Implementation & Technical Outcomes Ledger
+﻿# ðŸ›ï¸ EleViewer Free Windows Document Reader â€” Current Implementation & Technical Outcomes Ledger
 
 > **Document Status:** Comprehensive Synthesis of Ingested Context, Architectural Audits, Feature Roadmaps, and Live Codebase State.  
 > **Target Audience:** Core Developers, AI Engineering Agents, Technical Auditors, and Maintainers.  
 > **Last Updated:** July 30, 2026  
-> **Repositories Covered:** `eleviewer` (Desktop App — PySide6/Python) & `eleviewer-site` (Web Platform — Next.js/Tailwind)
+> **Repositories Covered:** `eleviewer` (Desktop App â€” PySide6/Python) & `eleviewer-site` (Web Platform â€” Next.js/Tailwind)
 
 ---
 
-## 1. Executive Summary & Sovereignty Workstation Philosophy
+## 1. Executive Summary & Free Windows Document Reader Philosophy
 
-**EleViewer** is an offline-first, portable document reader and study workstation designed primarily for undergraduates, academic power users, and researchers on Windows 10/11. It operates under the **"Sovereignty Workstation"** design philosophy:
+**EleViewer** is an offline-first, portable document reader and study workstation designed primarily for undergraduates, academic power users, and researchers on Windows 10/11. It operates under the **"Free Windows Document Reader"** design philosophy:
 
-* **Resource Sovereignty:** Sub-50MB idle RAM boot footprint (achieved via lazy-loading of Chromium), sub-100ms cold-start latency (via Nuitka LTO compilation), and smooth execution even on low-spec hardware.
-* **Data Sovereignty:** 100% offline-first operations. Zero telemetry, zero user tracking, and no required online accounts. All notes, bookmarks, drafts, and configurations live locally on the student's machine.
-* **Financial Sovereignty:** Open-source under the **GNU GPLv3** license. Free forever to prevent proprietary "digital extractivism" while retaining optional SaaS cloud sync capabilities via the GPLv3 "SaaS Loophole".
-* **Reflex Ergonomics:** Built around 4 muscle-memory Reflex Keys (`Ctrl+Q` Quick Switcher, `Alt+V` Vault Sidebar, `Ctrl+T` Web Panel, `Ctrl+Shift+T` Restore Tab) and Universal Text-to-Speech (`F9`).
+* **Lightweight Footprint:** Sub-50MB idle RAM boot footprint (achieved via lazy-loading of Chromium), sub-100ms cold-start latency (via Nuitka LTO compilation), and smooth execution even on low-spec hardware.
+* **Local File Privacy:** 100% offline-first operations. Zero telemetry, zero user tracking, and no required online accounts. All notes, bookmarks, drafts, and configurations live locally on the student's machine.
+* **Zero-Cost Tooling:** Open-source under the **GNU GPLv3** license. Free forever to prevent proprietary "digital extractivism" while retaining optional SaaS cloud sync capabilities via the GPLv3 "SaaS Loophole".
+* **Keyboard Ergonomics:** Built around 4 muscle-memory Keyboard Shortcuts (`Ctrl+Q` Quick Switcher, `Alt+V` Vault Sidebar, `Ctrl+T` Web Panel, `Ctrl+Shift+T` Restore Tab) and Universal Text-to-Speech (`F9`).
 
 ---
 
@@ -23,24 +23,24 @@
 The application architecture is structured around strict separation of concerns, decoupling UI controls from file parsing logic via a dynamic **Factory Pattern Router** (`file_handler.py`).
 
 ```
-                              ┌──────────────────────────────────┐
-                              │            ui.py                 │
-                              │   (EleViewerMainWindow / Tabs)   │
-                              └────────────────┬─────────────────┘
-                                               │
-                                               ▼
-                              ┌──────────────────────────────────┐
-                              │         file_handler.py          │
-                              │    (Factory Pattern Router)      │
-                              └────────────────┬─────────────────┘
-                                               │
-        ┌──────────────┬──────────────┬────────┴───────┬──────────────┬──────────────┐
-        ▼              ▼              ▼                ▼              ▼              ▼
- ┌─────────────┐┌─────────────┐┌─────────────┐  ┌─────────────┐┌─────────────┐┌─────────────┐
- │ pdf_viewer  ││ docx_viewer ││ xlsx_viewer │  │ pptx_viewer ││ markdown_ren││ csv/html/txt│
- │  (QPdfView) ││ (python-docx││  (QTableView│  │ (python-pptx││ (QTextBro-  ││   viewers   │
- │             ││  + QText)   ││   Virtual)  │  │  + win32com)││    wser)    ││             │
- └─────────────┘└─────────────┘└─────────────┘  └─────────────┘└─────────────┘└─────────────┘
+                              â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+                              â”‚            ui.py                 â”‚
+                              â”‚   (EleViewerMainWindow / Tabs)   â”‚
+                              â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+                                               â”‚
+                                               â–¼
+                              â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+                              â”‚         file_handler.py          â”‚
+                              â”‚    (Factory Pattern Router)      â”‚
+                              â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+                                               â”‚
+        â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+        â–¼              â–¼              â–¼                â–¼              â–¼              â–¼
+ â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”  â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+ â”‚ pdf_viewer  â”‚â”‚ docx_viewer â”‚â”‚ xlsx_viewer â”‚  â”‚ pptx_viewer â”‚â”‚ markdown_renâ”‚â”‚ csv/html/txtâ”‚
+ â”‚  (QPdfView) â”‚â”‚ (python-docxâ”‚â”‚  (QTableViewâ”‚  â”‚ (python-pptxâ”‚â”‚ (QTextBro-  â”‚â”‚   viewers   â”‚
+ â”‚             â”‚â”‚  + QText)   â”‚â”‚   Virtual)  â”‚  â”‚  + win32com)â”‚â”‚    wser)    â”‚â”‚             â”‚
+ â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜  â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
 ```
 
 ### Key Architectural Anchors:
@@ -78,9 +78,9 @@ The application architecture is structured around strict separation of concerns,
 * **Full-Vault Search (`VaultSearchDialog`):** SQLite **FTS5** virtual table indexing (`document_index`) using the **Porter unicode61** linguistic tokenizer (e.g. searching "genetics" matches "genetic").
 * **UX Frictionless Dismissal:** Includes `QEvent.WindowDeactivate` event filters allowing users to dismiss popup search dialogs instantly by clicking anywhere outside the window.
 
-### 4.3. Quick Switcher (`quick_switcher.py`) & Reflex Ergonomics
+### 4.3. Quick Switcher (`quick_switcher.py`) & Keyboard Ergonomics
 * **Fuzzy Finder (`Ctrl+Q`):** VSCode-style overlay displaying recently opened files, pinned items, and active tabs with instant filtering.
-* **4 Reflex Keys:**
+* **4 Keyboard Shortcuts:**
   * `Ctrl+Q`: Summon Quick Switcher.
   * `Alt+V`: Toggle Vault Sidebar.
   * `Ctrl+T`: Open Web Browser Panel / New Tab.
@@ -133,18 +133,18 @@ BRAND_PRIMARY          #f2f2f0                 --foreground (#f2f2) Primary Text
 ## 6. Build, OS Integration & Packaging Outcomes
 
 ```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                          PRODUCTION BUILD PIPELINE                          │
-├─────────────────────────────────────────────────────────────────────────────┤
-│ 1. Nuitka LTO Compiler:                                                     │
-│    nuitka --standalone --lto=yes --include-qt-plugins=sensible,styles main.py│
-├─────────────────────────────────────────────────────────────────────────────┤
-│ 2. Azure Artifact Signing (v0.5.0):                                         │
-│    Digitally signs EleViewer.exe to bypass Windows SmartScreen "Blue Wall"  │
-├─────────────────────────────────────────────────────────────────────────────┤
-│ 3. Inno Setup Per-User Installer (setup.iss):                               │
-│    PrivilegesRequired=lowest -> Writes ProgIDs to HKCU\Software\Classes\    │
-└─────────────────────────────────────────────────────────────────────────────┘
+â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+â”‚                          PRODUCTION BUILD PIPELINE                          â”‚
+â”œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¤
+â”‚ 1. Nuitka LTO Compiler:                                                     â”‚
+â”‚    nuitka --standalone --lto=yes --include-qt-plugins=sensible,styles main.pyâ”‚
+â”œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¤
+â”‚ 2. Azure Artifact Signing (v0.5.0):                                         â”‚
+â”‚    Digitally signs EleViewer.exe to bypass Windows SmartScreen "Blue Wall"  â”‚
+â”œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¤
+â”‚ 3. Inno Setup Per-User Installer (setup.iss):                               â”‚
+â”‚    PrivilegesRequired=lowest -> Writes ProgIDs to HKCU\Software\Classes\    â”‚
+â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
 ```
 
 ### 6.1. Nuitka LTO Compilation
@@ -154,7 +154,7 @@ BRAND_PRIMARY          #f2f2f0                 --foreground (#f2f2) Primary Text
 ### 6.2. Registry & Shell Integration (`setup.iss`)
 * **Per-User HKCU Protection (Rule 14 Enforcement):** Inno Setup script runs with `PrivilegesRequired=lowest` (no admin rights required on school lab PCs). All ProgIDs (`EleViewer.PDF`, `EleViewer.MD`, `EleViewer.DOCX`, `EleViewer.XLSX`, `EleViewer.PPTX`, `EleViewer.CSV`) and shell context menu verbs write to **`HKCU\Software\Classes\`** (never `HKCR`, which fails silently without admin rights).
 * **Capable Handler Registration:** Uses `OpenWithProgids` registration to integrate cleanly with Windows 10/11 "Open With" dialogs without forcibly hijacking existing app defaults.
-* **Taskbar Jump Lists:** Integrates Windows `AppUserModelID` (`EleViewer.Sovereignty.Workstation`) via `ctypes` in `main.py`, enabling right-click taskbar jump lists for recent files.
+* **Taskbar Jump Lists:** Integrates Windows `AppUserModelID` (`EleViewer.Document.Reader`) via `ctypes` in `main.py`, enabling right-click taskbar jump lists for recent files.
 
 ---
 
@@ -168,7 +168,7 @@ BRAND_PRIMARY          #f2f2f0                 --foreground (#f2f2) Primary Text
 ### 7.2. v2.0 Native Pivot ("The Eclipse Blueprint")
 - [ ] **C++ / Rust Hybrid Stack:** Transition from Python prototype to C++ Qt for UI rendering and Rust (`PyO3`/`Maturin`) for lock-free background async I/O.
 - [ ] **Chromium Tax Removal:** Replace Chromium Markdown previews with native `QTextBrowser` engines and PDF rendering with C-based MuPDF, shrinking installer from 212MB to **<45MB** and RAM to **~35MB**.
-- [ ] **Sub-Microsecond Input Latency:** Rust-backed indexers achieving input latency of **0.6µs** (~133x faster than Python).
+- [ ] **Sub-Microsecond Input Latency:** Rust-backed indexers achieving input latency of **0.6Âµs** (~133x faster than Python).
 
 ---
 
@@ -176,19 +176,20 @@ BRAND_PRIMARY          #f2f2f0                 --foreground (#f2f2) Primary Text
 
 | Feature / Audit Target | Status | Implementation Detail / File Path |
 | :--- | :--- | :--- |
-| **Status Bar Geometry** | ✅ Completed | Status bar right-aligned format & UTF-8 labels (`ui.py`). |
-| **Active Tab Line** | ✅ Completed | Top 2px `BRAND_ACCENT` border on selected tabs (`theme.py`, `ui.py`). |
-| **Universal TTS Across All Formats** | ✅ Completed | Floating TTS bar with page counters & play controls (`tts_engine.py`, `tts_reader_bar.py`). |
-| **Atomic File Persistence** | ✅ Completed | `atomic_write()` with `os.fsync()` across settings, session, and recent files (`save_utils.py`). |
-| **Zero-PII Bug Reporting** | ✅ Completed | Path sanitization + Vercel GitHub Issue bridge (`feedback_dialog.py`). |
-| **PPTX Slide Reading & Conversion** | ✅ Completed | Dual `win32com` PDF conversion + `python-pptx` fallback (`pptx_viewer.py`). |
-| **Per-User HKCU Registry Associations** | ✅ Completed | ProgIDs writing to `HKCU\Software\Classes\` in `setup.iss`. |
-| **PDF Thread Prefetch Crash Fix** | ✅ Completed | Active worker reference retention in `self._active_workers` (`pdf_viewer.py`). |
-| **Session Reset (Clear Session)** | ✅ Completed | `_new_session()` added under Session menu (`ui.py`, `session_manager.py`). |
-| **Click-Outside Dialog Dismissal** | ✅ Completed | `QEvent.WindowDeactivate` event handler on quick switcher & vault search (`vault_search.py`). |
-| **Online Edge Neural Voices** | ✅ Completed | `edge-tts` integration using `edge_tts.list_voices()` dict parsing (`tts_engine.py`). |
-| **Website Copy & SEO Alignment** | ✅ Completed | Windows-only TTS qualification, SoftwareApplication JSON-LD schema (`eleviewer-site`). |
+| **Status Bar Geometry** | âœ… Completed | Status bar right-aligned format & UTF-8 labels (`ui.py`). |
+| **Active Tab Line** | âœ… Completed | Top 2px `BRAND_ACCENT` border on selected tabs (`theme.py`, `ui.py`). |
+| **Universal TTS Across All Formats** | âœ… Completed | Floating TTS bar with page counters & play controls (`tts_engine.py`, `tts_reader_bar.py`). |
+| **Atomic File Persistence** | âœ… Completed | `atomic_write()` with `os.fsync()` across settings, session, and recent files (`save_utils.py`). |
+| **Zero-PII Bug Reporting** | âœ… Completed | Path sanitization + Vercel GitHub Issue bridge (`feedback_dialog.py`). |
+| **PPTX Slide Reading & Conversion** | âœ… Completed | Dual `win32com` PDF conversion + `python-pptx` fallback (`pptx_viewer.py`). |
+| **Per-User HKCU Registry Associations** | âœ… Completed | ProgIDs writing to `HKCU\Software\Classes\` in `setup.iss`. |
+| **PDF Thread Prefetch Crash Fix** | âœ… Completed | Active worker reference retention in `self._active_workers` (`pdf_viewer.py`). |
+| **Session Reset (Clear Session)** | âœ… Completed | `_new_session()` added under Session menu (`ui.py`, `session_manager.py`). |
+| **Click-Outside Dialog Dismissal** | âœ… Completed | `QEvent.WindowDeactivate` event handler on quick switcher & vault search (`vault_search.py`). |
+| **Online Edge Neural Voices** | âœ… Completed | `edge-tts` integration using `edge_tts.list_voices()` dict parsing (`tts_engine.py`). |
+| **Website Copy & SEO Alignment** | âœ… Completed | Windows-only TTS qualification, SoftwareApplication JSON-LD schema (`eleviewer-site`). |
 
 ---
 
-> **Conclusion:** The EleViewer Sovereignty Workstation stands as a battle-tested, offline-first study environment. Through rigorous memory reclamation, atomic file safety, per-user Windows integration, and strict design discipline, it delivers an uncompromising, distraction-free experience for academic power users.
+> **Conclusion:** The EleViewer Free Windows Document Reader stands as a battle-tested, offline-first study environment. Through rigorous memory reclamation, atomic file safety, per-user Windows integration, and strict design discipline, it delivers an uncompromising, distraction-free experience for academic power users.
+

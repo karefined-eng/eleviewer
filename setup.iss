@@ -29,6 +29,7 @@ ArchitecturesInstallIn64BitMode=x64
 ; Modern UI & Brand Styling
 WizardStyle=modern
 WizardResizable=no
+ChangesAssociations=yes
 ; To apply our custom color code (#161616 dark panels and #6cb6ff electric blue accents)
 ; to the wizard sidebars and headers, place branded bitmaps in the icons/ folder:
 ; WizardImageFile=icons\wizard_banner.bmp
@@ -64,6 +65,8 @@ Name: "{autodesktop}\EleViewer"; Filename: "{app}\EleViewer.exe"; Tasks: desktop
 ; Command Line Support (Allows launching via Win+R or terminal by typing "eleviewer")
 Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\App Paths\EleViewer.exe"; ValueType: string; ValueName: ""; ValueData: "{app}\EleViewer.exe"; Flags: uninsdeletekey
 Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\App Paths\EleViewer.exe"; ValueType: string; ValueName: "Path"; ValueData: "{app}"; Flags: uninsdeletekey
+; Add to system PATH so it can be called from cmd or cli anywhere
+Root: HKCU; Subkey: "Environment"; ValueType: expandsz; ValueName: "Path"; ValueData: "{olddata};{app}"; Check: NeedsAddPath(ExpandConstant('{app}'))
 
 ; Context Menu (Right-Click "Open with EleViewer") — Per-User
 Root: HKCU; Subkey: "Software\Classes\*\shell\EleViewer"; ValueType: string; ValueName: ""; ValueData: "Open with EleViewer"; Flags: uninsdeletekey; Tasks: contextmenu
@@ -71,6 +74,7 @@ Root: HKCU; Subkey: "Software\Classes\*\shell\EleViewer"; ValueType: string; Val
 Root: HKCU; Subkey: "Software\Classes\*\shell\EleViewer\command"; ValueType: string; ValueName: ""; ValueData: """{app}\EleViewer.exe"" ""%1"""; Flags: uninsdeletekey; Tasks: contextmenu
 
 ; Application Capabilities for Windows 10/11 "Open With" dialog (Per-User Installation)
+Root: HKCU; Subkey: "Software\EleViewer"; Flags: uninsdeletekeyifempty
 Root: HKCU; Subkey: "Software\RegisteredApplications"; ValueType: string; ValueName: "EleViewer"; ValueData: "Software\EleViewer\Capabilities"; Flags: uninsdeletevalue; Tasks: associate
 Root: HKCU; Subkey: "Software\EleViewer\Capabilities"; ValueType: string; ValueName: "ApplicationDescription"; ValueData: "Lightweight Document Viewer & Study Workspace"; Flags: uninsdeletekey; Tasks: associate
 Root: HKCU; Subkey: "Software\EleViewer\Capabilities"; ValueType: string; ValueName: "ApplicationName"; ValueData: "EleViewer"; Flags: uninsdeletekey; Tasks: associate
@@ -148,6 +152,17 @@ Filename: "{app}\EleViewer.exe"; Description: "Launch EleViewer"; Flags: nowait 
 Filename: "{app}\EleViewer.exe"; Parameters: ""; Flags: nowait; Check: IsSilentRelaunch
 
 [Code]
+function NeedsAddPath(Param: string): boolean;
+var
+  OrigPath: string;
+begin
+  if not RegQueryStringValue(HKEY_CURRENT_USER, 'Environment', 'Path', OrigPath) then begin
+    Result := True;
+    exit;
+  end;
+  Result := Pos(';' + Param + ';', ';' + OrigPath + ';') = 0;
+end;
+
 function IsSilentRelaunch(): Boolean;
 begin
   Result := CmdLineParamExists('/RESTARTAPP');
