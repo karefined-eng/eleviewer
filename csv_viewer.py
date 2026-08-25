@@ -184,7 +184,8 @@ class CsvViewer(QWidget):
     """CSV/TSV Workstation Table Viewer & Raw Text Editor."""
     textChanged = Signal()
 
-    def __init__(self, file_path=None, content=None):
+    def __init__(self, file_path=None, content=None, delimiter=None,
+                 quoting=csv.QUOTE_MINIMAL, encoding="utf-8"):
         super().__init__()
         self.file_path = file_path
         self.is_modified = False
@@ -197,6 +198,23 @@ class CsvViewer(QWidget):
         self.worker = None
 
         self._build_ui()
+        self.combo_delim.blockSignals(True)
+        self.combo_quote.blockSignals(True)
+        try:
+            if delimiter is not None:
+                for i in range(self.combo_delim.count()):
+                    if self.combo_delim.itemData(i) == delimiter:
+                        self.combo_delim.setCurrentIndex(i)
+                        break
+            self.current_quoting = quoting
+            for i in range(self.combo_quote.count()):
+                if self.combo_quote.itemData(i) == quoting:
+                    self.combo_quote.setCurrentIndex(i)
+                    break
+            self.current_encoding = encoding
+        finally:
+            self.combo_delim.blockSignals(False)
+            self.combo_quote.blockSignals(False)
 
         if content is not None:
             self.load_from_content(content)
@@ -347,28 +365,44 @@ class CsvViewer(QWidget):
         layout.addWidget(self.stack)
 
     # ── Off-Thread Loading ────────────────────────────────────────────────
+    def _stop_worker(self):
+        if self.worker is not None and self.worker.isRunning():
+            self.worker.requestInterruption()
+            if not self.worker.wait(2000):
+                self.worker.terminate()
+                self.worker.wait(1000)
+        self.worker = None
+
     def load_from_path(self, file_path):
+        self._stop_worker()
         self._loading = True
         self.file_path = file_path
-        if self.worker and self.worker.isRunning():
-            self.worker.terminate()
-            self.worker.wait()
-        
         delim = self.combo_delim.currentData()
         quote = self.combo_quote.currentData()
-        self.worker = CsvLoadWorker(file_path=file_path, delimiter=delim, quoting=quote)
+        self.worker = CsvLoadWorker(
+            file_path=file_path, delimiter=delim, quoting=quote,
+            encoding=self.current_encoding,
+        )
         self.worker.loaded.connect(self._on_load_success)
         self.worker.error.connect(self._on_load_error)
         self.worker.start()
 
     def load_from_content(self, content):
+        self._stop_worker()
         self._loading = True
         delim = self.combo_delim.currentData()
         quote = self.combo_quote.currentData()
-        self.worker = CsvLoadWorker(content=content, delimiter=delim, quoting=quote)
+        self.worker = CsvLoadWorker(
+            content=content, delimiter=delim, quoting=quote,
+            encoding=self.current_encoding,
+        )
         self.worker.loaded.connect(self._on_load_success)
         self.worker.error.connect(self._on_load_error)
         self.worker.start()
+
+    def closeEvent(self, event):
+        self._stop_worker()
+        super().closeEvent(event)
 
     def _on_load_success(self, rows, detected_delim):
         self._populate_grid(rows)

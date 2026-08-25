@@ -5,7 +5,7 @@ from PySide6.QtGui import QDesktopServices
 from PySide6.QtCore import QUrl
 from ui import MainWindow
 
-def run_test():
+def test_link_interception():
     app = QApplication.instance() or QApplication(sys.argv)
     print("[1/3] Initializing MainWindow with global URL handlers...")
     window = MainWindow()
@@ -48,10 +48,6 @@ def run_test():
     assert new_editor_tabs >= initial_editor_tabs, "Local file link did not open in editor!"
     
     print("\n[SUCCESS] All link clicks (HTTP, HTTPS, FILE) are cleanly intercepted and opened inside EleViewer without launching external system browsers!")
+    window._quitting = True
     window.close()
-    return 0
-
-if __name__ == "__main__":
-    ret = run_test()
-    os._exit(0)
 

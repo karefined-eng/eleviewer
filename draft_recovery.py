@@ -22,6 +22,8 @@ class DraftWorker(QThread):
 
     def run(self):
         for draft_path, meta_path, content, meta_dict in self.items:
+            if self.isInterruptionRequested():
+                break
             try:
                 atomic_write(draft_path, content)
                 atomic_write(meta_path, json.dumps(meta_dict))

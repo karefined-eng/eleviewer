@@ -212,6 +212,7 @@ class MainWindow(QMainWindow):
         self._web_dock = None
         self.bookmarks_panel = None
         self.tts_engine = TtsEngine()
+        self._quitting = False
 
         self.setWindowTitle(f"EleViewer — Untitled")
         self.setWindowIcon(create_eleviewer_icon(64))
@@ -253,11 +254,14 @@ class MainWindow(QMainWindow):
         self.tray_icon = QSystemTrayIcon(create_eleviewer_icon(32), self)
         tray_menu = QMenu()
         tray_menu.addAction("Open EleViewer", self.show_and_raise)
-        tray_menu.addAction("Quit", QApplication.quit)
+        tray_menu.addAction("Quit", self._quit_from_tray)
         self.tray_icon.setContextMenu(tray_menu)
         self.tray_icon.activated.connect(self._on_tray_activated)
         self.tray_icon.show()
         self._register_system_wide_hotkey()
+        app = QApplication.instance()
+        if app is not None:
+            app.aboutToQuit.connect(self._shutdown_workers)
 
     def _register_system_wide_hotkey(self):
         """Register Alt+E system-wide Windows hotkey to bring EleViewer to front and open a new note."""
@@ -305,6 +309,29 @@ class MainWindow(QMainWindow):
     def _on_tray_activated(self, reason):
         if reason == QSystemTrayIcon.DoubleClick:
             self.show_and_raise()
+
+    def _quit_from_tray(self):
+        self._quitting = True
+        QApplication.quit()
+
+    def _shutdown_workers(self):
+        """Stop owned QThreads before the window and QApplication are destroyed."""
+        for attr in ("_manual_update_thread", "_update_thread"):
+            thread = getattr(self, attr, None)
+            if thread is None:
+                continue
+            if thread.isRunning():
+                thread.requestInterruption()
+                thread.wait(9000)
+            if not thread.isRunning():
+                thread.deleteLater()
+            setattr(self, attr, None)
+
+        draft_manager = getattr(self, "draft_manager", None)
+        worker = getattr(draft_manager, "_current_worker", None) if draft_manager else None
+        if worker is not None and worker.isRunning():
+            worker.requestInterruption()
+            worker.wait(2000)
 
     # FIX: guard prevents ESC double-fire when modal dialog is active
     def handle_escape(self):
@@ -1353,7 +1380,8 @@ class MainWindow(QMainWindow):
         settings["window_geometry"] = self.saveGeometry().toBase64().data().decode()
         save_settings(settings)
 
-        if settings.get("minimize_to_tray", True) and hasattr(self, "tray_icon") and self.tray_icon.isVisible():
+        if (not self._quitting and settings.get("minimize_to_tray", True)
+                and hasattr(self, "tray_icon") and self.tray_icon.isVisible()):
             event.ignore()
             self.hide()
             self.tray_icon.showMessage(
@@ -1361,6 +1389,16 @@ class MainWindow(QMainWindow):
                 QSystemTrayIcon.Information, 2000
             )
         else:
+            for i in range(self.tabs.count()):
+                widget = self.tabs.widget(i)
+                if widget is not None:
+                    close = getattr(widget, "close", None)
+                    if close:
+                        close()
+                    cleanup = getattr(widget, "cleanup", None)
+                    if cleanup:
+                        cleanup()
+            self._shutdown_workers()
             event.accept()
 
     def save_all_modified(self):
