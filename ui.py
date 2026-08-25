@@ -1398,6 +1398,9 @@ class MainWindow(QMainWindow):
                     cleanup = getattr(widget, "cleanup", None)
                     if cleanup:
                         cleanup()
+            from PySide6.QtGui import QDesktopServices
+            for scheme in ("http", "https", "file"):
+                QDesktopServices.unsetUrlHandler(scheme)
             self._shutdown_workers()
             event.accept()
 

@@ -1,5 +1,6 @@
 import sys
 import os
+import logging
 
 from PySide6.QtWidgets import QApplication, QDialog
 
@@ -12,12 +13,13 @@ from PySide6.QtCore import QByteArray
 from settings import load_settings
 
 APP_VERSION = "1.3.0"
+logger = logging.getLogger("eleviewer")
 
 # Set AppUserModelID so taskbar grouping and jump lists work correctly
 try:
     ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(f"eleviewer.app.{APP_VERSION}")
-except Exception:
-    pass
+except Exception as exc:
+    logger.debug("Could not set Windows AppUserModelID: %s", exc)
 
 import traceback
 from datetime import datetime
@@ -85,8 +87,8 @@ def global_exception_handler(exc_type, exc_value, exc_traceback):
                 headers={'Content-Type': 'application/json'}
             )
             urllib.request.urlopen(req, timeout=5)
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.exception("Could not submit crash report: %s", exc)
             
     sys.exit(1)
 
