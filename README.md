@@ -74,7 +74,7 @@ Opens & edits **DOCX, XLSX, PPTX, PDF, MD, TXT, CSV, TSV and HTML/HTM** — all 
    ```bash
    pip install -r requirements.txt
    ```
-   *(Optional)* For the web panel: `pip install PySide6-WebEngine`
+   The requirements include PPTX parsing through `python-pptx`. For the embedded web panel, install the optional Qt WebEngine package as well: `pip install PySide6-WebEngine`. Without it, EleViewer remains usable for local documents but shows a clear warning when web-panel features are requested.
 
 4. **Run the application:**
    ```bash

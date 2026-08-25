@@ -45,7 +45,9 @@ def test_link_interception():
     QDesktopServices.openUrl(file_url)
     new_editor_tabs = window.tabs.count()
     print(f"      -> Editor tab count changed from {initial_editor_tabs} to {new_editor_tabs}.")
-    assert new_editor_tabs >= initial_editor_tabs, "Local file link did not open in editor!"
+    assert new_editor_tabs == initial_editor_tabs + 1, "Local file link did not open exactly one editor tab!"
+    current_editor = window.tabs.currentWidget()
+    assert os.path.abspath(getattr(current_editor, "file_path", "")) == test_file_path
     
     print("\n[SUCCESS] All link clicks (HTTP, HTTPS, FILE) are cleanly intercepted and opened inside EleViewer without launching external system browsers!")
     window._quitting = True
