@@ -21,7 +21,9 @@ This repository is a Python + PySide6 desktop app for browsing and studying loca
 ## Implementation rules
 - Keep UI responsiveness in mind for preview-heavy paths. Debouncing, caching, and skipping redundant renders are preferred when the user is typing or revisiting the same content.
 - Preserve existing keyboard shortcuts and document navigation behavior unless the task explicitly changes them.
-- Keep user-facing copy simple and direct.
+## Copywriting & Documentation
+- **No Developer Jargon in User Copy:** User-facing files (Welcome guide, marketing sites, README intros) MUST strictly avoid developer jargon (e.g., SQLite, QThread, bleach, chardet, pyttsx3). Translate these into plain English (e.g., "background search engine", "security sanitization"). Keep readability at a 6th-to-8th grade level (Flesch-Kincaid). Developer docs (`DEVELOPER_ONBOARDING.md`, code comments) should remain technical.
+- **Lead with Killer Features:** Do not bury the lede. Always highlight EleViewer's unique unified workspace features first: Split-Screen Web Panel, Vaults & Live Search, Session Restore, Persistent Bookmarks, and the Global Quick Note (Alt+E). Generic features (like "opens DOCX") should be listed last.
 - Avoid adding new packages unless the task truly requires them.
 
 ## Validation
