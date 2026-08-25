@@ -17,21 +17,26 @@ You can return to this guide at any time with `F1` or from **Help → Getting St
 
 ---
 
-## 1. Course folders & file search
+## 1. The Unified Workspace (Vaults, Tabs, and the Web)
 
-EleViewer operates on a strict **local-first, Local File Privacy architecture**. Your study materials, index databases, and application settings remain entirely on your local hard drive. There are no cloud accounts, mandatory logins, or background telemetry services.
+EleViewer operates on a strict **local-first** architecture, but it's designed to be a complete study workstation rather than a generic text editor. Here is how to use the killer features:
 
 ### Setting Up Your Vault Explorer (`Alt + V`)
-The Vault Explorer is your course-folder sidebar for navigating and searching local study files.
+The Vault Explorer is your course-folder sidebar.
+1. Press `Alt + V` to toggle the **Vault Explorer**.
+2. Click the **Settings icon** (⚙️) or press `Alt + S` to open the **Settings Dialog**.
+3. Click **Add Folder** and select any local directory containing your study materials.
+4. EleViewer's **background search engine** instantly scans your documents, making them searchable across their full text.
 
-1. Press `Alt + V` or click the Folder icon on the left sidebar to toggle the **Vault Explorer**.
-2. Click the **Settings icon** (⚙️) at the top of the sidebar or press `Alt + S` to open the **Settings Dialog**.
-3. Under **Vault Configuration**, click **Add Folder** and select any local directory containing your study materials, lecture slides, or project notes.
-4. Once added, EleViewer's background **SQLite FTS5 full-text indexer** automatically scans your documents. Your files immediately appear in the sidebar tree and become searchable across their full text.
-5. Use the dropdown selector at the top of the sidebar to switch between registered course folders.
+### Split-Screen Web Panel (`Ctrl + T`)
+You don't need to leave the app to research.
+1. Press `Ctrl + T` to open the **Web Panel** right alongside your local notes.
+2. If you click a web hyperlink inside any of your PDFs or Markdown documents, EleViewer will automatically intercept the click and open it in the Web Panel, keeping your focus locked in one window.
 
-> [!TIP]
-> While in the Settings Dialog (`Alt + S`), navigate to the **Theme** section to select a dynamic accent color that matches your visual workflow while preserving high-contrast readability.
+### Session Restore & Bookmarks (`Ctrl + D`)
+EleViewer respects your time. 
+- When you close the app, **Session Restore** remembers exactly which tabs you had open, your exact scroll position, and your PDF zoom levels. They will all restore perfectly on your next launch.
+- Press `Ctrl + D` anywhere in a document (even a 400-page PDF) to drop a **Persistent Bookmark**. Use `Ctrl + Alt + B` to open the Bookmarks Panel and jump back instantly.
 
 ---
 
@@ -86,7 +91,7 @@ The PDF workstation provides smooth continuous scrolling, fit-to-page/fit-to-wid
 ### Markdown & Plain Text Editor Workstation
 The Markdown workstation features split-screen syntax editing with a debounced real-time HTML rendered preview.
 - **Interactive Editing Modes:** Double-click anywhere on the rendered markdown preview to switch into **Plain-Text Edit Mode** (hiding markdown syntax formatting for distraction-free writing). Triple-click to enter **Full Syntax Edit Mode**.
-- **XSS Sanitization:** All rendered markdown and HTML previews pass through strict `bleach` XSS sanitization pipelines before rendering, preventing script injection from untrusted downloaded files.
+- **Safe Previews:** All rendered markdown and HTML previews pass through strict security sanitization before rendering, preventing malicious scripts from running in downloaded files.
 - **Table & Syntax Support:** Natively supports GitHub-flavored markdown tables, code syntax highlighting, blockquotes, and task checklists.
 
 ### CSV Table Workstation
@@ -113,7 +118,7 @@ The workstation bridges local HTML development and online web research.
 EleViewer incorporates defensive file engineering to prevent work loss during system failures, power outages, or battery drain.
 
 ### 60-Second Draft Auto-Save
-When editing Markdown, Plain Text, CSV, or HTML documents, a background `QThread` worker silently snapshots your unsaved buffer to disk every 60 seconds. Auto-save runs completely off-thread, ensuring zero UI freezing or typing latency.
+When editing Markdown, Plain Text, CSV, or HTML documents, EleViewer silently snapshots your unsaved work to disk every 60 seconds. Auto-save runs completely in the background, ensuring zero freezing or typing lag.
 
 ### Atomic Write Protection
 Traditional file savers open destination files directly and overwrite them byte-by-byte. If your laptop loses power or crashes midway through a write, the file becomes a 0-byte corrupted file.
@@ -126,13 +131,13 @@ EleViewer prevents this using **Atomic Writes**:
 All workspace databases, session histories, and settings reside strictly in your local Windows user directory:
 - **Settings & Configuration:** `%APPDATA%\EleViewer\settings.json`
 - **Session State & Scroll Recovery:** `%APPDATA%\EleViewer\session.json`
-- **SQLite FTS5 Search Index:** `%APPDATA%\EleViewer\vault_index.db`
+- **Search Index:** `%APPDATA%\EleViewer\vault_index.db`
 - **Recent Files & Bookmark History:** `%APPDATA%\EleViewer\recent_files.json`
 - **Auto-Save Draft Recovery:** `%APPDATA%\EleViewer\drafts\`
 
 ### Zero Telemetry & PII Protection
 EleViewer contains **zero background telemetry, analytics trackers, or advertising SDKs**. No usage data or document contents ever leave your computer.
-- **Secure Crash Reporter:** If an unhandled system exception occurs, EleViewer presents an opt-in crash dialog. If you choose to copy diagnostic logs to your clipboard for support, an automated PII-stripping algorithm scrubs all Windows usernames, file paths, and personal directory structures before copying the stack trace.
+- **Secure Crash Reporter:** If an unhandled system exception occurs, EleViewer presents an opt-in crash dialog. If you choose to copy diagnostic logs to your clipboard for support, an automated privacy algorithm scrubs all Windows usernames, file paths, and personal folder names before copying the error report.
 
 ---
 
@@ -165,10 +170,10 @@ To keep you focused on studying, EleViewer handles updates silently:
 ## 6. Troubleshooting and support
 
 ### Why is Universal Text-to-Speech (`F9`) silent or not reading?
-EleViewer uses Windows native speech synthesis via `pyttsx3`. If TTS is silent:
+EleViewer uses Windows native speech synthesis. If the speech is silent:
 1. Open Windows **Settings → Time & Language → Speech**.
 2. Verify that at least one **Installed voice package** (e.g., Microsoft David, Zira, or Mark) is installed and enabled.
-3. In EleViewer, ensure your system audio is unmuted and check the TTS speech rate slider on the top toolbar.
+3. In EleViewer, ensure your system audio is unmuted and check the speech rate slider on the top toolbar.
 
 ### How do I recover unsaved drafts after an unexpected laptop reboot?
 If Windows reboots unexpectedly while you have unsaved text in an editor tab:
@@ -185,7 +190,7 @@ If you are running EleViewer from source code (Python script) instead of the sta
 EleViewer is built around direct user feedback:
 1. Click **Help â†’ Submit Feedback** in the top menu bar.
 2. Type your bug report or feature request in the dialog.
-3. Click **Submit**. Your message is transmitted securely (with all PII and local file paths stripped) directly to the development backlog.
+3. Click **Submit**. Your message is transmitted securely (with all personal information and local file paths stripped) directly to the development backlog.
 
 ---
 

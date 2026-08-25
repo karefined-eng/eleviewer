@@ -6,39 +6,33 @@
 
 A lightweight Windows document editor supporting **DOCX**, **XLSX**, **PPTX**, **MD**, **TXT**, **CSV**, **TSV**, **HTML/HTM**, and **PDF**. Built with Python and PySide6.
 
-## 📚 Features
+## 📚 Why EleViewer? (The Killer Features)
 
-### 📁 File Support
-Opens & edits **DOCX, XLSX, PPTX, PDF, MD, TXT, CSV, TSV and HTML/HTM** — all in one workspace.
-- **XLSX View-Only Mode** — displays computed formula values (not raw formulas) in a read-only grid, protecting spreadsheet integrity while letting you study the data.
-- **Inline Image Rendering** — DOCX and PPTX files natively extract and render actual embedded pictures directly inside your study documents using a zero-dependency byte extractor.
-- **CSV Smart Encoding** — automatically detects file encoding via `chardet` so Excel-exported CSVs in Windows-1252, Latin-1, or UTF-8 render without garbled characters.
-- **CSV Table Workstation** — dual Table Grid View ⇄ Raw Text View with interactive cell editing, row/column insertion, delimiter overrides, and non-destructive text preservation.
-- **HTML Live Workstation** — split-screen syntax editor with debounced live preview, compact monochromatic styling, and 1-click migration into the right-hand Web Panel.
-- **Global Hyperlink Interception** — clicks on web or file links in documents automatically open inside EleViewer's Web Panel or editor tabs without launching external system browsers.
+Instead of a generic text editor, EleViewer is an offline-first, interconnected study workstation. Here is what makes it unique:
 
-### 🔊 Reading & Study Tools
-- **Universal Text-to-Speech** — reads lectures, notes, Word docs, Markdown, CSV tables, HTML text, and PDFs aloud for hands-free studying (Toggle with `F9` or the toolbar button). Reads highlighted text selection or the full document.
-- **Hybrid Neural TTS** — automatically uses high-quality Microsoft Neural voices (`edge-tts`) when online, and seamlessly falls back to native Windows SAPI5 voices (`pyttsx3`) when offline. No setup required.
-- **Persistent Bookmarks** — drop a bookmark anywhere in your documents (`Ctrl+D`), even in 400-page textbooks or lengthy notes, and jump back instantly.
+### 🚀 The Unified Workspace
+- **Split-Screen Web Panel (`Ctrl+T`)** — Browse the web directly alongside your local documents. Hyperlinks inside your PDFs or Markdown notes open in the Web Panel instead of kicking you out to Chrome, keeping your focus locked.
+- **Vaults & Live Search (`Alt+V`)** — Connect your local study folders. The embedded **background search engine** silently scans everything, allowing you to instantly search across hundreds of course files simultaneously.
+- **Session Restore** — Respects your time. If you close the app with 8 tabs open, a split-screen web page, and a specific PDF zoom, your entire workstation restores *exactly* as you left it on the next launch.
+- **Persistent Bookmarks (`Ctrl+D`)** — Drop a bookmark on page 342 of a massive textbook or deep within a Markdown file. EleViewer remembers the exact scroll coordinate so you can jump back instantly later.
+- **Global Quick Note (`Alt+E`)** — A system-wide Windows hotkey. Press `Alt+E` from anywhere in Windows to instantly bring EleViewer to the front and open a new blank scratchpad.
 
-### 🗂️ Organization & System Tray
-- **Vault sidebar** — one-click access to course folders (`Alt+V`).
-- **SQLite FTS5 full-text indexer** — instant background search across all vault study files.
-- **Quick switcher** — fuzzy file search like VSCode (`Ctrl+Q`).
-- **Obsidian-inspired Web Panel** — persists URLs, with dedicated Refresh and Bookmark toolbar controls.
-- **Session restore** — reopens all tabs right where you left off, preserving scroll position, zoom, and PDF page numbers.
-- **System Tray Minimization** — minimize to tray on close with background notification and double-click restore.
-- **Reopen closed tab** (`Ctrl+Shift+T`).
+### 🔊 Advanced Reading & Data Tools
+- **Hybrid Neural Text-to-Speech (`F9`)** — Reads documents aloud to you. It automatically uses high-quality Microsoft Neural voices when online, and seamlessly falls back to native Windows offline voices when disconnected.
+- **Dual-Mode CSV Workstation** — Toggle instantly between a beautiful Table Grid View and a raw text editor, with automatic encoding detection so your data never looks garbled.
+- **HTML Live Workstation** — Split-screen syntax editor with debounced live previews and 1-click migration into the Web Panel.
+
+### 📁 Universal File Support (Zero Cloud Rendering)
+Opens & edits **DOCX, XLSX, PPTX, PDF, MD, TXT, CSV, TSV and HTML/HTM** — all parsed natively using pure Python and PySide6.
+- No heavy LibreOffice wrappers. No uploading files to a cloud renderer.
+- **XLSX View-Only Mode** displays computed formula values to protect spreadsheet integrity.
+- **Inline Image Extraction** natively renders embedded pictures inside DOCX and PPTX files.
 
 ### ✨ Security & Reliability
 - **Atomic Writes** — zero-byte file corruption prevention on sudden crash or power loss.
-- **HTML XSS Sanitization** — `bleach` sanitization before rendering Markdown previews.
-- **Symlink Path Traversal Guards** — strict canonical root validation to isolate local file access.
-- **Off-Thread Concurrency** — draft recovery autosave, live vault search, and feedback submissions run on background `QThread` workers.
-- **Dynamic UI Accents** — Status bar and active icons pop with your chosen theme color.
-- **Lucide Icon Set** — clean, consistent, professional SVG icons throughout the UI, replacing legacy bulky glyphs.
-- **Automatic Updates** — Integrated GitHub release checker notifies you when a new release is available and links you to the official download.
+- **Safe Previews** — strict security sanitization before rendering Markdown and HTML.
+- **Smooth Performance** — draft recovery autosave and live vault searches run silently in the background to prevent your app from freezing.
+- **Zero Telemetry** — no mandatory logins, no tracking. Includes an opt-in, privacy-focused secure crash reporter.
 
 ### 💻 Specs
 - **~129 MB** compiled one-file portable Windows executable — no traditional installation required.
