@@ -13,8 +13,8 @@ PackageUrl: https://eleviewer.vercel.app
 License: GPL-3.0
 LicenseUrl: https://github.com/karefined-eng/eleviewer/blob/main/LICENSE
 Copyright: Copyright (c) 2026 karefined-eng
-ShortDescription: A lightweight, portable Windows document viewer and study workspace supporting DOCX, XLSX, PPTX, PDF, Markdown, CSV, TXT, and HTML.
-Description: EleViewer is a lightweight, open-source document viewer and study workspace designed for students and developers to manage academic and professional file formats in a single Windows application. It supports Word, Excel, PowerPoint, Markdown, CSV, HTML, and plain text editing alongside a robust PDF reader with universal text-to-speech (TTS). Features include a portable design requiring no installation, keyboard-centric navigation, and a built-in web panel.
+ShortDescription: A local-first study workspace unifying PDFs, Markdown, and Web research with Vaults, Session Restore, and Split-Screen panels.
+Description: EleViewer is a local-first study workspace that unifies your documents and web research. It features a Split-Screen Web Panel for side-by-side reading, Vaults with live background search, full Session Restore that remembers exactly where you left off, Persistent Bookmarks, and a Global Quick Note hotkey (Alt+E). Built for privacy and speed, EleViewer natively opens PDF, Word, Excel, PowerPoint, Markdown, CSV, and HTML files without any accounts, lag, or telemetry.
 Tags:
   - document-viewer
   - pdf-reader
