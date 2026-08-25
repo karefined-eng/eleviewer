@@ -9,9 +9,10 @@ EleViewer is a portable Windows workspace for opening course files, listening to
 
 ## Your first three actions
 
-1. Press `Ctrl + O` and open a PDF, Word document, presentation, spreadsheet, or note.
-2. In a PDF or text document, select a passage and press `F9` to show **Read Aloud**.
-3. Press `Alt + V`, open Settings with `Alt + S`, and add your course folder when you want its files one click away.
+1. Press `Alt + V`, open Settings with `Alt + S`, and add your course folder to unlock the **Vault Explorer & Background Search Engine**.
+2. Press `Ctrl + T` to open the **Split-Screen Web Panel** and research alongside your local notes.
+3. Close the app—**Session Restore** will remember your exact tabs and scroll positions next time.
+4. Drop a **Persistent Bookmark** (`Ctrl + D`) or hit `Alt + E` from anywhere in Windows to open a **Global Quick Note**.
 
 You can return to this guide at any time with `F1` or from **Help → Getting Started Guide**. The reference sections below explain the rest of the workspace when you are ready.
 
@@ -120,12 +121,12 @@ EleViewer incorporates defensive file engineering to prevent work loss during sy
 ### 60-Second Draft Auto-Save
 When editing Markdown, Plain Text, CSV, or HTML documents, EleViewer silently snapshots your unsaved work to disk every 60 seconds. Auto-save runs completely in the background, ensuring zero freezing or typing lag.
 
-### Atomic Write Protection
-Traditional file savers open destination files directly and overwrite them byte-by-byte. If your laptop loses power or crashes midway through a write, the file becomes a 0-byte corrupted file.
-EleViewer prevents this using **Atomic Writes**:
-1. All changes are written to a temporary hidden file on the same disk partition.
-2. The operating system flushes the temporary file data completely to physical storage.
-3. EleViewer executes an instantaneous, atomic file replacement, swapping the old file with the new file in a single OS clock cycle. Your original file remains 100% intact until the new write is verified.
+### Safe Saving & Draft Protection
+Traditional file savers open destination files directly and overwrite them byte-by-byte. If your laptop loses power midway through a write, the file becomes corrupted.
+EleViewer prevents this using **Safe Saving**:
+1. All changes are written to a temporary hidden file first.
+2. The operating system completely finishes saving the temporary file.
+3. EleViewer instantly swaps the old file with the new file in one quick motion. Your original file remains 100% intact until the new version is completely verified.
 
 ### Local Storage Architecture
 All workspace databases, session histories, and settings reside strictly in your local Windows user directory:

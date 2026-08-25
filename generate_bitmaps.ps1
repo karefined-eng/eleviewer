@@ -1,0 +1,18 @@
+Add-Type -AssemblyName System.Drawing
+$bmp = New-Object System.Drawing.Bitmap(164, 314)
+$graphics = [System.Drawing.Graphics]::FromImage($bmp)
+$brush = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::FromArgb(255, 22, 22, 22))
+$graphics.FillRectangle($brush, 0, 0, 164, 314)
+$pen = New-Object System.Drawing.Pen([System.Drawing.Color]::FromArgb(255, 108, 182, 255), 4)
+$graphics.DrawLine($pen, 162, 0, 162, 314)
+$font = New-Object System.Drawing.Font("Segoe UI", 48, [System.Drawing.FontStyle]::Bold)
+$textBrush = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::FromArgb(255, 242, 242, 240))
+$graphics.DrawString("E", $font, $textBrush, 40, 120)
+$bmp.Save("c:\Users\kwadw\Documents\eleviewer\icons\wizard_banner.bmp", [System.Drawing.Imaging.ImageFormat]::Bmp)
+
+$bmpSmall = New-Object System.Drawing.Bitmap(55, 55)
+$graphicsSmall = [System.Drawing.Graphics]::FromImage($bmpSmall)
+$graphicsSmall.FillRectangle($brush, 0, 0, 55, 55)
+$fontSmall = New-Object System.Drawing.Font("Segoe UI", 24, [System.Drawing.FontStyle]::Bold)
+$graphicsSmall.DrawString("E", $fontSmall, $textBrush, 10, 5)
+$bmpSmall.Save("c:\Users\kwadw\Documents\eleviewer\icons\wizard_logo.bmp", [System.Drawing.Imaging.ImageFormat]::Bmp)
