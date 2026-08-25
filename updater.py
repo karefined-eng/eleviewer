@@ -45,6 +45,8 @@ class CheckUpdateThread(QThread):
         self.current_version = current_version
 
     def run(self):
+        if self.isInterruptionRequested():
+            return
         url = f"https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}/releases/latest"
         req = urllib.request.Request(url, headers={"User-Agent": "EleViewer-AutoUpdater"})
         try:
@@ -85,6 +87,8 @@ class DownloadThread(QThread):
 
     def run(self):
         try:
+            if self.isInterruptionRequested():
+                return
             if not is_trusted_download_url(self.download_url):
                 raise ValueError("Update URL is not a trusted HTTPS GitHub download")
             req = urllib.request.Request(self.download_url, headers={"User-Agent": "EleViewer-AutoUpdater"})
@@ -98,6 +102,8 @@ class DownloadThread(QThread):
 
                 with open(dest_path, 'wb') as f:
                     while True:
+                        if self.isInterruptionRequested():
+                            return
                         buffer = resp.read(block_size)
                         if not buffer:
                             break

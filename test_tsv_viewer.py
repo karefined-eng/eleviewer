@@ -9,7 +9,7 @@ from csv_viewer import CsvViewer
 from file_handler import create_viewer_widget, get_file_content
 
 
-def run_tests():
+def test_tsv_routing_and_round_trip():
     try:
         sys.stdout.reconfigure(encoding='utf-8')
     except Exception:
@@ -40,8 +40,7 @@ def run_tests():
     extracted = get_file_content(widget, 'sample_data.tsv')
     assert '00123' in extracted, f"Expected '00123' in extracted TSV content, got: {extracted}"
 
+    viewer.close()
+    widget.close()
+    app.processEvents()
     print('TSV routing and round-trip test passed!')
-
-
-if __name__ == '__main__':
-    run_tests()

@@ -12,7 +12,7 @@ from PySide6.QtWidgets import QApplication
 from csv_viewer import CsvViewer
 from file_handler import create_viewer_widget, get_file_content
 
-def run_tests():
+def test_csv_workstation():
     try:
         sys.stdout.reconfigure(encoding='utf-8')
     except Exception:
@@ -87,7 +87,7 @@ def run_tests():
     assert "00123" in extracted, f"Expected '00123' in extracted content, got '{extracted}'"
     print("  -> Passed! file_handler routes .csv cleanly to CsvViewer.")
 
+    viewer.close()
+    widget.close()
+    app.processEvents()
     print("\nALL 5 CSV WORKSTATION TESTS PASSED SUCCESSFULLY!")
-
-if __name__ == "__main__":
-    run_tests()

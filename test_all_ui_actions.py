@@ -14,7 +14,9 @@ def main_window(tmp_path):
     app = get_app()
     win = MainWindow()
     yield win
+    win._quitting = True
     win.close()
+    app.processEvents()
 
 def test_mainwindow_instantiation(main_window):
     assert main_window is not None
@@ -89,14 +91,13 @@ def test_all_menu_actions_and_toolbar_buttons(main_window, monkeypatch):
 
     assert main_window.tabs.count() >= 7
 
-    # Test menu & toolbar slots
+    # Test non-modal menu and toolbar slots. Search dialogs are covered by
+    # dedicated tests and require a running interactive event loop.
     main_window.bookmark_current_tab()
     main_window.toggle_tts_bar()
     main_window.show_find()
     main_window.show_replace()
-    main_window.open_vault_search()
     main_window._on_settings_saved()
-    main_window.open_quick_switcher()
     main_window._new_session()
     assert main_window.tabs.count() == 1  # Session cleared to welcome/blank tab
 
@@ -172,5 +173,9 @@ def test_all_file_viewers_creation(tmp_path):
         pptx_file.write_bytes(b"%PDF-1.4")
     v_pptx = create_viewer_widget(str(pptx_file))
     assert v_pptx is not None
+
+    for viewer in (v_txt, v_md, v_csv, v_html, v_pdf, v_docx, v_xlsx, v_pptx):
+        viewer.close()
+    app.processEvents()
 
 

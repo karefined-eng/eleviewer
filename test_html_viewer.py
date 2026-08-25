@@ -12,7 +12,7 @@ from html_viewer import HtmlViewer
 from file_handler import create_viewer_widget, get_file_content
 from web_panel import WebPanel, WEB_AVAILABLE
 
-def run_tests():
+def test_html_workstation():
     try:
         sys.stdout.reconfigure(encoding='utf-8')
     except Exception:
@@ -65,7 +65,8 @@ def run_tests():
     assert reloaded, f"Expected reload_url to return True for {test_url}"
     print("  -> Passed! WebPanel tab creation and live reload_url work seamlessly!")
 
+    web_panel.close()
+    viewer.close()
+    widget.close()
+    app.processEvents()
     print("\nALL 6 HTML LIVE FEED & BROWSER MIGRATION TESTS PASSED SUCCESSFULLY!")
-
-if __name__ == "__main__":
-    run_tests()
