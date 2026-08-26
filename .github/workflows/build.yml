@@ -102,9 +102,9 @@ jobs:
           $installerHash = (Get-FileHash $installerPath -Algorithm SHA256).Hash.ToLowerInvariant()
           $manifestPath = "dist/winget-installer.yaml"
           $content = Get-Content "winget/karefined-eng.EleViewer.installer.yaml" -Raw
-          $content = $content.Replace("PackageVersion: 1.3.0", "PackageVersion: ${{ steps.version.outputs.VERSION }}")
-          $content = $content.Replace("InstallerUrl: https://github.com/karefined-eng/eleviewer/releases/download/v1.3.0/EleViewer_Setup_v1.3.0.exe", "InstallerUrl: $installerUrl")
-          $content = $content.Replace("InstallerSha256: E1EF2B0FB6A01D3061331297B0FF621FD70A2E8C35338148A7E75CCF777FED3A", "InstallerSha256: $installerHash")
+          $content = $content -replace '(?m)^PackageVersion:\s*.+$', 'PackageVersion: ${{ steps.version.outputs.VERSION }}'
+          $content = $content -replace '(?m)^\s*InstallerUrl:\s*.+$', "    InstallerUrl: $installerUrl"
+          $content = $content -replace '(?m)^\s*InstallerSha256:\s*.+$', "    InstallerSha256: $installerHash"
           Set-Content -Path $manifestPath -Value $content
           Write-Output "Generated $manifestPath"
           Get-Content $manifestPath

@@ -222,6 +222,18 @@ class TtsEngine:
         # Also push a stop command to wake up the queue if idle
         self._queue.put(("stop", None))
 
+    def shutdown(self, timeout=8.0):
+        """Stop playback and join the worker before the owning window is destroyed."""
+        thread = getattr(self, "_thread", None)
+        if thread is None:
+            return
+        self.stop()
+        self._queue.put(("shutdown", None))
+        if thread.is_alive():
+            thread.join(timeout)
+        if not thread.is_alive():
+            self._thread = None
+
 
 TTSEngine = TtsEngine
 PdfTts = TtsEngine
