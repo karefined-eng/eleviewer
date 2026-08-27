@@ -3,9 +3,9 @@
 ; and sets up file associations and context menus.
 
 ; CI/CD passes version via: iscc /DAppVersion=X.Y.Z setup.iss
-; Falls back to 1.3.0 for local manual builds.
+; Falls back to 1.3.1 for local manual builds.
 #ifndef AppVersion
-  #define AppVersion "1.3.0"
+  #define AppVersion "1.3.1"
 #endif
 
 [Setup]

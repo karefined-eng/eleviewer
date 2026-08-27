@@ -8,7 +8,7 @@ from PySide6.QtCore import Qt, QSize, QTimer, Slot, QUrl, Signal, QEvent, QMimeD
 import os
 import sys
 
-APP_VERSION = "1.3.0"
+APP_VERSION = "1.3.1"
 
 from editor import EditorTab
 from bookmark_manager import add_bookmark, load_bookmarks
@@ -240,10 +240,6 @@ class MainWindow(QMainWindow):
         self.update_status_bar()
         self._check_for_updates_async()
         
-        # Global Esc shortcut for closing popups and sidebars
-        self.esc_shortcut = QShortcut(QKeySequence(Qt.Key_Escape), self)
-        self.esc_shortcut.activated.connect(self.handle_escape)
-
         # Register global URL handlers so links in PDFs, Markdown, HTML, What's New, etc. open in EleViewer instead of external browser!
         from PySide6.QtGui import QDesktopServices
         QDesktopServices.setUrlHandler("http", self, "handle_url")
@@ -336,6 +332,10 @@ class MainWindow(QMainWindow):
         if worker is not None and worker.isRunning():
             worker.requestInterruption()
             worker.wait(2000)
+
+        tts_engine = getattr(self, "tts_engine", None)
+        if tts_engine is not None:
+            tts_engine.shutdown()
 
     # FIX: guard prevents ESC double-fire when modal dialog is active
     def handle_escape(self):
@@ -549,7 +549,9 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(self.main_splitter)
 
         for i in range(1, 10):
-            QShortcut(QKeySequence(f"Ctrl+{i}"), self).activated.connect(
+            tab_shortcut = QShortcut(QKeySequence(f"Ctrl+{i}"), self)
+            tab_shortcut.setContext(Qt.ApplicationShortcut)
+            tab_shortcut.activated.connect(
                 lambda idx=i-1: self.tabs.setCurrentIndex(min(idx, self.tabs.count()-1)) if self.tabs.count() > 0 else None
             )
 
@@ -607,7 +609,7 @@ class MainWindow(QMainWindow):
             self.toolbar.register_action("web", web_btn)
 
         settings_btn = QAction(icon("settings", size=ICON_SIZE_TOOLBAR), "Settings", self)
-        settings_btn.setToolTip("Settings")
+        settings_btn.setToolTip("Open Settings (Alt+S)")
         settings_btn.triggered.connect(self.open_settings)
         self.toolbar.register_action("settings", settings_btn)
 
@@ -679,6 +681,7 @@ class MainWindow(QMainWindow):
             ("Alt+V", self.toggle_vault_panel),
             ("Ctrl+Q", self.open_quick_switcher),
             ("Ctrl+T", self.open_web_tab),
+            ("Ctrl+Shift+W", self.toggle_web_panel),
             ("Ctrl+Shift+T", self.reopen_closed_tab),
             ("F9", self.toggle_tts_bar),
             ("Ctrl+N", self.new_tab),
@@ -689,6 +692,9 @@ class MainWindow(QMainWindow):
             ("Ctrl+F", self.show_find),
             ("Ctrl+H", self.show_replace),
             ("Ctrl+Shift+F", self.open_vault_search),
+            ("Ctrl+Alt+B", self.toggle_bookmarks_panel),
+            ("Ctrl+D", self.bookmark_current_tab),
+            ("F1", self.open_getting_started),
             ("Alt+S", self.open_settings),
         ]
         for key_seq, slot in shortcuts:
@@ -1022,7 +1028,7 @@ class MainWindow(QMainWindow):
         title.setStyleSheet(f"font-size: 32px; font-weight: bold; color: {p['BRAND_PRIMARY']};")
         title.setAlignment(Qt.AlignCenter)
         
-        subtitle = QLabel("Open a course file, listen to it read aloud, and organize your studies offline on Windows.")
+        subtitle = QLabel("Keep your document, PDF, notes, and reading tools together in one offline Windows workspace.")
         subtitle.setWordWrap(True)
         subtitle.setAlignment(Qt.AlignCenter)
         subtitle.setMaximumWidth(600)
@@ -1185,23 +1191,29 @@ class MainWindow(QMainWindow):
         secondary_btn_style = f"background: {p['BRAND_PANEL_2']}; color: {p['BRAND_PRIMARY']}; border: 1px solid {p['BRAND_BORDER']}; border-radius: 8px; padding: 12px 18px; font-size: 13px;"
         tertiary_btn_style = f"background: transparent; color: {p['BRAND_PRIMARY']}; border: 1px solid {p['BRAND_BORDER']}; border-radius: 8px; padding: 12px 18px; font-size: 13px;"
         
-        for label, ico, slot, style in [
-            ("Open a Course File", "folder-open", self.open_file, primary_btn_style),
-            ("Add a Course Folder", "panel-left", self.add_vault, secondary_btn_style),
-            ("Try the Sample Note", "play", self.open_sample_note, tertiary_btn_style),
-            ("Getting Started", "book-open", self.open_getting_started, tertiary_btn_style),
+        for label, ico, slot, style, tooltip in [
+            ("Open a Course File", "folder-open", self.open_file, primary_btn_style,
+             "Open a Word document, PDF, slide deck, spreadsheet, or note (Ctrl+O)"),
+            ("Add a Course Folder", "panel-left", self.add_vault, secondary_btn_style,
+             "Add a local course folder so you can find its files quickly (Alt+V)"),
+            ("Try the Sample Note", "play", self.open_sample_note, tertiary_btn_style,
+             "Open a short note that shows the basic EleViewer workflow"),
+            ("Getting Started", "book-open", self.open_getting_started, tertiary_btn_style,
+             "Open the interactive guide with shortcuts and study workflows (F1)"),
         ]:
             btn = QToolButton()
             btn.setText(label)
             btn.setIcon(icon(ico, size=16))
             btn.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
             btn.setCursor(Qt.PointingHandCursor)
+            btn.setToolTip(tooltip)
+            btn.setAccessibleName(label)
             btn.setStyleSheet(style)
             btn.clicked.connect(slot)
             action_bar_layout.addWidget(btn)
         main_layout.addWidget(action_bar)
 
-        action_hint = QLabel("Start with the sample or open your own file. Add a course folder when you're ready.")
+        action_hint = QLabel("Open a document, then press Ctrl+O again to open the PDF you need. Both stay open in tabs.")
         action_hint.setAlignment(Qt.AlignCenter)
         action_hint.setWordWrap(True)
         action_hint.setStyleSheet(f"color: {p['BRAND_MUTED_FG']}; font-size: 12px;")
@@ -1290,11 +1302,13 @@ class MainWindow(QMainWindow):
 
         shortcuts = [
             ("Ctrl+O", "Open file"),
-            ("Ctrl+N", "New note"),
-            ("Ctrl+T", "Browser"),
+            ("Ctrl+D", "Save your place"),
+            ("Ctrl+Alt+B", "Show bookmarks"),
+            ("F9", "Read Aloud"),
+            ("Ctrl+T", "Research in browser"),
             ("Alt+V", "Course folder"),
             ("Ctrl+Q", "Find a file"),
-            ("F9", "Read Aloud"),
+            ("Ctrl+W", "Close this tab"),
         ]
         grid = QWidget()
         grid.setStyleSheet("background: transparent; border: none;")

@@ -5,7 +5,9 @@ description: A short first-session guide for opening course files, listening to 
 
 # Start studying with EleViewer
 
-EleViewer is a portable Windows workspace for opening course files, listening to readings aloud, taking notes, and keeping your study session together. Your files stay on your computer, and no account is required.
+EleViewer keeps your course files in one Windows workspace. Open a Word document, PDF, slide deck, spreadsheet, or note without closing the file you are already using. Your files stay on your computer, and no account is required.
+
+> **A common study task:** Open your document with `Ctrl + O`, then press `Ctrl + O` again to open the PDF you need. Switch between both tabs instead of closing one to reach the other.
 
 ## Your first three actions
 
@@ -169,6 +171,15 @@ To keep you focused on studying, EleViewer handles updates silently:
 ---
 
 ## 6. Troubleshooting and support
+
+### I need a PDF while I am working on another document
+Press `Ctrl + O` and choose the PDF. EleViewer opens it in a new tab, so your Word document, notes, and PDF can stay open together. Use `Ctrl + 1` through `Ctrl + 9` to move between tabs quickly.
+
+### I want to save my place
+Press `Ctrl + D` while the document has focus. In a PDF this saves the current page; in a text or office document it saves the current reading position. Press `Ctrl + Alt + B` to show your saved bookmarks.
+
+### I found a problem or have an idea
+Use [Report a bug](https://github.com/karefined-eng/eleviewer/issues) or [request a feature](https://github.com/karefined-eng/eleviewer/issues/new). Include what you were trying to do and which file type you opened. Do not attach private course files.
 
 ### Why is Universal Text-to-Speech (`F9`) silent or not reading?
 EleViewer uses Windows native speech synthesis. If the speech is silent:
