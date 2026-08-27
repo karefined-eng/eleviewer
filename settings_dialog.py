@@ -220,3 +220,9 @@ class SettingsDialog(QDialog):
 
     def get_settings(self):
         return self.settings
+
+    def event(self, ev):
+        if ev.type() == QEvent.WindowDeactivate:
+            self.reject()
+            return True
+        return super().event(ev)

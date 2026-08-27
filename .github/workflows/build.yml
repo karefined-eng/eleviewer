@@ -54,10 +54,10 @@ jobs:
       - name: Compile with Nuitka (Native C++ with LTO)
         run: |
           python -m nuitka `
-            --onefile `
+            --standalone `
             --lto=yes `
             --enable-plugin=pyside6 `
-            --include-qt-plugins=sensible,styles `
+            --include-qt-plugins=sensible,styles,qwebengine `
             --windows-icon-from-ico=icons/eleviewer.ico `
             --windows-company-name="karefined-eng" `
             --windows-product-name="EleViewer" `
@@ -76,18 +76,22 @@ jobs:
 
       - name: Compile Inno Setup Installer
         run: |
-          # Stage the one-file Nuitka executable for the installer and release.
+          # Stage the standalone Nuitka output for the installer and release.
           if (Test-Path "dist") { Remove-Item -Recurse -Force dist }
           New-Item -ItemType Directory -Force -Path dist | Out-Null
-          Copy-Item "EleViewer.exe" "dist/EleViewer.exe" -Force
+          
+          # Create a portable zip with a clean folder name inside
+          Rename-Item -Path "main.dist" -NewName "EleViewer-Portable"
+          Compress-Archive -Path "EleViewer-Portable" -DestinationPath "dist\EleViewer-Portable.zip"
+          Rename-Item -Path "EleViewer-Portable" -NewName "main.dist"
           
           # Compile setup.iss with dynamic version from git tag
           iscc /DAppVersion=${{ steps.version.outputs.VERSION }} setup.iss
 
       - name: Verify release assets
         run: |
-          if (-not (Test-Path "dist/EleViewer.exe")) {
-            throw "Expected portable executable was not produced."
+          if (-not (Test-Path "dist/EleViewer-Portable.zip")) {
+            throw "Expected portable zip was not produced."
           }
           if (-not (Test-Path "dist/EleViewer_Setup_v${{ steps.version.outputs.VERSION }}.exe")) {
             throw "Expected installer was not produced."
@@ -126,7 +130,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            dist/EleViewer.exe
+            dist/EleViewer-Portable.zip
             dist/EleViewer_Setup_*.exe
             dist/winget-installer.yaml
           name: EleViewer ${{ steps.version.outputs.TAG }}
@@ -134,3 +138,10 @@ jobs:
           prerelease: false
           generate_release_notes: true
           overwrite_files: true
+
+      - name: Submit to Winget
+        uses: vedantmgoyal2009/winget-releaser@v2
+        with:
+          identifier: karefined-eng.EleViewer
+          installers-regex: '\.exe$'
+          token: ${{ secrets.WINGET_TOKEN }}

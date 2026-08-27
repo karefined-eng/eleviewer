@@ -30,6 +30,7 @@ def get_persistent_profile():
         storage_path = str(APP_DATA_DIR / "web_data")
         _web_profile.setPersistentStoragePath(storage_path)
         _web_profile.setCachePath(storage_path)
+        _web_profile.setHttpCacheMaximumSize(50 * 1024 * 1024)  # Cap HTTP cache at 50 MB
         _web_profile.setPersistentCookiesPolicy(QWebEngineProfile.PersistentCookiesPolicy.ForcePersistentCookies)
         
         settings = _web_profile.settings()

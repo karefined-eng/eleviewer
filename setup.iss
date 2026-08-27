@@ -44,7 +44,7 @@ WelcomeLabel2=This will install EleViewer on your computer.%n%nEleViewer is a li
 WizardSelectTasks=Select Shortcuts and File Options
 TasksListLabel=Choose how you want EleViewer to open your course materials and documents:
 FinishedHeadingLabel=EleViewer is ready for your studies!
-FinishedLabelNoIcons=Setup has finished installing EleViewer on your computer.%n%nYour files stay local on your hard drive, your privacy is protected, and your laptop will run fast. Click Finish to exit setup.
+FinishedLabelNoIcons=Setup has finished installing EleViewer on your computer.%n%nYour files stay local on your hard drive, your privacy is protected, and your laptop will run fast.%n%nTip: You can now type "eleviewer" in your terminal (Command Prompt or PowerShell) to launch the app. If it doesn't work yet, simply restart your terminal first — Windows only loads the updated PATH when a new terminal window opens.%n%nClick Finish to exit setup.
 
 [Tasks]
 Name: "desktopicon"; Description: "Create a shortcut on my desktop"; GroupDescription: "Desktop Shortcut"; Flags: unchecked
@@ -52,8 +52,8 @@ Name: "associate"; Description: "Open my study files (PDFs, Word docs, Excel, Po
 Name: "contextmenu"; Description: "Add 'Open with EleViewer' to my right-click menu in Windows Explorer"; GroupDescription: "Windows Explorer Integration"
 
 [Files]
-; The source is the single portable executable created by Nuitka.
-Source: "dist\EleViewer.exe"; DestDir: "{app}"; Flags: ignoreversion
+; Standalone Nuitka build — copy entire dist folder (includes Qt/WebEngine DLLs)
+Source: "main.dist\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "icons\*"; DestDir: "{app}\icons"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "getting_started\*"; DestDir: "{app}\getting_started"; Flags: ignoreversion recursesubdirs createallsubdirs
 
