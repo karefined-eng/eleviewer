@@ -19,6 +19,9 @@ def test_onboarding_ends_with_two_clear_first_actions():
     assert dialog.sample_btn.text() == "Try the Sample Note"
     assert dialog.open_file_btn.text() == "Open My File"
     assert dialog.next_btn.text() == "Finish"
+    dialog.close()
+    dialog.deleteLater()
+    app.processEvents()
 
 
 def test_startup_settings_store_readable_labels_as_internal_values():
@@ -28,3 +31,6 @@ def test_startup_settings_store_readable_labels_as_internal_values():
     assert dialog.launch_combo.itemData(0) == "remembered"
     assert dialog.fresh_session_combo.itemText(0) == "Show the welcome screen"
     assert dialog.fresh_session_combo.itemData(0) == "welcome"
+    dialog.close()
+    dialog.deleteLater()
+    app.processEvents()

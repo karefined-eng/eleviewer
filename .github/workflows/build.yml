@@ -14,10 +14,10 @@ jobs:
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: '3.11'
           cache: 'pip'
@@ -106,16 +106,16 @@ jobs:
           $installerHash = (Get-FileHash $installerPath -Algorithm SHA256).Hash.ToLowerInvariant()
           $manifestPath = "dist/winget-installer.yaml"
           $content = Get-Content "winget/karefined-eng.EleViewer.installer.yaml" -Raw
-          $content = $content.Replace("PackageVersion: 1.3.0", "PackageVersion: ${{ steps.version.outputs.VERSION }}")
-          $content = $content.Replace("InstallerUrl: https://github.com/karefined-eng/eleviewer/releases/download/v1.3.0/EleViewer_Setup_v1.3.0.exe", "InstallerUrl: $installerUrl")
-          $content = $content.Replace("InstallerSha256: E1EF2B0FB6A01D3061331297B0FF621FD70A2E8C35338148A7E75CCF777FED3A", "InstallerSha256: $installerHash")
+          $content = $content -replace '(?m)^PackageVersion:\s*.+$', 'PackageVersion: ${{ steps.version.outputs.VERSION }}'
+          $content = $content -replace '(?m)^\s*InstallerUrl:\s*.+$', "    InstallerUrl: $installerUrl"
+          $content = $content -replace '(?m)^\s*InstallerSha256:\s*.+$', "    InstallerSha256: $installerHash"
           Set-Content -Path $manifestPath -Value $content
           Write-Output "Generated $manifestPath"
           Get-Content $manifestPath
 
       - name: Azure Trusted Signing (when enabled)
         if: ${{ vars.AZURE_TRUSTED_SIGNING_ENABLED == 'true' }}
-        uses: azure/trusted-signing-action@v0.5.0
+        uses: azure/trusted-signing-action@07c81171dd46a04e1b9f382b6c693815828bbbf7 # v0.5.0
         with:
           azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           azure-client-id: ${{ secrets.AZURE_CLIENT_ID }}
@@ -127,7 +127,7 @@ jobs:
           files-folder-filter: "exe"
 
       - name: Create Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
         with:
           files: |
             dist/EleViewer-Portable.zip
