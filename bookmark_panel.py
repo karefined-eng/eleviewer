@@ -28,9 +28,12 @@ class BookmarkItemWidget(QWidget):
         name = os.path.basename(path) if path else "Unknown"
         page = bookmark.get("page_number", 0)
         suffix = f" · p.{page + 1}" if path.lower().endswith(".pdf") else ""
-        
-        self.lbl_text = QLabel(f"<b>{label}</b><br><span style='color:#aaa'>{name}{suffix}</span>")
+        # Elide long names so items never force the panel wider than its dock
+        display_name = (name[:30] + "…") if len(name) > 30 else name
+
+        self.lbl_text = QLabel(f"<b>{label}</b><br><span style='color:#aaa'>{display_name}{suffix}</span>")
         self.lbl_text.setTextFormat(Qt.RichText)
+        self.lbl_text.setWordWrap(True)
         
         self.btn_edit = QToolButton()
         self.btn_edit.setIcon(icon("pencil", size=14))
@@ -102,6 +105,7 @@ class BookmarkPanel(QWidget):
         layout.addWidget(header)
 
         self.list_widget = QListWidget()
+        self.list_widget.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         accent = get_brand_accent()
         self.list_widget.setStyleSheet(f"""
             QListWidget {{

@@ -253,8 +253,12 @@ class MainWindow(QMainWindow):
         # IMPROVEMENT: system tray minimization with restore on double-click
         self.tray_icon = QSystemTrayIcon(create_eleviewer_icon(32), self)
         tray_menu = QMenu()
-        tray_menu.addAction("Open EleViewer", self.show_and_raise)
-        tray_menu.addAction("Quit", self._quit_from_tray)
+        tray_menu.addAction("Open / Restore EleViewer", self.show_and_raise)
+        tray_menu.addAction("New Quick Note", self.bring_to_front_and_new_note)
+        tray_menu.addSeparator()
+        tray_menu.addAction("Settings...", self.open_settings)
+        tray_menu.addSeparator()
+        tray_menu.addAction("Quit EleViewer", self._quit_from_tray)
         self.tray_icon.setContextMenu(tray_menu)
         self.tray_icon.activated.connect(self._on_tray_activated)
         self.tray_icon.show()
@@ -1593,7 +1597,8 @@ class MainWindow(QMainWindow):
         self._add_menu_action(menu, "Settings...", self.open_settings, "Alt+S")
 
         help_menu = menu.addMenu("Help")
-        self._add_menu_action(help_menu, "Getting Started Guide", self.open_getting_started, "F1")
+        self._add_menu_action(help_menu, "Keyboard Shortcuts", self.open_shortcuts_dialog, "F1")
+        self._add_menu_action(help_menu, "Getting Started Guide", self.open_getting_started)
         self._add_menu_action(help_menu, "Check for Updates...", self.check_for_updates_manual)
         help_menu.addSeparator()
         self._add_menu_action(help_menu, "Submit Feedback...", self.open_feedback_dialog)
@@ -1601,7 +1606,101 @@ class MainWindow(QMainWindow):
 
         self.update_menus()
 
+    def open_shortcuts_dialog(self):
+        """F1: Show a student-friendly in-app keyboard shortcuts overlay."""
+        from PySide6.QtWidgets import (
+            QDialog, QVBoxLayout, QScrollArea, QWidget, QGridLayout, QLabel, QPushButton
+        )
+        from PySide6.QtCore import Qt
+        dlg = QDialog(self)
+        dlg.setWindowTitle("Keyboard Shortcuts")
+        dlg.setAttribute(Qt.WA_DeleteOnClose, True)
+        dlg.resize(540, 560)
+
+        SHORTCUTS = [
+            ("Opening & Saving", [
+                ("Open a file",             "Ctrl + O"),
+                ("New blank note",          "Ctrl + N"),
+                ("Save the current file",   "Ctrl + S"),
+                ("Save As…",                "Ctrl + Shift + S"),
+                ("Close current tab",       "Ctrl + W"),
+                ("Reopen last closed tab",  "Ctrl + Shift + T"),
+            ]),
+            ("Navigating", [
+                ("Quick file switcher",     "Ctrl + P"),
+                ("Find & Replace",          "Ctrl + F"),
+                ("Vault / folder search",   "Ctrl + Shift + F"),
+                ("Next tab",                "Ctrl + Tab"),
+                ("Previous tab",            "Ctrl + Shift + Tab"),
+                ("Go back in history",      "Alt + Left"),
+                ("Go forward in history",   "Alt + Right"),
+            ]),
+            ("Bookmarks", [
+                ("Bookmark current page",   "Ctrl + D"),
+                ("Toggle Bookmarks panel",  "Ctrl + Alt + B"),
+            ]),
+            ("View & Layout", [
+                ("Toggle Web Browser panel","F9"),
+                ("Toggle full screen",      "F11"),
+                ("Zoom in",                 "Ctrl + ="),
+                ("Zoom out",                "Ctrl + -"),
+                ("Reset zoom",              "Ctrl + 0"),
+            ]),
+            ("Quick Note (Global)", [
+                ("Open new note anywhere",  "Alt + E"),
+            ]),
+            ("Other", [
+                ("Settings",                "Alt + S"),
+                ("Keyboard Shortcuts",      "F1"),
+                ("Quit EleViewer",          "Ctrl + Q"),
+            ]),
+        ]
+
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
+        container = QWidget()
+        grid = QGridLayout(container)
+        grid.setContentsMargins(16, 12, 16, 12)
+        grid.setHorizontalSpacing(32)
+        grid.setVerticalSpacing(4)
+        grid.setColumnStretch(0, 1)
+
+        row = 0
+        for section, entries in SHORTCUTS:
+            if row > 0:
+                spacer = QLabel("")
+                spacer.setFixedHeight(6)
+                grid.addWidget(spacer, row, 0, 1, 2)
+                row += 1
+            hdr = QLabel(section.upper())
+            hdr.setStyleSheet("font-weight: bold; font-size: 11px; color: #888; letter-spacing: 1px;")
+            grid.addWidget(hdr, row, 0, 1, 2)
+            row += 1
+            for desc, keys in entries:
+                desc_lbl = QLabel(desc)
+                desc_lbl.setStyleSheet("font-size: 13px;")
+                key_lbl = QLabel(keys)
+                key_lbl.setStyleSheet(
+                    "font-size: 12px; font-family: monospace; "
+                    "background: #333; color: #ddd; border-radius: 4px; padding: 2px 6px;"
+                )
+                key_lbl.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+                grid.addWidget(desc_lbl, row, 0)
+                grid.addWidget(key_lbl, row, 1)
+                row += 1
+
+        scroll_area.setWidget(container)
+
+        close_btn = QPushButton("Close")
+        close_btn.clicked.connect(dlg.accept)
+
+        layout = QVBoxLayout(dlg)
+        layout.addWidget(scroll_area)
+        layout.addWidget(close_btn)
+        dlg.show()
+
     # FIX: WA_DeleteOnClose=True ensures dialog is freed on close
+
     def open_settings(self):
         if getattr(self, '_settings_dialog', None) is None:
             from settings_dialog import SettingsDialog
@@ -1807,7 +1906,7 @@ class MainWindow(QMainWindow):
             widget.deleteLater()
 
         if self.tabs.count() == 0:
-            self.new_tab()
+            self.tabs.addTab(self._create_welcome_widget(), "Welcome")
         else:
             self.update_status_bar()
 
