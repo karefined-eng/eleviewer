@@ -1000,7 +1000,7 @@ class MainWindow(QMainWindow):
 
         # Constrained content wrapper — stays readable on maximized windows
         content = QWidget()
-        content.setMaximumWidth(780)
+        content.setMaximumWidth(1000)
         content.setMinimumWidth(650)
         content.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
         
@@ -1182,16 +1182,15 @@ class MainWindow(QMainWindow):
         
         # 3. First actions
         action_bar = QWidget()
-        action_bar_layout = QHBoxLayout(action_bar)
+        action_bar_layout = QGridLayout(action_bar)
         action_bar_layout.setSpacing(12)
         action_bar_layout.setContentsMargins(0, 0, 0, 0)
-        action_bar_layout.setAlignment(Qt.AlignCenter)
         
         primary_btn_style = f"background: {get_brand_accent()}; color: #FFFFFF; border: none; border-radius: 8px; padding: 12px 20px; font-size: 13px; font-weight: bold;"
         secondary_btn_style = f"background: {p['BRAND_PANEL_2']}; color: {p['BRAND_PRIMARY']}; border: 1px solid {p['BRAND_BORDER']}; border-radius: 8px; padding: 12px 18px; font-size: 13px;"
         tertiary_btn_style = f"background: transparent; color: {p['BRAND_PRIMARY']}; border: 1px solid {p['BRAND_BORDER']}; border-radius: 8px; padding: 12px 18px; font-size: 13px;"
         
-        for label, ico, slot, style, tooltip in [
+        buttons_info = [
             ("Open a Course File", "folder-open", self.open_file, primary_btn_style,
              "Open a Word document, PDF, slide deck, spreadsheet, or note (Ctrl+O)"),
             ("Add a Course Folder", "panel-left", self.add_vault, secondary_btn_style,
@@ -1200,7 +1199,9 @@ class MainWindow(QMainWindow):
              "Open a short note that shows the basic EleViewer workflow"),
             ("Getting Started", "book-open", self.open_getting_started, tertiary_btn_style,
              "Open the interactive guide with shortcuts and study workflows (F1)"),
-        ]:
+        ]
+        
+        for i, (label, ico, slot, style, tooltip) in enumerate(buttons_info):
             btn = QToolButton()
             btn.setText(label)
             btn.setIcon(icon(ico, size=16))
@@ -1209,8 +1210,14 @@ class MainWindow(QMainWindow):
             btn.setToolTip(tooltip)
             btn.setAccessibleName(label)
             btn.setStyleSheet(style)
+            btn.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+            btn.setMinimumHeight(44)
             btn.clicked.connect(slot)
-            action_bar_layout.addWidget(btn)
+            
+            row = i // 2
+            col = i % 2
+            action_bar_layout.addWidget(btn, row, col)
+            
         main_layout.addWidget(action_bar)
 
         action_hint = QLabel("Open a document, then press Ctrl+O again to open the PDF you need. Both stay open in tabs.")
@@ -1320,8 +1327,8 @@ class MainWindow(QMainWindow):
             k_lbl.setStyleSheet(f"background: {p['BRAND_PANEL_2']}; padding: 6px 10px; border: 1px solid {p['BRAND_BORDER']}; border-radius: 6px; font-family: monospace; color: {get_brand_accent()}; font-size: 12px; font-weight: bold;")
             d_lbl = QLabel(desc)
             d_lbl.setStyleSheet(f"color: {p['BRAND_MUTED_FG']}; font-size: 13px; background: transparent; border: none;")
-            grid_layout.addWidget(k_lbl, i // 2, (i % 2) * 2)
-            grid_layout.addWidget(d_lbl, i // 2, (i % 2) * 2 + 1)
+            grid_layout.addWidget(k_lbl, i, 0)
+            grid_layout.addWidget(d_lbl, i, 1)
             
         right_layout.addWidget(grid)
         right_layout.addStretch()
