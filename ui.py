@@ -388,9 +388,9 @@ class MainWindow(QMainWindow):
         except Exception:
             pass
 
-    def _on_update_found(self, tag_name, release_notes, download_url):
+    def _on_update_found(self, tag_name, release_notes, download_url, expected_hash):
         from updater import UpdateDialog
-        dlg = UpdateDialog(tag_name, release_notes, download_url, self)
+        dlg = UpdateDialog(tag_name, release_notes, download_url, expected_hash, self)
         dlg.exec()
 
     def check_for_updates_manual(self):

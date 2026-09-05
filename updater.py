@@ -4,6 +4,7 @@ import json
 import urllib.request
 import tempfile
 import subprocess
+import hashlib
 from urllib.parse import urlparse
 from PySide6.QtCore import QThread, Signal, Qt, QUrl
 from PySide6.QtWidgets import (
@@ -36,7 +37,7 @@ def parse_version(v_str: str):
     return tuple(parts)
 
 class CheckUpdateThread(QThread):
-    update_available = Signal(str, str, str)  # tag_name, release_notes, download_url
+    update_available = Signal(str, str, str, str)  # tag_name, release_notes, download_url, expected_hash
     no_update = Signal()
     error_occurred = Signal(str)
 
@@ -68,7 +69,31 @@ class CheckUpdateThread(QThread):
                         if not download_url:
                             download_url = data.get("html_url", f"https://github.com/{REPO_OWNER}/{REPO_NAME}/releases")
                         
-                        self.update_available.emit(tag_name, body, download_url)
+                        hash_url = ""
+                        for asset in data.get("assets", []):
+                            if asset.get("name") == "EleViewer_SHA256.txt":
+                                hash_url = asset.get("browser_download_url", "")
+                                break
+                        
+                        expected_hash = ""
+                        if hash_url:
+                            try:
+                                hash_req = urllib.request.Request(hash_url, headers={"User-Agent": "EleViewer-AutoUpdater"})
+                                with urllib.request.urlopen(hash_req, timeout=5) as h_resp:
+                                    if h_resp.status == 200:
+                                        hash_content = h_resp.read().decode('utf-8')
+                                        for line in hash_content.splitlines():
+                                            if line.startswith("SHA-256:"):
+                                                expected_hash = line.split(":", 1)[1].strip()
+                                                break
+                            except Exception:
+                                pass
+                        
+                        if not expected_hash:
+                            self.error_occurred.emit("Security verification failed: No SHA-256 hash found for this release.")
+                            return
+
+                        self.update_available.emit(tag_name, body, download_url, expected_hash)
                     else:
                         self.no_update.emit()
                 else:
@@ -81,9 +106,10 @@ class DownloadThread(QThread):
     finished = Signal(str)
     failed = Signal(str)
 
-    def __init__(self, download_url, parent=None):
+    def __init__(self, download_url, expected_hash, parent=None):
         super().__init__(parent)
         self.download_url = download_url
+        self.expected_hash = expected_hash
 
     def run(self):
         try:
@@ -112,15 +138,26 @@ class DownloadThread(QThread):
                         if total_size > 0:
                             percent = int((downloaded / total_size) * 100)
                             self.progress.emit(percent)
+                            
+                h = hashlib.sha256()
+                with open(dest_path, "rb") as f:
+                    for chunk in iter(lambda: f.read(65536), b""):
+                        h.update(chunk)
+                computed_hash = h.hexdigest()
+                
+                if computed_hash.lower() != self.expected_hash.lower():
+                    os.remove(dest_path)
+                    raise ValueError(f"Security Error: Downloaded file hash ({computed_hash}) does not match expected hash ({self.expected_hash}).")
             
             self.finished.emit(dest_path)
         except Exception as e:
             self.failed.emit(str(e))
 
 class UpdateDialog(QDialog):
-    def __init__(self, tag_name, release_notes, download_url, parent=None):
+    def __init__(self, tag_name, release_notes, download_url, expected_hash, parent=None):
         super().__init__(parent)
         self.download_url = download_url
+        self.expected_hash = expected_hash
         self.setWindowTitle(f"Update Available - {tag_name}")
         self.resize(500, 380)
 
@@ -170,7 +207,7 @@ class UpdateDialog(QDialog):
             self.status_label.setText("Downloading installer update...")
             self.status_label.setVisible(True)
 
-            self.downloader = DownloadThread(self.download_url, self)
+            self.downloader = DownloadThread(self.download_url, self.expected_hash, self)
             self.downloader.progress.connect(self.progress_bar.setValue)
             self.downloader.finished.connect(self._on_download_finished)
             self.downloader.failed.connect(self._on_download_failed)
