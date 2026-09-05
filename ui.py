@@ -1828,7 +1828,6 @@ class MainWindow(QMainWindow):
         from markdown_renderer import MarkdownViewer
         from docx_viewer import DocxViewer
         from xlsx_viewer import XlsxViewer
-        from pptx_viewer import PptxViewer
         from html_viewer import HtmlViewer
         from csv_viewer import CsvViewer
         
@@ -1837,7 +1836,6 @@ class MainWindow(QMainWindow):
         _add("HTML (.html)", ".html", HtmlViewer)
         _add("Word Document (.docx)", ".docx", DocxViewer)
         _add("Excel Spreadsheet (.xlsx)", ".xlsx", XlsxViewer)
-        _add("PowerPoint Presentation (.pptx)", ".pptx", PptxViewer)
         _add("CSV Spreadsheet (.csv)", ".csv", CsvViewer)
         return menu
 
