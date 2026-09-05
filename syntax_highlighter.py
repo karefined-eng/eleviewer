@@ -1,5 +1,7 @@
 import re
+# pyrefly: ignore [missing-import]
 from PySide6.QtGui import QSyntaxHighlighter, QTextCharFormat, QFont, QColor
+# pyrefly: ignore [missing-import]
 from PySide6.QtCore import Qt
 from theme import get_brand_accent, BRAND_MUTED, BRAND_MUTED_FG
 

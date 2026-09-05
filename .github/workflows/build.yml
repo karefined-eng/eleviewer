@@ -98,6 +98,10 @@ jobs:
           }
           Get-ChildItem dist
 
+      - name: Generate release hash
+        run: |
+          python release_hash.py
+
       - name: Generate Winget installer manifest
         shell: pwsh
         run: |
@@ -133,6 +137,7 @@ jobs:
             dist/EleViewer-Portable.zip
             dist/EleViewer_Setup_*.exe
             dist/winget-installer.yaml
+            dist/EleViewer_SHA256.txt
           name: EleViewer ${{ steps.version.outputs.TAG }}
           draft: false
           prerelease: false
