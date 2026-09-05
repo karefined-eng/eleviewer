@@ -979,7 +979,7 @@ class MainWindow(QMainWindow):
         from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QGridLayout, QToolButton, QFrame, QLineEdit, QListWidget, QListWidgetItem, QSizePolicy
         from PySide6.QtCore import Qt, QSize
         from PySide6.QtGui import QPixmap, QIcon
-        from theme import get_active_palette, get_brand_accent
+        from theme import get_active_palette, get_brand_accent, get_active_accent
         p = get_active_palette()
         from branding_logo import create_eleviewer_pixmap
         from icons import icon
@@ -1006,8 +1006,8 @@ class MainWindow(QMainWindow):
         
         main_layout = QVBoxLayout(content)
         main_layout.setAlignment(Qt.AlignTop)
-        main_layout.setContentsMargins(40, 80, 40, 40)
-        main_layout.setSpacing(40)
+        main_layout.setContentsMargins(40, 48, 40, 40)
+        main_layout.setSpacing(28)
         
         wrapper_layout.addWidget(content, 1)
         wrapper_layout.addStretch()
@@ -1032,7 +1032,7 @@ class MainWindow(QMainWindow):
         subtitle.setWordWrap(True)
         subtitle.setAlignment(Qt.AlignCenter)
         subtitle.setMaximumWidth(600)
-        subtitle.setStyleSheet(f"color: {p['BRAND_MUTED_FG']}; font-size: 14px;")
+        subtitle.setStyleSheet(f"color: {p['BRAND_PRIMARY']}; opacity: 0.78; font-size: 14px; line-height: 1.5;")
         
         hero_layout.addWidget(logo_lbl)
         hero_layout.addWidget(title)
@@ -1048,11 +1048,15 @@ class MainWindow(QMainWindow):
 
         omni_bar_row = QWidget()
         omni_bar_row.setObjectName("OmniBarRow")
+        accent = get_brand_accent()
         omni_bar_row.setStyleSheet(f"""
             QWidget#OmniBarRow {{
                 background: {p['BRAND_PANEL_2']};
                 border: 1px solid {p['BRAND_BORDER']};
                 border-radius: 12px;
+            }}
+            QWidget#OmniBarRow:focus-within {{
+                border: 1px solid {accent}44;
             }}
         """)
         omni_row_layout = QHBoxLayout(omni_bar_row)
@@ -1073,6 +1077,9 @@ class MainWindow(QMainWindow):
                 padding: 14px 0;
             }}
             QLineEdit::placeholder {{ color: {p['BRAND_MUTED_FG']}; }}
+            QLineEdit:focus {{
+                border-bottom: 2px solid {accent};
+            }}
         """)
 
         omni_row_layout.addWidget(omni_search_icon)
@@ -1186,9 +1193,58 @@ class MainWindow(QMainWindow):
         action_bar_layout.setSpacing(12)
         action_bar_layout.setContentsMargins(0, 0, 0, 0)
         
-        primary_btn_style = f"background: {get_brand_accent()}; color: #FFFFFF; border: none; border-radius: 8px; padding: 12px 20px; font-size: 13px; font-weight: bold;"
-        secondary_btn_style = f"background: {p['BRAND_PANEL_2']}; color: {p['BRAND_PRIMARY']}; border: 1px solid {p['BRAND_BORDER']}; border-radius: 8px; padding: 12px 18px; font-size: 13px;"
-        tertiary_btn_style = f"background: transparent; color: {p['BRAND_PRIMARY']}; border: 1px solid {p['BRAND_BORDER']}; border-radius: 8px; padding: 12px 18px; font-size: 13px;"
+        accent_colors = get_active_accent()
+        primary_btn_style = f"""
+            QToolButton {{
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 {accent_colors['accent']}, stop:1 {accent_colors['pressed']});
+                color: {accent_colors['accent_fg']};
+                border: none;
+                border-radius: 10px;
+                padding: 12px 20px;
+                font-size: 13px;
+                font-weight: bold;
+            }}
+            QToolButton:hover {{
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 {accent_colors['hover']}, stop:1 {accent_colors['accent']});
+            }}
+            QToolButton:pressed {{
+                background: {accent_colors['pressed']};
+            }}
+        """
+        secondary_btn_style = f"""
+            QToolButton {{
+                background: {p['BRAND_PANEL_2']};
+                color: {p['BRAND_PRIMARY']};
+                border: 1px solid {p['BRAND_BORDER']};
+                border-radius: 10px;
+                padding: 12px 18px;
+                font-size: 13px;
+            }}
+            QToolButton:hover {{
+                background: {p['BRAND_BORDER']};
+                border: 1px solid {accent_colors['accent']}44;
+            }}
+            QToolButton:pressed {{
+                background: {p['BRAND_PANEL']};
+            }}
+        """
+        tertiary_btn_style = f"""
+            QToolButton {{
+                background: transparent;
+                color: {p['BRAND_PRIMARY']};
+                border: 1px solid {p['BRAND_BORDER']};
+                border-radius: 10px;
+                padding: 12px 18px;
+                font-size: 13px;
+            }}
+            QToolButton:hover {{
+                background: {p['BRAND_PANEL_2']};
+                border: 1px solid {accent_colors['accent']}44;
+            }}
+            QToolButton:pressed {{
+                background: {p['BRAND_PANEL']};
+            }}
+        """
         
         buttons_info = [
             ("Open a Course File", "folder-open", self.open_file, primary_btn_style,
@@ -1223,7 +1279,7 @@ class MainWindow(QMainWindow):
         action_hint = QLabel("Open a document, then press Ctrl+O again to open the PDF you need. Both stay open in tabs.")
         action_hint.setAlignment(Qt.AlignCenter)
         action_hint.setWordWrap(True)
-        action_hint.setStyleSheet(f"color: {p['BRAND_MUTED_FG']}; font-size: 12px;")
+        action_hint.setStyleSheet(f"color: {p['BRAND_MUTED_FG']}; font-size: 12px; margin-top: 4px; margin-bottom: 8px;")
         main_layout.addWidget(action_hint)
         
         # 4. Two Columns: Recent Files & Shortcuts
@@ -1240,8 +1296,8 @@ class MainWindow(QMainWindow):
         left_layout.setSpacing(15)
         left_layout.setContentsMargins(24, 24, 24, 24)
         
-        recent_lbl = QLabel("RECENT FILES")
-        recent_lbl.setStyleSheet(f"color: {p['BRAND_MUTED_FG']}; font-size: 11px; font-weight: bold; letter-spacing: 1px; border: none; background: transparent;")
+        recent_lbl = QLabel("Recent files")
+        recent_lbl.setStyleSheet(f"color: {p['BRAND_PRIMARY']}; font-size: 13px; font-weight: 600; border: none; background: transparent;")
         left_layout.addWidget(recent_lbl)
         
         recent_list = QListWidget()
@@ -1252,7 +1308,7 @@ class MainWindow(QMainWindow):
         """)
         recent_list.setSelectionMode(QListWidget.NoSelection)
         recent_list.setCursor(Qt.PointingHandCursor)
-        recent_list.setMinimumHeight(150)
+        recent_list.setMinimumHeight(170)
         recent_files = load_recent_files(validate=True)[:5]
         if not recent_files:
             recent_list.addItem(QListWidgetItem("Open a file to see it here"))
@@ -1264,8 +1320,8 @@ class MainWindow(QMainWindow):
         recent_list.itemClicked.connect(lambda it: self._open_vault_file(it.data(Qt.UserRole)) if it.data(Qt.UserRole) else None)
         left_layout.addWidget(recent_list)
         
-        bm_lbl = QLabel("BOOKMARKS")
-        bm_lbl.setStyleSheet(f"color: {p['BRAND_MUTED_FG']}; font-size: 11px; font-weight: bold; letter-spacing: 1px; margin-top: 15px; border: none; background: transparent;")
+        bm_lbl = QLabel("Bookmarks")
+        bm_lbl.setStyleSheet(f"color: {p['BRAND_PRIMARY']}; font-size: 13px; font-weight: 600; margin-top: 10px; border: none; background: transparent;")
         left_layout.addWidget(bm_lbl)
         
         bm_list = QListWidget()
@@ -1303,8 +1359,8 @@ class MainWindow(QMainWindow):
         right_layout.setSpacing(15)
         right_layout.setContentsMargins(24, 24, 24, 24)
         
-        shortcuts_lbl = QLabel("KEYBOARD SHORTCUTS")
-        shortcuts_lbl.setStyleSheet(f"color: {p['BRAND_MUTED_FG']}; font-size: 11px; font-weight: bold; letter-spacing: 1px; border: none; background: transparent;")
+        shortcuts_lbl = QLabel("Keyboard shortcuts")
+        shortcuts_lbl.setStyleSheet(f"color: {p['BRAND_PRIMARY']}; font-size: 13px; font-weight: 600; border: none; background: transparent;")
         right_layout.addWidget(shortcuts_lbl)
 
         shortcuts = [
