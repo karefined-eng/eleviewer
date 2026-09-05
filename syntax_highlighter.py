@@ -34,7 +34,7 @@ class MarkdownHighlighter(QSyntaxHighlighter):
 
         # Code: `code`
         c_format = QTextCharFormat()
-        c_format.setFontFamily("Consolas")
+        c_format.setFontFamilies(["Consolas"])
         c_format.setBackground(bg_muted)
         c_format.setForeground(accent_color)
         self.rules.append((re.compile(r"(`)(.*?)\1"), c_format))

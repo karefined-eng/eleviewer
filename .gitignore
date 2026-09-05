@@ -64,3 +64,4 @@ node_modules/
 PROJECT_LOG.md
 context/                      # Private planning notes & AI session logs — not shipped
 .gitignore
+A Homepage loading.txt
