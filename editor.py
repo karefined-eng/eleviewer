@@ -255,7 +255,9 @@ class EditorTab(QWidget):
         self.toolbar_widget.setVisible(not is_vis)
 
     def _on_pin_toggled(self, checked):
-        save_settings({"formatting_toolbar_pinned": checked})
+        s = load_settings()
+        s["formatting_toolbar_pinned"] = checked
+        save_settings(s)
         self._update_pin_icon()
         if checked:
             self.toolbar_widget.setVisible(True)
