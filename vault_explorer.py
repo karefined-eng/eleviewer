@@ -44,24 +44,18 @@ class VaultExplorer(QWidget):
         icon_qsize = QSize(icon_sz, icon_sz)
 
         self.vault_selector = QComboBox()
-        p = get_active_palette()
-        self.vault_selector.setStyleSheet(
-            f"QComboBox {{ background: {p['BRAND_PANEL_2']}; color: {p['BRAND_PRIMARY']}; border: 1px solid {p['BRAND_BORDER']}; padding: 4px; }} QComboBox QAbstractItemView {{ background: {p['BRAND_PANEL']}; color: {p['BRAND_PRIMARY']}; border: 1px solid {p['BRAND_BORDER']}; selection-background-color: {get_brand_accent()}; selection-color: {p['BRAND_BACKGROUND']}; }}"
-        )
         self.vault_selector.currentIndexChanged.connect(self._on_vault_selected)
 
         self.btn_add = QToolButton()
         self.btn_add.setIconSize(icon_qsize)
         self.btn_add.setIcon(icon("plus", size=icon_sz))
         self.btn_add.setToolTip("Add vault")
-        self.btn_add.setStyleSheet(compact_toolbar_stylesheet())
         self.btn_add.setAutoRaise(True)
 
         self.btn_refresh = QToolButton()
         self.btn_refresh.setIconSize(icon_qsize)
         self.btn_refresh.setIcon(icon("rotate-cw", size=icon_sz))
         self.btn_refresh.setToolTip("Refresh vault")
-        self.btn_refresh.setStyleSheet(compact_toolbar_stylesheet())
         self.btn_refresh.setAutoRaise(True)
         self.btn_refresh.clicked.connect(self.refresh_active_vault)
 
@@ -69,7 +63,6 @@ class VaultExplorer(QWidget):
         self.btn_search.setIconSize(icon_qsize)
         self.btn_search.setIcon(icon("search", size=icon_sz))
         self.btn_search.setToolTip("Search vault")
-        self.btn_search.setStyleSheet(compact_toolbar_stylesheet())
         self.btn_search.setAutoRaise(True)
         self.btn_search.clicked.connect(self._emit_search)
 
@@ -83,7 +76,25 @@ class VaultExplorer(QWidget):
         self.tree.setHeaderHidden(True)
         self.tree.setAnimated(True)
         self.tree.setIndentation(16)
+        self.tree.itemExpanded.connect(self._on_item_expanded)
+        self.tree.itemDoubleClicked.connect(self._on_item_double_clicked)
+        self.tree.itemSelectionChanged.connect(self._on_tree_selection_changed)
+
+        layout.addLayout(header_row)
+        layout.addWidget(self.tree)
+        self.apply_theme()
+
+    def apply_theme(self):
         p = get_active_palette()
+        accent = get_brand_accent()
+        self.vault_selector.setStyleSheet(
+            f"QComboBox {{ background: {p['BRAND_PANEL_2']}; color: {p['BRAND_PRIMARY']}; border: 1px solid {p['BRAND_BORDER']}; padding: 4px; }} "
+            f"QComboBox QAbstractItemView {{ background: {p['BRAND_PANEL']}; color: {p['BRAND_PRIMARY']}; border: 1px solid {p['BRAND_BORDER']}; selection-background-color: {accent}; selection-color: {p['BRAND_BACKGROUND']}; }}"
+        )
+        ct_sheet = compact_toolbar_stylesheet()
+        self.btn_add.setStyleSheet(ct_sheet)
+        self.btn_refresh.setStyleSheet(ct_sheet)
+        self.btn_search.setStyleSheet(ct_sheet)
         self.tree.setStyleSheet(f"""
             QTreeWidget {{
                 background: {p['BRAND_PANEL']};
@@ -93,15 +104,9 @@ class VaultExplorer(QWidget):
                 outline: none;
             }}
             QTreeWidget::item {{ padding: 5px 6px; border-left: 2px solid transparent; }}
-            QTreeWidget::item:selected {{ background: {p['BRAND_PANEL_2']}; border-left: 2px solid {get_brand_accent()}; color: #ffffff; font-weight: bold; }}
+            QTreeWidget::item:selected {{ background: {p['BRAND_PANEL_2']}; border-left: 2px solid {accent}; color: #ffffff; font-weight: bold; }}
             QTreeWidget::item:hover:!selected {{ background: {p['BRAND_PANEL_2']}; }}
         """)
-        self.tree.itemExpanded.connect(self._on_item_expanded)
-        self.tree.itemDoubleClicked.connect(self._on_item_double_clicked)
-        self.tree.itemSelectionChanged.connect(self._on_tree_selection_changed)
-
-        layout.addLayout(header_row)
-        layout.addWidget(self.tree)
 
     def set_show_all_files(self, show_all):
         self._show_all_files = show_all

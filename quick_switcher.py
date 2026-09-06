@@ -4,13 +4,13 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt, Signal, QEvent
 from PySide6.QtGui import QIcon, QColor
 from pathlib import Path
-from theme import BRAND_BACKGROUND, BRAND_PANEL, BRAND_BORDER, BRAND_PRIMARY, BRAND_MUTED, BRAND_MUTED_FG, get_brand_accent
+from theme import get_active_palette, get_brand_accent
 from file_icons import file_type_icon
 
 
 class QuickSwitcher(QDialog):
     """
-    Quick file switcher dialog (Ctrl+P).
+    Quick file switcher dialog (Ctrl+Q).
     Fuzzy search over recent and pinned files.
     VSCode-style interface.
     """
@@ -33,31 +33,32 @@ class QuickSwitcher(QDialog):
                     seen.add(f)
         
         self.setWindowTitle("Quick Switcher")
+        p = get_active_palette()
         accent = get_brand_accent()
         self.setStyleSheet(f"""
             QDialog {{
-                background: {BRAND_BACKGROUND};
-                color: {BRAND_PRIMARY};
+                background: {p['BRAND_BACKGROUND']};
+                color: {p['BRAND_PRIMARY']};
             }}
             QLineEdit {{
-                background: {BRAND_PANEL};
-                color: {BRAND_PRIMARY};
-                border: 1px solid {BRAND_BORDER};
+                background: {p['BRAND_PANEL']};
+                color: {p['BRAND_PRIMARY']};
+                border: 1px solid {p['BRAND_BORDER']};
                 padding: 8px;
                 font-size: 14px;
                 selection-background-color: {accent};
             }}
             QListWidget {{
-                background: {BRAND_PANEL};
-                color: {BRAND_PRIMARY};
-                border: 1px solid {BRAND_BORDER};
+                background: {p['BRAND_PANEL']};
+                color: {p['BRAND_PRIMARY']};
+                border: 1px solid {p['BRAND_BORDER']};
             }}
             QListWidget::item:selected {{
                 background: {accent};
-                color: {BRAND_BACKGROUND};
+                color: {p['BRAND_BACKGROUND']};
             }}
             QListWidget::item:hover {{
-                background: {BRAND_MUTED};
+                background: {p['BRAND_MUTED']};
             }}
         """)
         
@@ -73,7 +74,7 @@ class QuickSwitcher(QDialog):
         
         # Help text
         help_label = QLabel("↑↓ Navigate  Enter Select  Esc Cancel")
-        help_label.setStyleSheet(f"color: {BRAND_MUTED_FG}; font-size: 11px; padding: 5px;")
+        help_label.setStyleSheet(f"color: {p['BRAND_MUTED_FG']}; font-size: 11px; padding: 5px;")
         
         # File list
         self.file_list = QListWidget()
@@ -99,6 +100,7 @@ class QuickSwitcher(QDialog):
         self.file_list.clear()
         
         if show_sections:
+            p = get_active_palette()
             groups = [
                 ("Open Tabs", [f for f in files if f in self.open_tabs]),
                 ("Pinned", [f for f in files if f in self.pinned_files and f not in self.open_tabs]),
@@ -109,7 +111,7 @@ class QuickSwitcher(QDialog):
                 if not group_files: continue
                 h_item = QListWidgetItem(header)
                 h_item.setFlags(h_item.flags() & ~Qt.ItemIsSelectable)
-                h_item.setForeground(QColor(BRAND_MUTED_FG))
+                h_item.setForeground(QColor(p['BRAND_MUTED_FG']))
                 self.file_list.addItem(h_item)
                 
                 for f in group_files:

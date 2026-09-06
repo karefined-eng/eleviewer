@@ -415,22 +415,26 @@ class MainWindow(QMainWindow):
             self.show_status_message("Update check failed.", 3000)
 
 
+    def _apply_status_bar_theme(self):
+        from theme import get_active_palette
+        p = get_active_palette()
+        if hasattr(self, "status_left"):
+            self.status_left.setStyleSheet(f"color: {p['BRAND_MUTED_FG']}; font-family: monospace; font-size: 11px; padding-left: 8px;")
+        if hasattr(self, "status_center"):
+            self.status_center.setStyleSheet(f"color: {p['BRAND_MUTED_FG']}; font-family: monospace; font-size: 11px;")
+        if hasattr(self, "status_right"):
+            self.status_right.setStyleSheet(f"color: {p['BRAND_MUTED_FG']}; font-family: monospace; font-size: 11px; padding-right: 12px;")
+
     def _setup_status_bar(self):
         status_bar = self.statusBar()
         status_bar.setSizeGripEnabled(False)
-        
-        from theme import get_active_palette
-        p = get_active_palette()
 
         self.status_left = QLabel("0 tabs · session saved")
-        self.status_left.setStyleSheet(f"color: {p['BRAND_MUTED_FG']}; font-family: monospace; font-size: 11px; padding-left: 8px;")
-
         self.status_center = QLabel("Ctrl+Q quick switch · Alt+V vault")
-        self.status_center.setStyleSheet(f"color: {p['BRAND_MUTED_FG']}; font-family: monospace; font-size: 11px;")
         self.status_center.setAlignment(Qt.AlignCenter)
-
         self.status_right = QLabel("md · UTF-8")
-        self.status_right.setStyleSheet(f"color: {p['BRAND_MUTED_FG']}; font-family: monospace; font-size: 11px; padding-right: 12px;")
+
+        self._apply_status_bar_theme()
 
         status_bar.addWidget(self.status_left)
         status_bar.addWidget(self.status_center, 1)
@@ -491,6 +495,8 @@ class MainWindow(QMainWindow):
         self.tabs.setMovable(True)
         self.tabs.tabBar().installEventFilter(self)
         self.tabs.tabBar().setMovable(True)
+        self.tabs.tabBar().setUsesScrollButtons(True)
+        self.tabs.tabBar().setElideMode(Qt.ElideRight)
         self.tabs.tabCloseRequested.connect(self.close_tab)
         self.tabs.setContextMenuPolicy(Qt.CustomContextMenu)
         self.tabs.customContextMenuRequested.connect(self.show_tab_context_menu)
@@ -499,6 +505,8 @@ class MainWindow(QMainWindow):
         self.tabs_right.setTabsClosable(True)
         self.tabs_right.setDocumentMode(True)
         self.tabs_right.tabBar().setMovable(True)
+        self.tabs_right.tabBar().setUsesScrollButtons(True)
+        self.tabs_right.tabBar().setElideMode(Qt.ElideRight)
         self.tabs_right.tabCloseRequested.connect(lambda i: self._close_tab_in_widget(self.tabs_right, i))
         self.tabs_right.setContextMenuPolicy(Qt.CustomContextMenu)
         self.tabs_right.customContextMenuRequested.connect(lambda pos: self.show_tab_context_menu(pos, self.tabs_right))
@@ -697,10 +705,41 @@ class MainWindow(QMainWindow):
             ("F1", self.open_getting_started),
             ("Alt+S", self.open_settings),
         ]
+        if hasattr(self, "next_tab"):
+            shortcuts.append(("Ctrl+Tab", self.next_tab))
+        if hasattr(self, "prev_tab"):
+            shortcuts.append(("Ctrl+Shift+Tab", self.prev_tab))
+            shortcuts.append(("Ctrl+Backtab", self.prev_tab))
         for key_seq, slot in shortcuts:
             sc = QShortcut(QKeySequence(key_seq), self)
             sc.setContext(Qt.ApplicationShortcut)
             sc.activated.connect(slot)
+
+    def next_tab(self):
+        tab_widget = self.tabs
+        if hasattr(self, "tabs_right") and self.tabs_right.isVisible():
+            from PySide6.QtWidgets import QApplication
+            fw = QApplication.focusWidget()
+            if fw and (self.tabs_right.isAncestorOf(fw) or fw == self.tabs_right):
+                tab_widget = self.tabs_right
+        count = tab_widget.count()
+        if count > 1:
+            idx = (tab_widget.currentIndex() + 1) % count
+            tab_widget.setCurrentIndex(idx)
+            self.update_status_bar()
+
+    def prev_tab(self):
+        tab_widget = self.tabs
+        if hasattr(self, "tabs_right") and self.tabs_right.isVisible():
+            from PySide6.QtWidgets import QApplication
+            fw = QApplication.focusWidget()
+            if fw and (self.tabs_right.isAncestorOf(fw) or fw == self.tabs_right):
+                tab_widget = self.tabs_right
+        count = tab_widget.count()
+        if count > 1:
+            idx = (tab_widget.currentIndex() - 1) % count
+            tab_widget.setCurrentIndex(idx)
+            self.update_status_bar()
 
     def _restore_vault(self):
         settings = load_settings()
@@ -1119,12 +1158,13 @@ class MainWindow(QMainWindow):
             host = t.split("/", 1)[0].lower()
             return any(host.endswith(tld) for tld in common_tlds)
 
-        def _omni_changed(text):
-            text = text.strip()
-            if not text:
-                omni_results.hide()
-                return
-            if _is_url(text):
+        omni_timer = QTimer(w)
+        omni_timer.setSingleShot(True)
+        omni_timer.setInterval(200)
+
+        def _do_omni_search():
+            text = omni_input.text().strip()
+            if not text or _is_url(text):
                 omni_results.hide()
                 return
             # Vault file search
@@ -1153,6 +1193,15 @@ class MainWindow(QMainWindow):
                 omni_results.show()
             else:
                 omni_results.hide()
+
+        omni_timer.timeout.connect(_do_omni_search)
+
+        def _omni_changed(text):
+            if not text.strip():
+                omni_timer.stop()
+                omni_results.hide()
+                return
+            omni_timer.start(200)
 
         def _omni_activated():
             text = omni_input.text().strip()
@@ -1430,13 +1479,20 @@ class MainWindow(QMainWindow):
 
     def _check_file_load_milestone(self):
         settings = load_settings()
+        if settings.get("whatsapp_invite_shown", False):
+            return
         count = settings.get("files_opened", 0) + 1
         settings["files_opened"] = count
-        save_settings(settings)
-        if count == 5:
+        if count >= 5:
+            settings["whatsapp_invite_shown"] = True
+            save_settings(settings)
             self._show_whatsapp_invite()
+        else:
+            save_settings(settings)
 
     def _show_whatsapp_invite(self):
+        if os.environ.get("PYTEST_CURRENT_TEST") or os.environ.get("CI"):
+            return
         msg = QMessageBox(self)
         msg.setIcon(QMessageBox.Information)
         msg.setWindowTitle("EleViewer — Join Nightly Insiders")
@@ -1704,7 +1760,7 @@ class MainWindow(QMainWindow):
                 ("Reopen last closed tab",  "Ctrl + Shift + T"),
             ]),
             ("Navigating", [
-                ("Quick file switcher",     "Ctrl + P"),
+                ("Quick file switcher",     "Ctrl + Q"),
                 ("Find & Replace",          "Ctrl + F"),
                 ("Vault / folder search",   "Ctrl + Shift + F"),
                 ("Next tab",                "Ctrl + Tab"),
@@ -1717,7 +1773,8 @@ class MainWindow(QMainWindow):
                 ("Toggle Bookmarks panel",  "Ctrl + Alt + B"),
             ]),
             ("View & Layout", [
-                ("Toggle Web Browser panel","F9"),
+                ("Toggle Web Browser panel","Ctrl + Shift + W"),
+                ("Read Aloud / TTS",        "F9"),
                 ("Toggle full screen",      "F11"),
                 ("Zoom in",                 "Ctrl + ="),
                 ("Zoom out",                "Ctrl + -"),
@@ -1729,7 +1786,7 @@ class MainWindow(QMainWindow):
             ("Other", [
                 ("Settings",                "Alt + S"),
                 ("Keyboard Shortcuts",      "F1"),
-                ("Quit EleViewer",          "Ctrl + Q"),
+                ("Quit EleViewer",          "Alt + F4"),
             ]),
         ]
 
@@ -1792,11 +1849,16 @@ class MainWindow(QMainWindow):
     def _on_settings_saved(self):
         from theme import main_window_stylesheet
         self.setStyleSheet(main_window_stylesheet())
+        self._apply_status_bar_theme()
+        if hasattr(self, '_apply_web_dock_theme'):
+            self._apply_web_dock_theme()
         if hasattr(self, 'autosaver') and self.autosaver:
             self.autosaver.apply_settings()
         from settings import load_settings
         settings = load_settings()
         if hasattr(self, 'vault_panel') and self.vault_panel:
+            if hasattr(self.vault_panel, 'apply_theme'):
+                self.vault_panel.apply_theme()
             self.vault_panel.set_show_all_files(settings.get("vault_show_all_files", False))
             self.vault_panel.restore_from_settings()
         self.show_status_message("Settings saved", 2000)
@@ -1950,20 +2012,28 @@ class MainWindow(QMainWindow):
         if not editor:
             return
         if getattr(editor, "is_modified", False):
-            reply = QMessageBox.question(
-                self, "Unsaved Changes", "Save before closing?",
-                QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel,
-            )
-            if reply == QMessageBox.Yes:
+            tab_name = self.tabs.tabText(index).rstrip("*") or "Untitled"
+            msg = QMessageBox(self)
+            msg.setWindowTitle("Unsaved Changes")
+            msg.setText(f"<b>{tab_name}</b> has unsaved changes.")
+            msg.setInformativeText("Do you want to save before closing?")
+            msg.setIcon(QMessageBox.Warning)
+            save_btn    = msg.addButton("Save",    QMessageBox.AcceptRole)
+            discard_btn = msg.addButton("Discard", QMessageBox.DestructiveRole)
+            msg.addButton("Cancel",                QMessageBox.RejectRole)
+            msg.setDefaultButton(save_btn)
+            msg.exec()
+            clicked = msg.clickedButton()
+            if clicked == save_btn:
                 self.tabs.setCurrentIndex(index)
                 self.save_file()
                 if getattr(editor, "is_modified", False):
                     return
-            elif reply == QMessageBox.Cancel:
-                return
-            elif reply == QMessageBox.No:
+            elif clicked == discard_btn:
                 if hasattr(self, "draft_manager"):
                     self.draft_manager.cleanup(path=getattr(editor, "file_path", None), editor_id=id(editor))
+            else:  # Cancel (or dialog closed)
+                return
 
         self.closed_tabs.append({
             "content": editor.toPlainText() if hasattr(editor, "toPlainText") else "",
@@ -2070,6 +2140,14 @@ class MainWindow(QMainWindow):
                 self.tabs.setCurrentIndex(i)
                 self.update_status_bar()
                 return True
+        if hasattr(self, "tabs_right") and self.tabs_right.isVisible():
+            for i in range(self.tabs_right.count()):
+                editor = self.tabs_right.widget(i)
+                tab_path = getattr(editor, "file_path", None)
+                if tab_path and os.path.abspath(tab_path) == normalized_path:
+                    self.tabs_right.setCurrentIndex(i)
+                    self.update_status_bar()
+                    return True
         return False
 
     def open_file(self, file_path=None):
@@ -2254,6 +2332,18 @@ class MainWindow(QMainWindow):
         else:
             self.open_web_tab()
 
+    def _apply_web_dock_theme(self):
+        if not getattr(self, "_web_title_bar", None):
+            return
+        from theme import get_active_palette, compact_toolbar_stylesheet
+        p = get_active_palette()
+        self._web_title_bar.setStyleSheet(f"background: {p['BRAND_PANEL']}; border-bottom: 1px solid {p['BRAND_BORDER']};")
+        if getattr(self, "_web_lbl_title", None):
+            self._web_lbl_title.setStyleSheet(f"color: {p['BRAND_MUTED_FG']}; font-weight: bold; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;")
+        ct_sheet = compact_toolbar_stylesheet()
+        for btn in getattr(self, "_web_title_buttons", []):
+            btn.setStyleSheet(ct_sheet)
+
     def open_web_tab(self):
         from PySide6.QtWidgets import QDockWidget, QWidget, QLabel, QToolButton, QHBoxLayout, QMessageBox
         from theme import get_active_palette, compact_toolbar_stylesheet
@@ -2294,15 +2384,12 @@ class MainWindow(QMainWindow):
         if self.tabs.count() == 0:
             self.editor_splitter.hide()
 
-        p = get_active_palette()
-        title_bar = QWidget()
-        title_bar.setStyleSheet(f"background: {p['BRAND_PANEL']}; border-bottom: 1px solid {p['BRAND_BORDER']};")
-        tb_layout = QHBoxLayout(title_bar)
+        self._web_title_bar = QWidget()
+        tb_layout = QHBoxLayout(self._web_title_bar)
         tb_layout.setContentsMargins(10, 6, 10, 6)
 
-        lbl_title = QLabel("Web Browser")
-        lbl_title.setStyleSheet(f"color: {p['BRAND_MUTED_FG']}; font-weight: bold; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;")
-        tb_layout.addWidget(lbl_title)
+        self._web_lbl_title = QLabel("Web Browser")
+        tb_layout.addWidget(self._web_lbl_title)
         tb_layout.addStretch()
 
         from icons import icon
@@ -2313,25 +2400,25 @@ class MainWindow(QMainWindow):
         btn_max.setIcon(icon("maximize", size=icon_sz))
         btn_max.setIconSize(icon_qsize)
         btn_max.setToolTip("Expand to Full Window")
-        btn_max.setStyleSheet(compact_toolbar_stylesheet())
 
         btn_float = QToolButton()
         btn_float.setIcon(icon("external-link", size=icon_sz))
         btn_float.setIconSize(icon_qsize)
         btn_float.setToolTip("Pop Out Web Panel")
-        btn_float.setStyleSheet(compact_toolbar_stylesheet())
 
         btn_close = QToolButton()
         btn_close.setIcon(icon("x", size=icon_sz))
         btn_close.setIconSize(icon_qsize)
         btn_close.setToolTip("Close Web Panel")
-        btn_close.setStyleSheet(compact_toolbar_stylesheet())
+
+        self._web_title_buttons = [btn_max, btn_float, btn_close]
+        self._apply_web_dock_theme()
 
         tb_layout.addWidget(btn_max)
         tb_layout.addWidget(btn_float)
         tb_layout.addWidget(btn_close)
 
-        self._web_dock.setTitleBarWidget(title_bar)
+        self._web_dock.setTitleBarWidget(self._web_title_bar)
 
         # Maximize/restore toggle: hides editor so web panel takes full width
         def _toggle_maximize():
@@ -2388,12 +2475,16 @@ class MainWindow(QMainWindow):
         if hasattr(editor, "find_text"):
             self.find_replace_panel.show()
             self.find_replace_panel.focus_find()
+        else:
+            self.show_status_message("Search is not available for this file type", 2000)
 
     def show_replace(self):
         editor = self.current_editor()
         if hasattr(editor, "replace_text"):
             self.find_replace_panel.show()
             self.find_replace_panel.focus_replace()
+        else:
+            self.show_status_message("Replace is not available for this file type", 2000)
 
     def _on_find_next(self, text, match_case, whole_word, forward):
         editor = self.current_editor()
