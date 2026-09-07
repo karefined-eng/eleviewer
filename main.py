@@ -147,6 +147,7 @@ if len(sys.argv) > 1:
 
 from PySide6.QtCore import QEventLoop, QTimer, Qt
 from PySide6.QtWidgets import QWidget, QVBoxLayout
+from PySide6.QtGui import QGuiApplication
 from morphing_loader import MorphingLogo
 
 splash = QWidget()
@@ -156,6 +157,9 @@ splash_layout = QVBoxLayout(splash)
 loader = MorphingLogo(size=120)
 splash_layout.addWidget(loader)
 loader.start()
+
+screen_geo = QGuiApplication.primaryScreen().geometry()
+splash.move((screen_geo.width() - 120) // 2, (screen_geo.height() - 120) // 2)
 splash.show()
 
 loop = QEventLoop()
