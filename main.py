@@ -11,8 +11,7 @@ from instance_lock import SingleInstanceServer
 import ctypes
 from PySide6.QtCore import QByteArray
 from settings import load_settings
-
-APP_VERSION = "1.5.0"
+from version import APP_VERSION
 logger = logging.getLogger("eleviewer")
 
 # Set AppUserModelID so taskbar grouping and jump lists work correctly

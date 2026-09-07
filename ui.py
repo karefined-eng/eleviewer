@@ -8,7 +8,7 @@ from PySide6.QtCore import Qt, QSize, QTimer, Slot, QUrl, Signal, QEvent, QMimeD
 import os
 import sys
 
-APP_VERSION = "1.4.0"
+from version import APP_VERSION
 
 from editor import EditorTab
 from bookmark_manager import add_bookmark, load_bookmarks

@@ -11,8 +11,7 @@ import urllib.request
 import urllib.parse
 from theme import BRAND_BACKGROUND, BRAND_PRIMARY, BRAND_PANEL, BRAND_BORDER, get_brand_accent
 from paths import strip_pii
-
-APP_VERSION = "1.4.0"
+from version import APP_VERSION
 
 # FIX: HTTP POST moved to QThread to prevent 10s GUI freeze on timeout
 class FeedbackSubmitThread(QThread):

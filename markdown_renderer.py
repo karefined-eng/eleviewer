@@ -374,7 +374,11 @@ class MarkdownViewer(QWidget):
         self.formatting_widget.setVisible(not is_vis)
 
     def _on_pin_toggled(self, checked):
-        save_settings({"formatting_toolbar_pinned": checked})
+        # Read-modify-write: save_settings() replaces the whole settings file,
+        # so a one-key dict would wipe every other saved setting.
+        s = load_settings()
+        s["formatting_toolbar_pinned"] = checked
+        save_settings(s)
         self._update_pin_icon()
         if checked:
             self.formatting_widget.setVisible(True)
