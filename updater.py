@@ -175,15 +175,25 @@ class UpdateDialog(QDialog):
         self.notes_area.setReadOnly(True)
         self.notes_area.setPlainText(release_notes)
         layout.addWidget(self.notes_area)
+        
+        from morphing_loader import MorphingHamburger
+        self.loader_anim = MorphingHamburger(size=48)
+        self.loader_anim.setVisible(False)
+        
+        status_layout = QHBoxLayout()
+        status_layout.addWidget(self.loader_anim)
+        
+        self.status_label = QLabel("")
+        self.status_label.setStyleSheet("color: #666;")
+        self.status_label.setVisible(False)
+        status_layout.addWidget(self.status_label)
+        status_layout.addStretch()
+        
+        layout.addLayout(status_layout)
 
         self.progress_bar = QProgressBar()
         self.progress_bar.setVisible(False)
         layout.addWidget(self.progress_bar)
-
-        self.status_label = QLabel("")
-        self.status_label.setStyleSheet("color: #666;")
-        self.status_label.setVisible(False)
-        layout.addWidget(self.status_label)
 
         btn_layout = QHBoxLayout()
         self.update_btn = QPushButton("Update Now")
@@ -204,6 +214,8 @@ class UpdateDialog(QDialog):
             self.cancel_btn.setEnabled(False)
             self.progress_bar.setVisible(True)
             self.progress_bar.setValue(0)
+            self.loader_anim.setVisible(True)
+            self.loader_anim.start()
             self.status_label.setText("Downloading installer update...")
             self.status_label.setVisible(True)
 
@@ -219,6 +231,8 @@ class UpdateDialog(QDialog):
             self.accept()
 
     def _on_download_finished(self, exe_path):
+        self.loader_anim.stop()
+        self.loader_anim.setVisible(False)
         self.status_label.setText("Starting installer...")
         try:
             subprocess.Popen([exe_path])
@@ -228,7 +242,13 @@ class UpdateDialog(QDialog):
             self.reject()
 
     def _on_download_failed(self, reason):
+        self.loader_anim.stop()
+        self.loader_anim.setVisible(False)
+        self.update_btn.setEnabled(True)
+        self.cancel_btn.setEnabled(True)
+        self.progress_bar.setVisible(False)
+        self.status_label.setVisible(False)
         QMessageBox.warning(self, "Download Failed", f"Could not download update: {reason}\nOpening release page instead.")
         from PySide6.QtGui import QDesktopServices
-        QDesktopServices.openUrl(QUrl(self.download_url))
+        QDesktopServices.openUrl(QUrl("https://github.com/karefined-eng/eleviewer/releases/latest"))
         self.reject()

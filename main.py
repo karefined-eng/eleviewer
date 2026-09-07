@@ -145,6 +145,25 @@ if len(sys.argv) > 1:
     elif os.path.exists(arg):
         window._open_vault_file(os.path.abspath(arg))
 
+from PySide6.QtCore import QEventLoop, QTimer, Qt
+from PySide6.QtWidgets import QWidget, QVBoxLayout
+from morphing_loader import MorphingHamburger
+
+splash = QWidget()
+splash.setWindowFlags(Qt.SplashScreen | Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)
+splash.setAttribute(Qt.WA_TranslucentBackground)
+splash_layout = QVBoxLayout(splash)
+loader = MorphingHamburger(size=120)
+splash_layout.addWidget(loader)
+loader.start()
+splash.show()
+
+loop = QEventLoop()
+QTimer.singleShot(1500, loop.quit)
+loop.exec()
+
+splash.close()
+
 window.show()
 
 if not settings.get("onboarding_completed", False):

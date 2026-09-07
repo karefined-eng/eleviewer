@@ -1515,7 +1515,7 @@ class MainWindow(QMainWindow):
             return
         count = settings.get("files_opened", 0) + 1
         settings["files_opened"] = count
-        if count >= 5:
+        if count >= 20:
             settings["whatsapp_invite_shown"] = True
             save_settings(settings)
             self._show_whatsapp_invite()
