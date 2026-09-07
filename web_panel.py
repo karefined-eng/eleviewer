@@ -355,8 +355,15 @@ class WebPanel(QWidget):
         self.btn_add.setToolTip("New tab (Ctrl+T)")
         self.btn_add.clicked.connect(self.add_tab)
 
+        self.btn_menu = QToolButton()
+        self.btn_menu.setIconSize(icon_qsize)
+        self.btn_menu.setIcon(icon("more-vertical", size=icon_sz))
+        self.btn_menu.setToolTip("Menu")
+        self.btn_menu.setPopupMode(QToolButton.InstantPopup)
+        self.btn_menu.setMenu(self._build_nav_menu())
+
         for btn in (self.btn_back, self.btn_forward, self.btn_refresh,
-                    self.btn_bookmark, self.btn_add):
+                    self.btn_bookmark, self.btn_add, self.btn_menu):
             btn.setStyleSheet(compact_toolbar_stylesheet())
             btn.setAutoRaise(True)
 
@@ -367,6 +374,7 @@ class WebPanel(QWidget):
         nav.addWidget(self._zoom_label)
         nav.addWidget(self.btn_bookmark)
         nav.addWidget(self.btn_add)
+        nav.addWidget(self.btn_menu)
 
         # ── Tab widget ────────────────────────────────────────────────────
         self.tabs = QTabWidget()
@@ -431,7 +439,52 @@ class WebPanel(QWidget):
         sc_zreset.setContext(Qt.WidgetWithChildrenShortcut)
         sc_zreset.activated.connect(self._zoom_reset)
 
+        # History and Downloads Shortcuts
+        sc_hist = QShortcut(QKeySequence("Ctrl+Shift+H"), self)
+        sc_hist.setContext(Qt.WidgetWithChildrenShortcut)
+        sc_hist.activated.connect(self._show_history_dialog)
+
+        sc_dl = QShortcut(QKeySequence("Ctrl+J"), self)
+        sc_dl.setContext(Qt.WidgetWithChildrenShortcut)
+        sc_dl.activated.connect(self._show_downloads_dialog)
+
         self.restore_tabs()
+
+    def _build_nav_menu(self):
+        from PySide6.QtWidgets import QMenu
+        menu = QMenu(self)
+        
+        act_hist = menu.addAction(icon("clock", size=14), "History")
+        act_hist.setShortcut("Ctrl+Shift+H")
+        act_hist.triggered.connect(self._show_history_dialog)
+        
+        act_dl = menu.addAction(icon("download", size=14), "Downloads")
+        act_dl.setShortcut("Ctrl+J")
+        act_dl.triggered.connect(self._show_downloads_dialog)
+        
+        menu.addSeparator()
+        
+        act_set = menu.addAction(icon("settings", size=14), "Settings")
+        act_set.setShortcut("Alt+S")
+        act_set.triggered.connect(self._open_settings)
+        
+        return menu
+
+    def _show_history_dialog(self):
+        from web_history import HistoryDialog
+        dlg = HistoryDialog(self.window())
+        dlg.url_requested.connect(self.open_url_in_new_tab)
+        dlg.exec()
+
+    def _show_downloads_dialog(self):
+        from web_downloads import DownloadsDialog
+        dlg = DownloadsDialog(self.window())
+        dlg.exec()
+
+    def _open_settings(self):
+        window = self.window()
+        if hasattr(window, "open_settings"):
+            window.open_settings()
 
     # ─────────────────────────────────────────────────────────────────────
     # Find bar
@@ -693,6 +746,9 @@ class WebPanel(QWidget):
         self._download_bar.show()
         self._current_dl_path = os.path.join(dl_dir, filename)
 
+        from web_downloads import track_download
+        track_download(filename, self._current_dl_path, download.url().toString(), "Downloading")
+
         download.receivedBytesChanged.connect(
             lambda: self._on_dl_progress(download))
         download.isFinishedChanged.connect(
@@ -713,6 +769,12 @@ class WebPanel(QWidget):
         self._dl_progress.setValue(100)
         self._dl_filename.setText(f"Downloaded: {filename}")
         self._dl_open_btn.show()
+        
+        # Determine status
+        from PySide6.QtWebEngineCore import QWebEngineDownloadRequest
+        status = "Completed" if download.state() == QWebEngineDownloadRequest.DownloadState.DownloadCompleted else "Failed"
+        from web_downloads import track_download
+        track_download(filename, getattr(self, "_current_dl_path", ""), download.url().toString(), status)
 
     def _open_download_folder(self):
         import os, subprocess
@@ -932,6 +994,14 @@ class WebPanel(QWidget):
             # Update tooltip with current title + URL
             title = self._tabs_data[idx].get("title", "")
             self.tabs.setTabToolTip(idx, f"{title}\n{url.toString()}")
+        
+        # Track history
+        try:
+            from web_history import track_visit
+            track_visit(url.toString(), view.title() if view else url.toString())
+        except Exception:
+            pass
+            
         self._schedule_persist()
 
     def _on_title_changed(self, view, title):
@@ -944,6 +1014,15 @@ class WebPanel(QWidget):
             # Update tooltip with full title + URL
             url_str = view.url().toString() if view else ""
             self.tabs.setTabToolTip(idx, f"{title}\n{url_str}")
+        
+        # Track history update
+        try:
+            from web_history import track_visit
+            if view and view.url().isValid():
+                track_visit(view.url().toString(), title)
+        except Exception:
+            pass
+            
         self._schedule_persist()
 
     def _on_icon_changed(self, view, web_icon):

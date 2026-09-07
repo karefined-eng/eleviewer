@@ -15,6 +15,10 @@ os.environ.setdefault("QTWEBENGINE_CHROMIUM_FLAGS", "--disable-gpu --no-sandbox"
 out_dir = Path(tempfile.gettempdir()) / "eleviewer_ui_check"
 out_dir.mkdir(exist_ok=True)
 
+# Redirect the whole config dir (settings, session, recents, bookmarks) before
+# paths.py is imported, so captures never touch the real AppData profile.
+os.environ["APPDATA"] = str(out_dir)
+
 cap_settings = out_dir / "settings.json"
 
 import settings as settings_mod
