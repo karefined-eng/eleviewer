@@ -224,6 +224,9 @@ class MainWindow(QMainWindow):
         self._build_toolbar()
         self.create_menu()
         self._setup_global_shortcuts()
+        # Give the right dock area the top-right corner so the web panel docks
+        # flush under the menu bar instead of stopping below the main toolbar.
+        self.setCorner(Qt.TopRightCorner, Qt.RightDockWidgetArea)
         self._restore_vault()
         self.restore_session()
 
@@ -612,7 +615,7 @@ class MainWindow(QMainWindow):
 
         if WEB_AVAILABLE:
             web_btn = QAction(icon("globe", size=ICON_SIZE_TOOLBAR), "Web Panel", self)
-            web_btn.setToolTip("Toggle Web Browser Panel (Ctrl+Shift+W)")
+            web_btn.setToolTip("Open Web Panel (Ctrl+T = new tab · Ctrl+Shift+W = toggle)")
             web_btn.triggered.connect(self.toggle_web_panel)
             self.toolbar.register_action("web", web_btn)
 
@@ -649,8 +652,19 @@ class MainWindow(QMainWindow):
         # Populate the quick menu in the status bar with the toolbar actions
         for action in self.toolbar.actions():
             self.quick_menu.addAction(action)
-            
-        self.toolbar.hide()
+
+        self.toolbar.setVisible(bool(load_settings().get("show_toolbar", True)))
+
+    def toggle_main_toolbar(self):
+        show = self.toolbar.isHidden()
+        self.toolbar.setVisible(show)
+        action = getattr(self, "action_toggle_toolbar", None)
+        if action:
+            action.setChecked(show)
+        s = load_settings()
+        s["show_toolbar"] = show
+        save_settings(s)
+        self.show_status_message("Main toolbar shown" if show else "Main toolbar hidden — all commands remain in the menu bar", 2500)
 
     def _add_menu_action(self, menu, text, slot, shortcut=None):
         action = QAction(text, self)
@@ -701,6 +715,7 @@ class MainWindow(QMainWindow):
             ("Ctrl+H", self.show_replace),
             ("Ctrl+Shift+F", self.open_vault_search),
             ("Ctrl+Alt+B", self.toggle_bookmarks_panel),
+            ("Ctrl+Alt+T", self.toggle_main_toolbar),
             ("Ctrl+D", self.bookmark_current_tab),
             ("F1", self.open_getting_started),
             ("Alt+S", self.open_settings),
@@ -1727,6 +1742,14 @@ class MainWindow(QMainWindow):
         self.bookmarks_menu = session_menu.addMenu("Bookmarks")
         self._add_menu_action(self.bookmarks_menu, "Bookmark Current Tab", self.bookmark_current_tab, "Ctrl+D")
 
+        view_menu = menu.addMenu("View")
+        self.action_toggle_toolbar = view_menu.addAction("Show Main Toolbar")
+        self.action_toggle_toolbar.setCheckable(True)
+        self.action_toggle_toolbar.setChecked(not self.toolbar.isHidden())
+        self.action_toggle_toolbar.setShortcut("Ctrl+Alt+T")
+        self.action_toggle_toolbar.setShortcutContext(Qt.WidgetShortcut)
+        self.action_toggle_toolbar.triggered.connect(self.toggle_main_toolbar)
+
         self._add_menu_action(menu, "Settings...", self.open_settings, "Alt+S")
 
         help_menu = menu.addMenu("Help")
@@ -1773,6 +1796,7 @@ class MainWindow(QMainWindow):
                 ("Toggle Bookmarks panel",  "Ctrl + Alt + B"),
             ]),
             ("View & Layout", [
+                ("Toggle main toolbar",     "Ctrl + Alt + T"),
                 ("Toggle Web Browser panel","Ctrl + Shift + W"),
                 ("Read Aloud / TTS",        "F9"),
                 ("Toggle full screen",      "F11"),
@@ -2333,20 +2357,17 @@ class MainWindow(QMainWindow):
             self.open_web_tab()
 
     def _apply_web_dock_theme(self):
-        if not getattr(self, "_web_title_bar", None):
-            return
         from theme import get_active_palette, compact_toolbar_stylesheet
         p = get_active_palette()
-        self._web_title_bar.setStyleSheet(f"background: {p['BRAND_PANEL']}; border-bottom: 1px solid {p['BRAND_BORDER']};")
-        if getattr(self, "_web_lbl_title", None):
-            self._web_lbl_title.setStyleSheet(f"color: {p['BRAND_MUTED_FG']}; font-weight: bold; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;")
         ct_sheet = compact_toolbar_stylesheet()
-        for btn in getattr(self, "_web_title_buttons", []):
+        for btn in getattr(self, "_web_dock_buttons", []):
             btn.setStyleSheet(ct_sheet)
+        if getattr(self, "_web_sep", None):
+            self._web_sep.setStyleSheet(f"background: {p['BRAND_BORDER']}; margin: 6px 4px;")
 
     def open_web_tab(self):
-        from PySide6.QtWidgets import QDockWidget, QWidget, QLabel, QToolButton, QHBoxLayout, QMessageBox
-        from theme import get_active_palette, compact_toolbar_stylesheet
+        from PySide6.QtWidgets import QDockWidget, QWidget, QToolButton, QFrame, QMessageBox
+        from theme import compact_toolbar_stylesheet
         global WEB_AVAILABLE
         if not WEB_AVAILABLE:
             QMessageBox.warning(self, "Missing Module", "QtWebEngine not installed.")
@@ -2380,24 +2401,19 @@ class MainWindow(QMainWindow):
         )
         self.addDockWidget(Qt.RightDockWidgetArea, self._web_dock)
 
-        # Auto-maximize when no doc tabs open; side-by-side otherwise
-        if self.tabs.count() == 0:
-            self.editor_splitter.hide()
+        # Auto-maximize when no doc tabs open; side-by-side otherwise.
+        # Decided after the handlers below are defined (see _set_maximized).
 
-        self._web_title_bar = QWidget()
-        tb_layout = QHBoxLayout(self._web_title_bar)
-        tb_layout.setContentsMargins(10, 6, 10, 6)
-
-        self._web_lbl_title = QLabel("Web Browser")
-        tb_layout.addWidget(self._web_lbl_title)
-        tb_layout.addStretch()
+        # No dock title bar: the dock controls live at the right end of the
+        # web panel's navigation row, so the page starts one row higher.
+        self._web_dock.setTitleBarWidget(QWidget())
 
         from icons import icon
-        icon_sz = 26
+        icon_sz = 24  # matches the web panel's nav buttons
         icon_qsize = QSize(icon_sz, icon_sz)
 
         btn_max = QToolButton()
-        btn_max.setIcon(icon("maximize", size=icon_sz))
+        btn_max.setIcon(icon("maximize-2", size=icon_sz))
         btn_max.setIconSize(icon_qsize)
         btn_max.setToolTip("Expand to Full Window")
 
@@ -2411,25 +2427,37 @@ class MainWindow(QMainWindow):
         btn_close.setIconSize(icon_qsize)
         btn_close.setToolTip("Close Web Panel")
 
-        self._web_title_buttons = [btn_max, btn_float, btn_close]
+        for btn in (btn_max, btn_float, btn_close):
+            btn.setStyleSheet(compact_toolbar_stylesheet())
+            btn.setAutoRaise(True)
+
+        self._web_sep = QFrame()
+        self._web_sep.setFrameShape(QFrame.VLine)
+        self._web_sep.setFixedWidth(1)
+
+        nav_layout = web_panel.nav_layout
+        nav_layout.addSpacing(4)
+        nav_layout.addWidget(self._web_sep)
+        nav_layout.addWidget(btn_max)
+        nav_layout.addWidget(btn_float)
+        nav_layout.addWidget(btn_close)
+
+        self._web_dock_buttons = [btn_max, btn_float, btn_close]
         self._apply_web_dock_theme()
 
-        tb_layout.addWidget(btn_max)
-        tb_layout.addWidget(btn_float)
-        tb_layout.addWidget(btn_close)
-
-        self._web_dock.setTitleBarWidget(self._web_title_bar)
-
-        # Maximize/restore toggle: hides editor so web panel takes full width
-        def _toggle_maximize():
-            if self.editor_splitter.isVisible():
+        # Maximize/restore toggle: hides the editor so the web panel takes full width
+        def _set_maximized(maximized):
+            if maximized:
                 self.editor_splitter.hide()
-                btn_max.setIcon(icon("minimize", size=icon_sz))
+                btn_max.setIcon(icon("minimize-2", size=icon_sz))
                 btn_max.setToolTip("Restore Side-by-Side")
             else:
                 self.editor_splitter.show()
-                btn_max.setIcon(icon("maximize", size=icon_sz))
+                btn_max.setIcon(icon("maximize-2", size=icon_sz))
                 btn_max.setToolTip("Expand to Full Window")
+
+        def _toggle_maximize():
+            _set_maximized(self.editor_splitter.isVisible())
 
         btn_max.clicked.connect(_toggle_maximize)
 
@@ -2438,11 +2466,19 @@ class MainWindow(QMainWindow):
 
         btn_float.clicked.connect(_toggle_float)
 
+        def _on_float_state_changed(floating):
+            btn_float.setIcon(icon("columns-2" if floating else "external-link", size=icon_sz))
+            btn_float.setToolTip("Re-dock Web Panel" if floating else "Pop Out Web Panel")
+
+        self._web_dock.topLevelChanged.connect(_on_float_state_changed)
+
         def _close_web_panel():
             self._web_dock.hide()
-            self.editor_splitter.show()  # always restore docs when web panel closes
+            _set_maximized(False)  # restore the editor and reset the button state
 
         btn_close.clicked.connect(_close_web_panel)
+
+        _set_maximized(self.tabs.count() == 0)
 
     @Slot(QUrl)
     @Slot(str)

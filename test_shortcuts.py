@@ -23,6 +23,7 @@ SHORTCUTS = {
     "Ctrl+H": "show_replace",
     "Ctrl+Shift+F": "open_vault_search",
     "Ctrl+Alt+B": "toggle_bookmarks_panel",
+    "Ctrl+Alt+T": "toggle_main_toolbar",
     "Ctrl+D": "bookmark_current_tab",
     "F1": "open_getting_started",
     "Alt+S": "open_settings",
@@ -54,6 +55,7 @@ class ShortcutHost(QWidget):
     def show_replace(self): self.record("show_replace")
     def open_vault_search(self): self.record("open_vault_search")
     def toggle_bookmarks_panel(self): self.record("toggle_bookmarks_panel")
+    def toggle_main_toolbar(self): self.record("toggle_main_toolbar")
     def bookmark_current_tab(self): self.record("bookmark_current_tab")
     def open_getting_started(self): self.record("open_getting_started")
     def open_settings(self): self.record("open_settings")
