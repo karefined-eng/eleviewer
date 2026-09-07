@@ -33,14 +33,14 @@ class OnboardingManager(QObject):
         self.window.statusBar().showMessage("👋 Welcome to EleViewer! Try the actions in the Playground.", 8000)
 
     def _hook_actions(self):
-        # Hook Alt+E (open_scratchpad)
-        orig_open_scratchpad = self.window.open_scratchpad
-        def hooked_open_scratchpad():
-            orig_open_scratchpad()
+        # Hook Alt+E (bring_to_front_and_new_note)
+        orig_bring_to_front = self.window.bring_to_front_and_new_note
+        def hooked_bring_to_front():
+            orig_bring_to_front()
             if not self.note_opened:
                 self.note_opened = True
                 self._show_success("Quick Note Opened (Alt+E)")
-        self.window.open_scratchpad = hooked_open_scratchpad
+        self.window.bring_to_front_and_new_note = hooked_bring_to_front
         
         # Hook Bookmark (add_bookmark_from_editor)
         orig_add_bookmark = self.window._add_bookmark_from_editor
