@@ -1,27 +1,62 @@
 import sys
 
-from PySide6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication, QStatusBar
 
-from onboarding import OnboardingDialog
+from onboarding import OnboardingManager
 from settings_dialog import SettingsDialog
 
 
 app = QApplication.instance() or QApplication(sys.argv)
 
+from PySide6.QtCore import QObject
 
-def test_onboarding_ends_with_two_clear_first_actions():
-    dialog = OnboardingDialog()
+class MockWebPanel:
+    def isVisible(self):
+        return False
 
-    for _ in range(dialog.stack.count() - 1):
-        dialog._next()
+class MockWindow(QObject):
+    def __init__(self):
+        super().__init__()
+        self._status_bar = QStatusBar()
+        self.web_panel = MockWebPanel()
+        
+    def statusBar(self):
+        return self._status_bar
+        
+    def toggle_web_panel(self):
+        pass
+        
+    def _open_vault_file(self, path):
+        pass
+        
+    def open_scratchpad(self):
+        pass
+        
+    def _add_bookmark_from_editor(self, editor, data):
+        pass
 
-    assert dialog.stack.currentIndex() == dialog.stack.count() - 1
-    assert dialog.sample_btn.text() == "Try the Sample Note"
-    assert dialog.open_file_btn.text() == "Open My File"
-    assert dialog.next_btn.text() == "Finish"
-    dialog.close()
-    dialog.deleteLater()
-    app.processEvents()
+
+def test_onboarding_manager_hooks_actions():
+    window = MockWindow()
+    manager = OnboardingManager(window)
+    
+    manager.start()
+    
+    # Test that hooking works
+    assert manager.note_opened is False
+    window.open_scratchpad()
+    assert manager.note_opened is True
+
+    assert manager.bookmark_added is False
+    window._add_bookmark_from_editor(None, None)
+    assert manager.bookmark_added is True
+    
+    # Check that Web Panel gets "opened" (at least flag sets if we call toggle again)
+    assert manager.web_opened is False
+    # Mocking isVisible to return True to simulate it being open
+    window.web_panel.isVisible = lambda: True
+    window.toggle_web_panel()
+    assert manager.web_opened is True
 
 
 def test_startup_settings_store_readable_labels_as_internal_values():

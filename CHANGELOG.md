@@ -5,6 +5,24 @@ All notable changes to EleViewer are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2026-09-07
+
+### Added
+- **Web Panel Zoom Controls:** Added full page zoom support with keyboard shortcuts (`Ctrl++` / `Ctrl+-` / `Ctrl+0`), mouse wheel zoom (`Ctrl+Scroll`), and an interactive zoom percentage badge in the navigation bar.
+- **Integrated Download Manager:** Native file download handling in the Web Panel via `downloadRequested`, supporting a customizable downloads folder in Settings, with a docked animated progress bar, status feedback, and dismiss action.
+- **Web View Context Menu:** Custom right-click menu in web views providing quick navigation (Back, Forward, Reload), Open Link in New Tab, Copy Link Address, Copy selection, Bookmark Page, and Zoom controls.
+- **Web Tab Hover Tooltips:** Tab headers now display full page title and complete URL on hover.
+- **Expanded Settings & Preferences:** Completely overhauled the Settings Dialog into six dedicated tabs (Startup & Defaults, Text Editing, PDF Reading, Web Browser Panel, Audio & Read Aloud, and Folders & Organization) with options for custom downloads folder, default zoom, editor font size/family, soft line wrapping, line numbers, PDF default zoom, speech reading speed, and vault search scope.
+- **Action-First Interactive Onboarding:** A dynamic, interactive playground designed to teach you EleViewer's core features (Split-Screen Web Panel, Search, Settings) by having you actively use them right when you launch the app, completely avoiding boring, passive tutorial slides.
+- **Type-Specific Bookmark Icons:** Distinct visual Lucide icons for web bookmarks (globe) and local document files in the persistent bookmarks panel.
+
+### Changed
+- **Bulletproof Feedback Dialog:** Submitting bug reports is now foolproof. If the backend API ever experiences rate limits or network failures, EleViewer automatically degrades gracefully, opening your default web browser to a pre-filled GitHub issue page so your feedback is never lost.
+- **Web Panel Video & Layout Polish:** Enjoy seamless, full-screen video playback in the browser panel with `Esc` to exit, perfectly proportioned 16px navigation icons, and tightened native-feeling margins.
+- **Intuitive Toolbar Labels & Custom Layouts:** Preserved clear text labels under icons by default for maximum intuitiveness, and added a user preference in Settings to select between *Icons with text labels*, *Icons only (Compact)*, or *Icons beside text*.
+- **Bookmark Item Polish:** Replaced raw text remove button with a clean Lucide 'x' icon button for faster bookmark management.
+- **Onboarding & Help Guides:** Refreshed in-app guides, release modals, and documentation to feature the unified workspace, new web panel capabilities, and comprehensive preferences.
+
 ## [1.3.1] - 2026-09-06
 
 ### Added

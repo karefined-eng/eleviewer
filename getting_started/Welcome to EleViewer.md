@@ -35,6 +35,9 @@ The Vault Explorer is your course-folder sidebar.
 You don't need to leave the app to research.
 1. Press `Ctrl + T` to open the **Web Panel** right alongside your local notes.
 2. If you click a web hyperlink inside any of your PDFs or Markdown documents, EleViewer will automatically intercept the click and open it in the Web Panel, keeping your focus locked in one window.
+3. Use `Ctrl + +` and `Ctrl + -` (or hold `Ctrl` while scrolling) to zoom web pages with a live percentage badge. Reset anytime with `Ctrl + 0`.
+4. Right-click anywhere in the web view to open links in new tabs, copy text or link addresses, save bookmarks, or adjust zoom.
+5. Download course handouts or data files directly with the integrated download progress bar saving to your Downloads folder.
 
 ### Session Restore & Bookmarks (`Ctrl + D`)
 EleViewer respects your time. 
@@ -61,6 +64,8 @@ You do not need to memorize every shortcut to begin. These commands become usefu
 | Shortcut | Command | Action Description |
 |---|---|---|
 | **Ctrl + T** | **New Web Tab / Panel** | Opens an integrated web browser tab directly alongside your local study notes. |
+| **Ctrl + Plus / Minus** | **Web Zoom In / Out** | Increases or decreases web page zoom level in the Web Panel. |
+| **Ctrl + 0** | **Reset Web Zoom** | Resets web page zoom back to 100% in the Web Panel. |
 | **Ctrl + W** | **Close Tab** | Closes the currently active document or web tab. |
 | **Ctrl + Shift + T** | **Reopen Closed Tab** | Restores the most recently closed tab, preserving exact scroll position and zoom level. |
 | **Ctrl + Alt + B** | **Toggle Bookmarks Panel** | Opens or closes the right-hand persistent bookmarks panel. |
@@ -111,7 +116,7 @@ EleViewer natively parses and renders Microsoft Office document formats locally 
 ### HTML Live Workstation & Web Panel
 The workstation bridges local HTML development and online web research.
 - **HTML Live Workstation:** Open local `.html` or `.htm` files in a split-screen editor. Edits reflect instantly in the live web rendered preview. Click **Migrate to Web Panel** in the toolbar to promote a local HTML file into a full browser session.
-- **Integrated Web Panel (`Ctrl + T`):** An Obsidian-inspired web browser tab that persists active URLs across application restarts. Includes dedicated navigation, refresh, and bookmark toolbar controls.
+- **Integrated Web Panel (`Ctrl + T`):** An Obsidian-inspired web browser tab that persists active URLs across application restarts. Includes smooth page zoom (`Ctrl++`/`Ctrl+-`/`Ctrl+0`), integrated file downloads saving straight to your Downloads folder, tab preview tooltips on hover, and a full right-click context menu.
 - **Global Hyperlink Interception:** Clicking web URLs or local file links inside PDF, Markdown, or Office documents automatically opens them inside a new EleViewer tab or Web Panel instead of launching external system browsers, keeping your focus inside the workspace.
 
 ---

@@ -82,7 +82,7 @@ def get_active_accent():
 def get_brand_accent():
     return get_active_accent()["accent"]
 
-ICON_SIZE_TOOLBAR = 28
+ICON_SIZE_TOOLBAR = 24
 ICON_SIZE_COMPACT = 22
 ICON_SIZE_MARKDOWN = 32
 ICON_SIZE_VAULT_TREE = 24
@@ -137,11 +137,15 @@ def main_window_stylesheet():
         QToolButton:pressed {{ background-color: {accent['pressed']}; color: {p['BRAND_BACKGROUND']}; }}
         QToolButton:checked {{ background-color: {accent['accent']}; color: {p['BRAND_BACKGROUND']}; }}
         QToolBar QToolButton {{
-            min-width: 60px;
-            min-height: 54px;
-            font-size: 10px;
-            font-family: 'Segoe UI', sans-serif;
-            letter-spacing: 0.2px;
+            color: {p['BRAND_PRIMARY']};
+            border: none;
+            border-radius: 6px;
+            padding: 4px 6px;
+            min-width: 54px;
+            min-height: 50px;
+            font-size: 11px;
+            font-family: 'Segoe UI', -apple-system, sans-serif;
+            text-align: center;
         }}
 
         /* ── Tabs ────────────────────────────────────────────── */
@@ -443,8 +447,8 @@ def compact_toolbar_stylesheet():
             border: none;
             padding: 4px;
             border-radius: 6px;
-            min-width: 28px;
-            min-height: 28px;
+            min-width: 24px;
+            min-height: 24px;
         }}
         QToolButton:hover {{ background: {p['BRAND_PANEL_2']}; }}
         QToolButton:pressed {{ background: {get_active_accent()['pressed']}; color: {p['BRAND_BACKGROUND']}; }}

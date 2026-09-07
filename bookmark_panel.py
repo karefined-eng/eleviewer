@@ -31,6 +31,20 @@ class BookmarkItemWidget(QWidget):
         # Elide long names so items never force the panel wider than its dock
         display_name = (name[:30] + "…") if len(name) > 30 else name
 
+        # Type icon: globe for web bookmarks, file-type icon for documents
+        is_web = path.startswith(("http://", "https://"))
+        if is_web:
+            type_ico = icon("globe", size=16)
+        else:
+            from file_icons import file_type_icon
+            ext = os.path.splitext(path)[1].lower() if path else ".txt"
+            type_ico = file_type_icon(ext or ".txt", size=16)
+
+        ico_lbl = QLabel()
+        ico_lbl.setPixmap(type_ico.pixmap(16, 16))
+        ico_lbl.setFixedSize(20, 20)
+        ico_lbl.setAlignment(Qt.AlignCenter)
+
         self.lbl_text = QLabel(f"<b>{label}</b><br><span style='color:#aaa'>{display_name}{suffix}</span>")
         self.lbl_text.setTextFormat(Qt.RichText)
         self.lbl_text.setWordWrap(True)
@@ -42,12 +56,12 @@ class BookmarkItemWidget(QWidget):
         self.btn_edit.clicked.connect(self._on_edit)
         
         self.btn_del = QToolButton()
-        self.btn_del.setIcon(icon("square", size=14)) # fallback, maybe use eraser or trash if we had it, but pencil and square are available. Wait, I can just use a simple text 'x' if no trash icon exists, but wait, do we have a trash icon? Let's check our icon set. I'll just use the eraser icon or text "X". Or I can use 'eraser' icon.
-        self.btn_del.setText("X")
+        self.btn_del.setIcon(icon("x", size=14))
         self.btn_del.setToolTip("Delete Bookmark")
-        self.btn_del.setStyleSheet("QToolButton { color: #f44336; font-weight: bold; padding: 2px; border:none; } QToolButton:hover { background: #550000; }")
+        self.btn_del.setStyleSheet(compact_toolbar_stylesheet())
         self.btn_del.clicked.connect(self._on_delete)
 
+        layout.addWidget(ico_lbl)
         layout.addWidget(self.lbl_text, stretch=1)
         layout.addWidget(self.btn_edit)
         layout.addWidget(self.btn_del)

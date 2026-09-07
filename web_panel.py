@@ -59,6 +59,16 @@ def get_web_view_class():
                 self.setPage(page)
                 page.featurePermissionRequested.connect(self._auto_deny_permissions)
                 page.loadFinished.connect(self._inject_ad_blocker)
+                page.fullScreenRequested.connect(self._handle_fullscreen)
+
+            def _handle_fullscreen(self, request):
+                request.accept()
+                if request.toggleOn():
+                    self.setWindowFlag(Qt.Window, True)
+                    self.showFullScreen()
+                else:
+                    self.setWindowFlag(Qt.Window, False)
+                    self.show()
                 
             def _auto_deny_permissions(self, security_origin, feature):
                 self.page().setFeaturePermission(security_origin, feature, QWebEnginePage.PermissionPolicy.PermissionDeniedByUser)
@@ -148,6 +158,87 @@ def get_web_view_class():
                     return
                 super().keyPressEvent(event)
 
+            def wheelEvent(self, event):
+                """Ctrl+ScrollWheel zooms the web page."""
+                if event.modifiers() == Qt.ControlModifier:
+                    panel = self.parent()
+                    while panel and not hasattr(panel, "_zoom_in"):
+                        panel = panel.parent()
+                    if panel:
+                        delta = event.angleDelta().y()
+                        if delta > 0:
+                            panel._zoom_in()
+                        elif delta < 0:
+                            panel._zoom_out()
+                        event.accept()
+                        return
+                super().wheelEvent(event)
+
+            def contextMenuEvent(self, event):
+                """Custom right-click menu with app-relevant actions."""
+                from PySide6.QtWidgets import QMenu, QApplication
+                menu = QMenu(self)
+                page = self.page()
+                hit = page.contextMenuData()
+
+                # Navigation
+                back_act = menu.addAction(icon("chevron-left", size=16), "Back")
+                back_act.setEnabled(self.history().canGoBack())
+                back_act.triggered.connect(self.back)
+
+                fwd_act = menu.addAction(icon("chevron-right", size=16), "Forward")
+                fwd_act.setEnabled(self.history().canGoForward())
+                fwd_act.triggered.connect(self.forward)
+
+                reload_act = menu.addAction(icon("refresh-cw", size=16), "Reload")
+                reload_act.triggered.connect(self.reload)
+
+                menu.addSeparator()
+
+                # Link actions (when right-clicking a link)
+                link_url = hit.linkUrl() if hit else QUrl()
+                if link_url.isValid() and not link_url.isEmpty():
+                    open_tab_act = menu.addAction("Open Link in New Tab")
+                    open_tab_act.triggered.connect(
+                        lambda: self._open_link_in_new_tab(link_url))
+
+                    copy_link_act = menu.addAction("Copy Link Address")
+                    copy_link_act.triggered.connect(
+                        lambda: QApplication.clipboard().setText(link_url.toString()))
+                    menu.addSeparator()
+
+                # Selection actions
+                if hit and hit.selectedText():
+                    copy_act = menu.addAction("Copy")
+                    copy_act.triggered.connect(lambda: page.triggerAction(
+                        page.WebAction.Copy))
+                    menu.addSeparator()
+
+                # Bookmark & Zoom
+                panel = self.parent()
+                while panel and not hasattr(panel, "_bookmark_current"):
+                    panel = panel.parent()
+                if panel:
+                    bm_act = menu.addAction(icon("bookmark", size=16), "Bookmark This Page")
+                    bm_act.triggered.connect(panel._bookmark_current)
+                    menu.addSeparator()
+
+                    zi_act = menu.addAction(icon("zoom-in", size=16), "Zoom In")
+                    zi_act.triggered.connect(panel._zoom_in)
+                    zo_act = menu.addAction(icon("zoom-out", size=16), "Zoom Out")
+                    zo_act.triggered.connect(panel._zoom_out)
+                    zr_act = menu.addAction("Reset Zoom")
+                    zr_act.triggered.connect(panel._zoom_reset)
+
+                menu.exec(event.globalPos())
+
+            def _open_link_in_new_tab(self, url):
+                parent_w = self.parent()
+                while parent_w and not hasattr(parent_w, "add_tab"):
+                    parent_w = parent_w.parent()
+                if parent_w:
+                    parent_w.add_tab(url=url.toString(), title="Loading...")
+
         _WebViewWrapperClass = _WebViewWrapperImpl
     return _WebViewWrapperClass
 
@@ -179,7 +270,7 @@ from theme import compact_toolbar_stylesheet, ICON_SIZE_COMPACT
 class WebPanel(QWidget):
     tabs_changed = Signal()
 
-    _NAV_ICON_SZ = 24
+    _NAV_ICON_SZ = 16
     _FIND_ICON_SZ = 16
     _SEC_ICON_SZ = 14
 
@@ -201,7 +292,7 @@ class WebPanel(QWidget):
 
         # ── Navigation row ────────────────────────────────────────────────
         nav = QHBoxLayout()
-        nav.setContentsMargins(4, 4, 4, 0)
+        nav.setContentsMargins(2, 2, 2, 0)
         self.nav_layout = nav  # exposed so the dock can merge its controls
         icon_sz = self._NAV_ICON_SZ
         icon_qsize = QSize(icon_sz, icon_sz)
@@ -243,6 +334,14 @@ class WebPanel(QWidget):
         self.btn_bookmark.setToolTip("Bookmark this web page (Ctrl+D)")
         self.btn_bookmark.clicked.connect(self._bookmark_current)
 
+        # Zoom % indicator (hidden when at 100%)
+        self._zoom_label = QLabel()
+        self._zoom_label.setStyleSheet(
+            "font-size: 11px; color: #9b9b96; padding: 0 4px; min-width: 32px;"
+        )
+        self._zoom_label.setAlignment(Qt.AlignCenter)
+        self._zoom_label.hide()
+
         self.btn_add = QToolButton()
         self.btn_add.setIconSize(icon_qsize)
         self.btn_add.setIcon(icon("plus", size=icon_sz))
@@ -258,6 +357,7 @@ class WebPanel(QWidget):
         nav.addWidget(self.btn_forward)
         nav.addWidget(self.btn_refresh)
         nav.addWidget(self.url_bar, stretch=1)
+        nav.addWidget(self._zoom_label)
         nav.addWidget(self.btn_bookmark)
         nav.addWidget(self.btn_add)
 
@@ -284,10 +384,17 @@ class WebPanel(QWidget):
         # ── In-page find bar (hidden by default, opened by Ctrl+F) ────────
         self._find_bar = self._build_find_bar()
 
+        # ── Download status bar (hidden by default) ───────────────────────
+        self._download_bar = self._build_download_bar()
+
         layout.addLayout(nav)
         layout.addWidget(self._progress_bar)
         layout.addWidget(self.tabs)
         layout.addWidget(self._find_bar)
+        layout.addWidget(self._download_bar)
+
+        # ── Connect download handling on the shared profile ───────────────
+        get_persistent_profile().downloadRequested.connect(self._on_download_requested)
 
         # ── Keyboard shortcuts ────────────────────────────────────────────
         QShortcut(QKeySequence("Ctrl+R"), self, self._refresh_or_stop)
@@ -304,6 +411,18 @@ class WebPanel(QWidget):
         sc_find = QShortcut(QKeySequence("Ctrl+F"), self)
         sc_find.setContext(Qt.WidgetWithChildrenShortcut)
         sc_find.activated.connect(self._toggle_find_bar)
+
+        # Zoom shortcuts
+        for key in ("Ctrl+=", "Ctrl+Plus"):
+            sc = QShortcut(QKeySequence(key), self)
+            sc.setContext(Qt.WidgetWithChildrenShortcut)
+            sc.activated.connect(self._zoom_in)
+        sc_zout = QShortcut(QKeySequence("Ctrl+-"), self)
+        sc_zout.setContext(Qt.WidgetWithChildrenShortcut)
+        sc_zout.activated.connect(self._zoom_out)
+        sc_zreset = QShortcut(QKeySequence("Ctrl+0"), self)
+        sc_zreset.setContext(Qt.WidgetWithChildrenShortcut)
+        sc_zreset.activated.connect(self._zoom_reset)
 
         self.restore_tabs()
 
@@ -460,6 +579,141 @@ class WebPanel(QWidget):
         self._devtools_window.finished.connect(lambda *args: setattr(self, "_devtools_window", None))
         self._devtools_window.show()
 
+    # ─────────────────────────────────────────────────────────────────────
+    # Zoom controls
+    # ─────────────────────────────────────────────────────────────────────
+
+    _ZOOM_STEP = 0.10
+    _ZOOM_MIN = 0.25
+    _ZOOM_MAX = 5.0
+
+    def _zoom_in(self):
+        view = self._current_view()
+        if view:
+            factor = min(view.zoomFactor() + self._ZOOM_STEP, self._ZOOM_MAX)
+            view.setZoomFactor(factor)
+            self._update_zoom_label(factor)
+
+    def _zoom_out(self):
+        view = self._current_view()
+        if view:
+            factor = max(view.zoomFactor() - self._ZOOM_STEP, self._ZOOM_MIN)
+            view.setZoomFactor(factor)
+            self._update_zoom_label(factor)
+
+    def _zoom_reset(self):
+        view = self._current_view()
+        if view:
+            view.setZoomFactor(1.0)
+            self._update_zoom_label(1.0)
+
+    def _update_zoom_label(self, factor=None):
+        if factor is None:
+            view = self._current_view()
+            factor = view.zoomFactor() if view else 1.0
+        pct = round(factor * 100)
+        if pct == 100:
+            self._zoom_label.hide()
+        else:
+            self._zoom_label.setText(f"{pct}%")
+            self._zoom_label.show()
+
+    # ─────────────────────────────────────────────────────────────────────
+    # Download handling
+    # ─────────────────────────────────────────────────────────────────────
+
+    def _build_download_bar(self):
+        bar = QFrame()
+        bar.setObjectName("webDownloadBar")
+        bar.hide()
+        h = QHBoxLayout(bar)
+        h.setContentsMargins(8, 4, 8, 4)
+        h.setSpacing(6)
+
+        self._dl_filename = QLabel()
+        self._dl_filename.setStyleSheet("font-size: 12px;")
+
+        self._dl_progress = QProgressBar()
+        self._dl_progress.setTextVisible(True)
+        self._dl_progress.setFixedHeight(16)
+        self._dl_progress.setFixedWidth(180)
+        self._dl_progress.setRange(0, 100)
+
+        self._dl_open_btn = QToolButton()
+        self._dl_open_btn.setText("Open folder")
+        self._dl_open_btn.setStyleSheet(
+            "font-size: 11px; padding: 2px 8px; border: 1px solid #2c2c2c; border-radius: 4px;"
+        )
+        self._dl_open_btn.hide()
+        self._dl_open_btn.clicked.connect(self._open_download_folder)
+
+        btn_close_dl = QToolButton()
+        btn_close_dl.setIcon(icon("x", size=14))
+        btn_close_dl.setAutoRaise(True)
+        btn_close_dl.setToolTip("Dismiss")
+        btn_close_dl.clicked.connect(lambda: bar.hide())
+
+        h.addWidget(self._dl_filename)
+        h.addWidget(self._dl_progress)
+        h.addWidget(self._dl_open_btn)
+        h.addStretch()
+        h.addWidget(btn_close_dl)
+
+        bar.setStyleSheet(
+            "#webDownloadBar {"
+            "  background: #1c1c1c;"
+            "  border-top: 1px solid #2c2c2c;"
+            "}"
+        )
+        return bar
+
+    def _on_download_requested(self, download):
+        import os
+        from pathlib import Path
+        from settings import load_settings
+        settings = load_settings()
+        custom_dl = settings.get("default_download_folder", "").strip()
+        if custom_dl and os.path.isdir(custom_dl):
+            dl_dir = custom_dl
+        else:
+            dl_dir = str(Path.home() / "Downloads")
+        download.setDownloadDirectory(dl_dir)
+        filename = download.downloadFileName()
+
+        self._dl_filename.setText(f"Downloading: {filename}")
+        self._dl_progress.setValue(0)
+        self._dl_open_btn.hide()
+        self._download_bar.show()
+        self._current_dl_path = os.path.join(dl_dir, filename)
+
+        download.receivedBytesChanged.connect(
+            lambda: self._on_dl_progress(download))
+        download.isFinishedChanged.connect(
+            lambda: self._on_dl_finished(download, filename))
+
+        download.accept()
+
+    def _on_dl_progress(self, download):
+        total = download.totalBytes()
+        received = download.receivedBytes()
+        if total > 0:
+            self._dl_progress.setValue(int(received * 100 / total))
+        else:
+            self._dl_progress.setRange(0, 0)  # indeterminate
+
+    def _on_dl_finished(self, download, filename):
+        self._dl_progress.setRange(0, 100)
+        self._dl_progress.setValue(100)
+        self._dl_filename.setText(f"Downloaded: {filename}")
+        self._dl_open_btn.show()
+
+    def _open_download_folder(self):
+        import os, subprocess
+        path = getattr(self, "_current_dl_path", "")
+        folder = os.path.dirname(path) if path else str(__import__("pathlib").Path.home() / "Downloads")
+        if os.path.isdir(folder):
+            subprocess.Popen(["explorer", folder])
+
     def restore_tabs(self):
         settings = load_settings()
         tabs_data = settings.get("web_tabs") or DEFAULT_WEB_TABS.copy()
@@ -485,6 +739,13 @@ class WebPanel(QWidget):
         if not WEB_AVAILABLE:
             return None
         view = WebViewWrapper()
+        try:
+            from settings import load_settings
+            def_zoom = int(load_settings().get("web_default_zoom", 100))
+            if def_zoom != 100:
+                view.setZoomFactor(max(0.25, min(5.0, def_zoom / 100.0)))
+        except Exception:
+            pass
         view.setUrl(QUrl(url))
         view.urlChanged.connect(lambda u, v=view: self._on_url_changed(v, u))
         view.titleChanged.connect(lambda t, v=view: self._on_title_changed(v, t))
@@ -651,6 +912,7 @@ class WebPanel(QWidget):
             self.url_bar.setText(url.toString())
             self._update_security_indicator(url)
         self._update_nav_state()
+        self._update_zoom_label()
         self._schedule_persist()
 
     def _on_url_changed(self, view, url):
@@ -660,6 +922,9 @@ class WebPanel(QWidget):
         idx = self.tabs.indexOf(view)
         if 0 <= idx < len(self._tabs_data):
             self._tabs_data[idx]["url"] = url.toString()
+            # Update tooltip with current title + URL
+            title = self._tabs_data[idx].get("title", "")
+            self.tabs.setTabToolTip(idx, f"{title}\n{url.toString()}")
         self._schedule_persist()
 
     def _on_title_changed(self, view, title):
@@ -669,6 +934,9 @@ class WebPanel(QWidget):
             self.tabs.setTabText(idx, short)
             if idx < len(self._tabs_data):
                 self._tabs_data[idx]["title"] = title
+            # Update tooltip with full title + URL
+            url_str = view.url().toString() if view else ""
+            self.tabs.setTabToolTip(idx, f"{title}\n{url_str}")
         self._schedule_persist()
 
     def _on_icon_changed(self, view, web_icon):
