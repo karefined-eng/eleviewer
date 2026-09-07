@@ -6,7 +6,7 @@ from theme import get_active_palette, get_brand_accent
 
 
 class WhatsNewDialog(QDialog):
-    def __init__(self, parent=None, app_version="1.3.0"):
+    def __init__(self, parent=None, app_version="1.4.0"):
         super().__init__(parent)
         self.setWindowTitle(f"What's New in v{app_version}")
         self.resize(550, 450)
@@ -59,40 +59,35 @@ class WhatsNewDialog(QDialog):
             b {{ color: {accent}; }}
         </style>
         <div>
-            Thank you for studying with EleViewer! Here is what we just shipped based entirely on anonymous community feedback:
+            Thank you for studying with EleViewer! Here is what we just shipped to make your workspace even better:
             <br><br>
-            <b>1. Hybrid Neural Text-to-Speech</b>
+            <b>1. Enhanced Split-Screen Web Browser</b>
             <ul>
-                <li>EleViewer now uses <b>Microsoft Neural voices</b> (Aria, Guy, Jenny, and 400+ more) for natural, human-like reading when you're online.</li>
-                <li>When offline, it <b>seamlessly falls back</b> to your local Windows voices — no setup or manual switching needed.</li>
+                <li><b>Smooth Page Zoom:</b> Scale web pages easily with <code>Ctrl + +</code>, <code>Ctrl + -</code>, <code>Ctrl + 0</code>, or hold <code>Ctrl</code> while scrolling. A live zoom badge in the top bar keeps you informed.</li>
+                <li><b>Integrated File Downloads:</b> Download course slides, PDFs, and data files directly into your Downloads folder with an animated progress bar.</li>
+                <li><b>Quick Right-Click Menu:</b> Right-click any link or page to open in a new tab, copy web links or selected text, bookmark pages, or adjust your zoom.</li>
+                <li><b>Tab Preview Tooltips:</b> Hover over any web tab to view the complete title and web address without cluttering your screen.</li>
             </ul>
 
-            <b>2. Smarter Native Document Viewing</b>
+            <b>2. Intuitive Toolbar with Clear Labels</b>
             <ul>
-                <li><b>Inline Image Rendering:</b> DOCX and PPTX files now render actual embedded pictures directly inside your study cards using our zero-dependency native byte extractor! No heavy bloat, just your visuals.</li>
-                <li><b>XLSX View-Only Mode:</b> Spreadsheets now display computed formula values (not raw <code>=SUM()</code> strings) in a protected read-only grid.</li>
-                <li><b>CSV Smart Encoding:</b> Files exported from Excel in Windows-1252 or Latin-1 now render correctly without garbled characters.</li>
+                <li>Clear, readable labels directly under icons ("New File", "Vault", "Bookmarks", "Open", "Save", "Read Aloud", "Web", "Settings") so every tool is immediately obvious.</li>
+                <li>Fully customizable in Settings: choose between <i>Icons with text labels</i>, <i>Icons only</i>, or <i>Icons beside text</i>.</li>
             </ul>
 
-            <b>3. Lucide Icon Refresh</b>
+            <b>3. Expanded Settings & Preferences</b>
             <ul>
-                <li>Every icon in the app has been replaced with clean, consistent <b>Lucide</b> line-art SVGs for a professional, modern look.</li>
+                <li>Six dedicated tabs to personalize your study workspace: customize your Web Panel downloads destination, set default zoom levels, adjust editor font sizes and line wrapping, configure PDF viewing modes, choose Text-to-Speech reading speeds, and adjust vault search scopes.</li>
             </ul>
 
-            <b>4. CSV Table Workstation & Editor</b>
+            <b>4. Visual Bookmarks</b>
             <ul>
-                <li>Dual view modes: toggle instantly between <b>Table Grid View</b> (Excel/Sheets style) and <b>Raw Text View</b>.</li>
-                <li>Add rows, add columns, delete selected cells, and override delimiters on-the-fly without corrupting leading zeroes!</li>
-            </ul>
-
-            <b>5. Expanded Universal TTS & Robust Shortcuts</b>
-            <ul>
-                <li>Pressing <code>F9</code> now reads aloud CSV spreadsheets and HTML pages alongside PDFs, DOCX, and PPTX!</li>
-                <li>Restored full reliability to <code>Alt+V</code> (Toggle Vault) and <code>Ctrl+W</code> tab closing with intelligent Web Panel focus detection.</li>
+                <li>Bookmarks now show dedicated icons for web links and document files so you can find what you need instantly.</li>
+                <li>Added a simple one-click button to remove bookmarks when you are done studying a topic.</li>
             </ul>
             
             <br>
-            <i>Thank you to the students who anonymously reported these issues. Your feedback directly shapes EleViewer.</i>
+            <i>Thank you to everyone who shared ideas and feedback. Your suggestions directly shape EleViewer.</i>
         </div>
         """
         content.setHtml(html)

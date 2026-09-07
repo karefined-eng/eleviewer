@@ -12,7 +12,7 @@ import ctypes
 from PySide6.QtCore import QByteArray
 from settings import load_settings
 
-APP_VERSION = "1.3.1"
+APP_VERSION = "1.4.0"
 logger = logging.getLogger("eleviewer")
 
 # Set AppUserModelID so taskbar grouping and jump lists work correctly
@@ -131,12 +131,11 @@ if len(sys.argv) > 1:
 window.show()
 
 if not settings.get("onboarding_completed", False):
-    from onboarding import OnboardingDialog
+    from onboarding import OnboardingManager
     from settings import save_settings
-    from pathlib import Path
     
-    dlg = OnboardingDialog(window)
-    dlg.exec()
+    manager = OnboardingManager(window)
+    manager.start()
     
     settings["onboarding_completed"] = True
     settings["last_run_version"] = APP_VERSION

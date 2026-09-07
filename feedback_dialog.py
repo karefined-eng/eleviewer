@@ -5,12 +5,14 @@ from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel, QComboBox, QTextEdit, 
     QPushButton, QMessageBox
 )
-from PySide6.QtCore import QThread, Signal
+from PySide6.QtCore import Qt, QUrl, QThread, Signal
+from PySide6.QtGui import QDesktopServices
 import urllib.request
+import urllib.parse
 from theme import BRAND_BACKGROUND, BRAND_PRIMARY, BRAND_PANEL, BRAND_BORDER, get_brand_accent
 from paths import strip_pii
 
-APP_VERSION = "1.3.0"
+APP_VERSION = "1.4.0"
 
 # FIX: HTTP POST moved to QThread to prevent 10s GUI freeze on timeout
 class FeedbackSubmitThread(QThread):
@@ -149,7 +151,19 @@ class FeedbackDialog(QDialog):
             QMessageBox.information(self, "Success", message)
             self.accept()
         else:
-            QMessageBox.warning(self, "Network Error", f"Failed to send feedback securely to server.\n\nError: {message}")
-            self.submit_btn.setText("Submit Feedback")
-            self.submit_btn.setEnabled(True)
+            QMessageBox.warning(
+                self, 
+                "Network Error", 
+                f"Failed to send feedback securely to server.\n\nError: {message}\n\nFalling back to opening the issue in your default web browser..."
+            )
+            # Fallback to GitHub URL
+            type_str = self.type_combo.currentText()
+            desc = self.desc_edit.toPlainText().strip()
+            title = urllib.parse.quote(f"[{type_str}] Feedback from App")
+            body = urllib.parse.quote(f"**Version**: {APP_VERSION}\n**OS**: {sys.platform}\n\n**Description**:\n{desc}")
+            
+            url = f"https://github.com/karefined-eng/eleviewer/issues/new?title={title}&body={body}"
+            QDesktopServices.openUrl(QUrl(url))
+            
+            self.accept()
 

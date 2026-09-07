@@ -8,7 +8,7 @@ from PySide6.QtCore import Qt, QSize, QTimer, Slot, QUrl, Signal, QEvent, QMimeD
 import os
 import sys
 
-APP_VERSION = "1.3.1"
+APP_VERSION = "1.4.0"
 
 from editor import EditorTab
 from bookmark_manager import add_bookmark, load_bookmarks
@@ -566,11 +566,25 @@ class MainWindow(QMainWindow):
                 lambda idx=i-1: self.tabs.setCurrentIndex(min(idx, self.tabs.count()-1)) if self.tabs.count() > 0 else None
             )
 
+    def _apply_toolbar_style(self):
+        if not hasattr(self, 'toolbar') or not self.toolbar:
+            return
+        from settings import load_settings
+        settings_data = load_settings()
+        style_name = settings_data.get("toolbar_button_style", "text_under_icon")
+        if style_name == "icon_only":
+            self.toolbar.setToolButtonStyle(Qt.ToolButtonIconOnly)
+        elif style_name == "text_beside_icon":
+            self.toolbar.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+        else:
+            self.toolbar.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
+        self.toolbar.setVisible(settings_data.get("show_toolbar", True))
+
     def _build_toolbar(self):
         self.toolbar = DraggableToolBar("Main Toolbar")
         self.toolbar.setMovable(False)
         self.toolbar.setIconSize(QSize(ICON_SIZE_TOOLBAR, ICON_SIZE_TOOLBAR))
-        self.toolbar.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
+        self._apply_toolbar_style()
         self.addToolBar(self.toolbar)
 
         new_file_action = QAction(icon("file-plus", size=ICON_SIZE_TOOLBAR), "New File", self)
@@ -1044,7 +1058,6 @@ class MainWindow(QMainWindow):
         w.is_welcome_tab = True
         # Outer layout
         outer_layout = QVBoxLayout(w)
-        outer_layout.setAlignment(Qt.AlignTop)
         outer_layout.setContentsMargins(0, 0, 0, 0)
 
         wrapper = QWidget()
@@ -1067,6 +1080,7 @@ class MainWindow(QMainWindow):
         wrapper_layout.addStretch()
         
         outer_layout.addWidget(wrapper)
+        outer_layout.addStretch()
         
         # 1. Hero Section (Logo + Title)
         hero = QWidget()
@@ -1075,10 +1089,12 @@ class MainWindow(QMainWindow):
         hero_layout.setSpacing(15)
         
         logo_lbl = QLabel()
+        logo_lbl.setMinimumSize(72, 72)
         logo_lbl.setPixmap(create_eleviewer_pixmap(72))
         logo_lbl.setAlignment(Qt.AlignCenter)
         
         title = QLabel("EleViewer")
+        title.setMinimumHeight(40)
         title.setStyleSheet(f"font-size: 32px; font-weight: bold; color: {p['BRAND_PRIMARY']};")
         title.setAlignment(Qt.AlignCenter)
         
@@ -1102,6 +1118,7 @@ class MainWindow(QMainWindow):
 
         omni_bar_row = QWidget()
         omni_bar_row.setObjectName("OmniBarRow")
+        omni_bar_row.setMinimumHeight(50)
         accent = get_brand_accent()
         omni_bar_row.setStyleSheet(f"""
             QWidget#OmniBarRow {{
@@ -1874,6 +1891,7 @@ class MainWindow(QMainWindow):
         from theme import main_window_stylesheet
         self.setStyleSheet(main_window_stylesheet())
         self._apply_status_bar_theme()
+        self._apply_toolbar_style()
         if hasattr(self, '_apply_web_dock_theme'):
             self._apply_web_dock_theme()
         if hasattr(self, 'autosaver') and self.autosaver:

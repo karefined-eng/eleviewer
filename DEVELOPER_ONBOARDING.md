@@ -1,4 +1,4 @@
-﻿# Developer Onboarding: Welcome to the Free Windows Document Reader
+# Developer Onboarding: Welcome to the Free Windows Document Reader
 
 If you are reading this, you are contributing to **EleViewer**â€”a minimalist, multi-tabbed study workstation built on PySide6. 
 
@@ -27,8 +27,9 @@ EleViewer relies heavily on standard PySide6 widgets and custom components to ke
 - `main.py`: Bootstraps the application, enforces single-instance locking (so clicking a file opens it in the *existing* window), and binds `sys.excepthook` to route global unhandled exceptions securely to the feedback dialog.
 
 ### UI & Shell
-- `ui.py`: The `MainWindow` class. Manages the tab widget, toolbars, and the side panels.
-- `theme.py`: **CRITICAL**. Do not hardcode hex colors in any UI file. Use the centralized constants (`BRAND_PRIMARY`, `BRAND_PANEL`, etc.) here to ensure the desktop app visually matches the website. Additionally, this module powers the **Dynamic UI Accents** (via `get_active_accent()`) which dynamically injects the user's chosen accent color into active states like `:pressed` and `:checked` buttons.
+- `ui.py`: The `MainWindow` class. Manages the tab widget, toolbars, and side panels. Implements `_apply_toolbar_style()` to dynamically switch toolbar button styles (`Qt.ToolButtonTextUnderIcon`, `Qt.ToolButtonIconOnly`, or `Qt.ToolButtonTextBesideIcon`) based on user preferences.
+- `theme.py`: **CRITICAL**. Do not hardcode hex colors in any UI file. Use the centralized constants (`BRAND_PRIMARY`, `BRAND_PANEL`, etc.) here to ensure the desktop app visually matches the website. Defines centralized toolbar and icon size metrics (`ICON_SIZE_TOOLBAR = 24`, 54×50px min button sizes for text-under-icon labels). Additionally powers **Dynamic UI Accents** (via `get_active_accent()`).
+- `settings_dialog.py`: Modular six-tab workstation configuration dialog (Startup & Defaults, Text Editing, PDF Reading, Web Browser Panel, Audio & Read Aloud, and Folders & Organization) allowing end-users to customize themes, toolbar styles, downloads directory, default zoom, editor fonts, and TTS speeds without touching raw JSON.
 
 ### Core File Factory
 - `file_handler.py`: The heart of the viewer. It reads a file extension and dynamically instantiates the correct viewer (e.g., `MarkdownViewer`, `XlsxViewer`, `PdfViewer`).
@@ -38,9 +39,15 @@ EleViewer relies heavily on standard PySide6 widgets and custom components to ke
 - `editor.py`: The text/Markdown editor. Uses a PySide6-based preview path with debounced refreshes and cached render output to keep typing responsive.
 - `xlsx_viewer.py` & `csv_viewer.py`: Use `openpyxl` and standard library `csv` to render spreadsheets natively into `QTableWidget` with cell/row/column insertion and F9 TTS table summaries.
 - `docx_viewer.py` & `pptx_viewer.py`: Render Word and PowerPoint content into lightweight HTML previews using available parser libraries and pure Python native byte extraction for inline images, with caching for repeated loads.
-- `html_viewer.py` & `web_panel.py`: Dedicated HTML/XML workstation with a lazy-loaded web dock when the feature is available, plus reload/bookmark controls and global hyperlink interception.
+- `html_viewer.py` & `web_panel.py`: Dedicated HTML/XML workstation and lazy-loaded WebEngine dock (`QWebEngineView`). Features include:
+  - **Zoom Engine**: `zoom_factor` managed per tab (clamped 0.25 to 5.0), bound to `Ctrl++`/`Ctrl+-`/`Ctrl+0`, `Ctrl+Wheel` event filters, and an active zoom percentage indicator in the navigation bar.
+  - **Download Pipeline**: Connects `QWebEngineProfile.downloadRequested` to `_handle_download_requested`, prompting/saving to the system Downloads folder with a docked animated `QProgressBar` download bar.
+  - **Context Menus**: `CustomWebEngineView.contextMenuEvent` provides navigation, link copying, bookmark creation, and zoom controls.
+  - **Tab Tooltips**: Full page title and URL exposed via tab bar tooltips.
+  - **Hyperlink Interception**: Global interception of external URLs from Markdown/PDF viewers into side-by-side web tabs.
 
 ### Sub-systems & Concurrency
+- `bookmark_panel.py` & `bookmark_manager.py`: Persistent bookmarks with type-specific Lucide icons (globe for web bookmarks, document icons for local files) and clean delete actions.
 - `file_icons.py` & `icons.py`: Minimalist Lucide line-art SVG icon engine supporting two-tone state rendering (`#6cb6ff` active focus vs `#888888` inactive).
 - `instance_lock.py`: Local socket IPC server (`QLocalSocket`) enforcing single-instance execution, `--new`/`-n` CLI flag routing, and system-wide hotkey interception (`Alt+E` for Quick Note scratchpad).
 - `vault_explorer.py` & `vault_indexer.py`: The left sidebar for file navigation (filtering out system junk files like `desktop.ini`). The current indexer is a Python/SQLite-based background search flow rather than a Rust extension.

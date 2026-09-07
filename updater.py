@@ -14,7 +14,7 @@ from PySide6.QtWidgets import (
 
 REPO_OWNER = "karefined-eng"
 REPO_NAME = "eleviewer"
-CURRENT_VERSION = "1.3.0"  # Fallback current version
+CURRENT_VERSION = "1.4.0"  # Fallback current version
 TRUSTED_DOWNLOAD_HOSTS = {
     "github.com",
     "objects.githubusercontent.com",
