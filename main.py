@@ -84,11 +84,28 @@ def global_exception_handler(exc_type, exc_value, exc_traceback):
             req = urllib.request.Request(
                 "https://eleviewer.vercel.app/api/feedback", 
                 data=json.dumps(data).encode('utf-8'),
-                headers={'Content-Type': 'application/json'}
+                headers={
+                    'Content-Type': 'application/json',
+                    'User-Agent': f'EleViewer/{APP_VERSION}'
+                }
             )
             urllib.request.urlopen(req, timeout=5)
         except Exception as exc:
-            logger.exception("Could not submit crash report: %s", exc)
+            # Fallback: open GitHub issue in default browser
+            logger.warning("Crash report API failed (%s), falling back to browser", exc)
+            try:
+                import urllib.parse
+                from PySide6.QtGui import QDesktopServices
+                from PySide6.QtCore import QUrl
+                title = urllib.parse.quote(f"[Bug] Fatal Crash (v{APP_VERSION})")
+                body = urllib.parse.quote(
+                    f"**Version**: {APP_VERSION}\n**OS**: {sys.platform}\n\n"
+                    f"**Crash Log**:\n```python\n{tb_text[:2000]}\n```"
+                )
+                url = f"https://github.com/karefined-eng/eleviewer/issues/new?title={title}&body={body}"
+                QDesktopServices.openUrl(QUrl(url))
+            except Exception:
+                pass
             
     sys.exit(1)
 

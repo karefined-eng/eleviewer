@@ -34,7 +34,8 @@ def get_persistent_profile():
         _web_profile.setPersistentCookiesPolicy(QWebEngineProfile.PersistentCookiesPolicy.ForcePersistentCookies)
         
         settings = _web_profile.settings()
-        settings.setAttribute(QWebEngineSettings.WebAttribute.PluginsEnabled, False)
+        settings.setAttribute(QWebEngineSettings.WebAttribute.FullScreenSupportEnabled, True)
+        settings.setAttribute(QWebEngineSettings.WebAttribute.PluginsEnabled, True)
         settings.setAttribute(QWebEngineSettings.WebAttribute.WebGLEnabled, False)
         settings.setAttribute(QWebEngineSettings.WebAttribute.PdfViewerEnabled, False)
         settings.setAttribute(QWebEngineSettings.WebAttribute.JavascriptCanOpenWindows, False)
@@ -176,61 +177,67 @@ def get_web_view_class():
 
             def contextMenuEvent(self, event):
                 """Custom right-click menu with app-relevant actions."""
-                from PySide6.QtWidgets import QMenu, QApplication
-                menu = QMenu(self)
-                page = self.page()
-                hit = page.contextMenuData()
+                try:
+                    from PySide6.QtWidgets import QMenu, QApplication
+                    from icons import icon as _icon
+                    menu = QMenu(self)
+                    page = self.page()
+                    hit = page.contextMenuData()
 
-                # Navigation
-                back_act = menu.addAction(icon("chevron-left", size=16), "Back")
-                back_act.setEnabled(self.history().canGoBack())
-                back_act.triggered.connect(self.back)
+                    # Navigation
+                    back_act = menu.addAction(_icon("chevron-left", size=16), "Back")
+                    back_act.setEnabled(self.history().canGoBack())
+                    back_act.triggered.connect(self.back)
 
-                fwd_act = menu.addAction(icon("chevron-right", size=16), "Forward")
-                fwd_act.setEnabled(self.history().canGoForward())
-                fwd_act.triggered.connect(self.forward)
+                    fwd_act = menu.addAction(_icon("chevron-right", size=16), "Forward")
+                    fwd_act.setEnabled(self.history().canGoForward())
+                    fwd_act.triggered.connect(self.forward)
 
-                reload_act = menu.addAction(icon("refresh-cw", size=16), "Reload")
-                reload_act.triggered.connect(self.reload)
+                    reload_act = menu.addAction(_icon("refresh-cw", size=16), "Reload")
+                    reload_act.triggered.connect(self.reload)
 
-                menu.addSeparator()
-
-                # Link actions (when right-clicking a link)
-                link_url = hit.linkUrl() if hit else QUrl()
-                if link_url.isValid() and not link_url.isEmpty():
-                    open_tab_act = menu.addAction("Open Link in New Tab")
-                    open_tab_act.triggered.connect(
-                        lambda: self._open_link_in_new_tab(link_url))
-
-                    copy_link_act = menu.addAction("Copy Link Address")
-                    copy_link_act.triggered.connect(
-                        lambda: QApplication.clipboard().setText(link_url.toString()))
                     menu.addSeparator()
 
-                # Selection actions
-                if hit and hit.selectedText():
-                    copy_act = menu.addAction("Copy")
-                    copy_act.triggered.connect(lambda: page.triggerAction(
-                        page.WebAction.Copy))
-                    menu.addSeparator()
+                    # Link actions (when right-clicking a link)
+                    link_url = hit.linkUrl() if hit else QUrl()
+                    if link_url.isValid() and not link_url.isEmpty():
+                        open_tab_act = menu.addAction("Open Link in New Tab")
+                        open_tab_act.triggered.connect(
+                            lambda: self._open_link_in_new_tab(link_url))
 
-                # Bookmark & Zoom
-                panel = self.parent()
-                while panel and not hasattr(panel, "_bookmark_current"):
-                    panel = panel.parent()
-                if panel:
-                    bm_act = menu.addAction(icon("bookmark", size=16), "Bookmark This Page")
-                    bm_act.triggered.connect(panel._bookmark_current)
-                    menu.addSeparator()
+                        copy_link_act = menu.addAction("Copy Link Address")
+                        copy_link_act.triggered.connect(
+                            lambda: QApplication.clipboard().setText(link_url.toString()))
+                        menu.addSeparator()
 
-                    zi_act = menu.addAction(icon("zoom-in", size=16), "Zoom In")
-                    zi_act.triggered.connect(panel._zoom_in)
-                    zo_act = menu.addAction(icon("zoom-out", size=16), "Zoom Out")
-                    zo_act.triggered.connect(panel._zoom_out)
-                    zr_act = menu.addAction("Reset Zoom")
-                    zr_act.triggered.connect(panel._zoom_reset)
+                    # Selection actions
+                    if hit and hit.selectedText():
+                        copy_act = menu.addAction("Copy")
+                        copy_act.triggered.connect(lambda: page.triggerAction(
+                            page.WebAction.Copy))
+                        menu.addSeparator()
 
-                menu.exec(event.globalPos())
+                    # Bookmark & Zoom
+                    panel = self.parent()
+                    while panel and not hasattr(panel, "_bookmark_current"):
+                        panel = panel.parent()
+                    if panel:
+                        bm_act = menu.addAction(_icon("bookmark", size=16), "Bookmark This Page")
+                        bm_act.triggered.connect(panel._bookmark_current)
+                        menu.addSeparator()
+
+                        zi_act = menu.addAction(_icon("zoom-in", size=16), "Zoom In")
+                        zi_act.triggered.connect(panel._zoom_in)
+                        zo_act = menu.addAction(_icon("zoom-out", size=16), "Zoom Out")
+                        zo_act.triggered.connect(panel._zoom_out)
+                        zr_act = menu.addAction("Reset Zoom")
+                        zr_act.triggered.connect(panel._zoom_reset)
+
+                    menu.exec(event.globalPos())
+                except Exception:
+                    import logging
+                    logging.getLogger("eleviewer").exception("contextMenuEvent failed")
+                    super().contextMenuEvent(event)
 
             def _open_link_in_new_tab(self, url):
                 parent_w = self.parent()
