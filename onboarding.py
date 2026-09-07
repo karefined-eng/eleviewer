@@ -19,7 +19,7 @@ class OnboardingManager(QObject):
         
     def start(self):
         # Open Web Panel immediately to showcase the split-screen layout
-        if not self.window.web_panel.isVisible():
+        if self.window._web_dock is None or not self.window._web_dock.isVisible():
             self.window.toggle_web_panel()
             
         # Open the interactive Playground document
@@ -55,7 +55,7 @@ class OnboardingManager(QObject):
         orig_toggle_web = self.window.toggle_web_panel
         def hooked_toggle_web():
             orig_toggle_web()
-            if not self.web_opened and self.window.web_panel.isVisible():
+            if not self.web_opened and self.window._web_dock and self.window._web_dock.isVisible():
                 self.web_opened = True
                 self._show_success("Web Panel Opened (Ctrl+T)")
         self.window.toggle_web_panel = hooked_toggle_web

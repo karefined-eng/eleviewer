@@ -34,3 +34,12 @@ def test_close_button_icon_matches_theme(monkeypatch):
 
 def test_show_toolbar_default():
     assert DEFAULT_SETTINGS.get("show_toolbar") is True
+
+def test_show_toolbar_preference_persists(tmp_path, monkeypatch):
+    """A user's saved toolbar preference must survive load_settings — the
+    toolbar may be hidden permanently (distraction-free mode)."""
+    import settings as settings_mod
+    fake = tmp_path / "settings.json"
+    fake.write_text('{"show_toolbar": false}', encoding="utf-8")
+    monkeypatch.setattr(settings_mod, "SETTINGS_FILE_PATH", fake)
+    assert settings_mod.load_settings()["show_toolbar"] is False
