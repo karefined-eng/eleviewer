@@ -579,6 +579,9 @@ class MainWindow(QMainWindow):
         else:
             self.toolbar.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
         self.toolbar.setVisible(settings_data.get("show_toolbar", True))
+        action = getattr(self, "action_toggle_toolbar", None)
+        if action:
+            action.setChecked(not self.toolbar.isHidden())
 
     def _build_toolbar(self):
         self.toolbar = DraggableToolBar("Main Toolbar")
