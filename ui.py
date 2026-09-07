@@ -2107,7 +2107,11 @@ class MainWindow(QMainWindow):
         tab_data = self.closed_tabs.pop()
         file_path = tab_data["file_path"]
         if file_path and os.path.exists(file_path):
-            editor = create_viewer_widget(file_path)
+            try:
+                editor = create_viewer_widget(file_path)
+            except Exception as e:
+                QMessageBox.critical(self, "Error", f"Failed to open file: {str(e)}")
+                return
             self._wire_editor(editor)
             if tab_data["modified"] and tab_data["content"] and not is_binary_format(file_path):
                 editor.setPlainText(tab_data["content"])
