@@ -3,10 +3,11 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt
 from theme import get_active_palette, get_brand_accent
+from version import APP_VERSION
 
 
 class WhatsNewDialog(QDialog):
-    def __init__(self, parent=None, app_version="1.4.0"):
+    def __init__(self, parent=None, app_version=APP_VERSION):
         super().__init__(parent)
         self.setWindowTitle(f"What's New in v{app_version}")
         self.resize(550, 450)
