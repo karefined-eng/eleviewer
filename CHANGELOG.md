@@ -5,6 +5,20 @@ All notable changes to EleViewer are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.0] - 2026-09-07
+
+### Added
+- **Toggleable Main Toolbar (Distraction-Free Mode):** A new **View** menu with a checkable **Show Main Toolbar** action (`Ctrl+Alt+T`). Toolbar visibility is saved to your preferences and restored on launch, reclaiming the full toolbar height for reading while every command stays reachable from the menu bar and status-bar quick menu.
+- **Theme-Aware Tab Close Buttons:** The `×` on document tabs, split-view tabs, and web tabs now uses a dedicated high-contrast icon per theme (bright white in Dark mode, deep grey in Light mode), fixing close buttons that were nearly invisible on dark tab bars. Icons also resolve via an absolute path, so they render correctly in packaged builds.
+
+### Changed
+- **Compact Unified Browser Header:** Removed the web panel's redundant "WEB BROWSER" title row entirely. The Expand, Pop Out, and Close controls now live at the right end of the browser's navigation row behind a slim divider, so pages start one row higher. The Pop Out button doubles as Re-dock while the panel is floated.
+- **Web Panel Docks "Hit the Roof":** The right dock area now owns the window's top-right corner, so the web panel extends flush up to the menu bar and the main toolbar stops at the panel's edge instead of stretching across it — noticeably more vertical space for side-by-side work.
+- **Auto-Maximize State Sync:** Opening the web panel with no documents open now correctly reflects the maximized state on the expand button (icon and tooltip), and closing the panel restores the editor together with the button state.
+
+### Fixed
+- **Empty Web Panel Control Icons:** The Expand, Pop Out, and Reload buttons referenced missing icon assets (`maximize`, `minimize`, `external-link`, `refresh-cw`) and rendered blank; they now ship real Lucide icons (`maximize-2` / `minimize-2`, new `external-link` and `refresh-cw` glyphs).
+
 ## [1.4.0] - 2026-09-07
 
 ### Added
