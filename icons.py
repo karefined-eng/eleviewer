@@ -19,7 +19,7 @@ else:
 _cache: dict[tuple[str, int, str], QIcon] = {}
 
 
-def icon(name: str, size: int = ICON_SIZE_TOOLBAR, color: str = "#e0e0e0") -> QIcon:
+def icon(name: str, size: int = ICON_SIZE_TOOLBAR, color: str = "#c0c0c0") -> QIcon:
     key = (name, size, color)
     if key in _cache:
         return _cache[key]
@@ -30,7 +30,7 @@ def icon(name: str, size: int = ICON_SIZE_TOOLBAR, color: str = "#e0e0e0") -> QI
 
     svg_data = svg_path.read_text(encoding="utf-8")
 
-    # Always normalise stroke colour so icons appear in the requested colour
+    # Normalise stroke colour so icons appear in the requested colour
     # (handles currentColor, hardcoded black #000000/#000, or missing stroke)
     svg_data = svg_data.replace('stroke="currentColor"', f'stroke="{color}"')
     svg_data = svg_data.replace("stroke='currentColor'", f"stroke='{color}'")
@@ -40,12 +40,22 @@ def icon(name: str, size: int = ICON_SIZE_TOOLBAR, color: str = "#e0e0e0") -> QI
     if 'stroke=' not in svg_data:
         svg_data = svg_data.replace('<svg ', f'<svg stroke="{color}" ')
 
+    # Render at 2× density then smooth-scale down for crisp HiDPI output.
+    render_size = size * 2
     renderer = QSvgRenderer(QByteArray(svg_data.encode("utf-8")))
-    pixmap = QPixmap(QSize(size, size))
-    pixmap.fill(Qt.transparent)
-    painter = QPainter(pixmap)
+    hi_pixmap = QPixmap(QSize(render_size, render_size))
+    hi_pixmap.fill(Qt.transparent)
+    painter = QPainter(hi_pixmap)
+    painter.setRenderHint(QPainter.Antialiasing)
+    painter.setRenderHint(QPainter.SmoothPixmapTransform)
     renderer.render(painter)
     painter.end()
+
+    pixmap = hi_pixmap.scaled(
+        QSize(size, size),
+        Qt.KeepAspectRatio,
+        Qt.SmoothTransformation,
+    )
 
     qicon = QIcon(pixmap)
     _cache[key] = qicon

@@ -1,6 +1,6 @@
 """Tabbed web panel with persisted URLs using QtWebEngine."""
 
-from PySide6.QtCore import Signal, QUrl
+from PySide6.QtCore import Signal, QUrl, QTimer
 from paths import APP_DATA_DIR
 
 WEB_AVAILABLE = True
@@ -110,6 +110,9 @@ def get_web_view_class():
                 super().forward()
 
             def keyPressEvent(self, event):
+                # Keys forwarded to the main application window unchanged.
+                # NOTE: Ctrl+F is intentionally absent — it opens the
+                # in-panel find bar via the explicit handler below.
                 _APP_SHORTCUT_KEYS = {
                     (Qt.NoModifier, Qt.Key_Escape),
                     (Qt.AltModifier, Qt.Key_V),
@@ -121,13 +124,22 @@ def get_web_view_class():
                     (Qt.ControlModifier, Qt.Key_N),
                     (Qt.ControlModifier, Qt.Key_O),
                     (Qt.ControlModifier, Qt.Key_S),
-                    (Qt.ControlModifier, Qt.Key_F),
                     (Qt.ControlModifier, Qt.Key_H),
                     (Qt.ControlModifier | Qt.ShiftModifier, Qt.Key_T),
                     (Qt.ControlModifier | Qt.ShiftModifier, Qt.Key_F),
                     (Qt.ControlModifier | Qt.ShiftModifier, Qt.Key_S),
                     (Qt.NoModifier, Qt.Key_F9),
                 }
+                # Ctrl+F → route to the parent WebPanel's in-page find bar.
+                # We traverse up because QWebEngineView sits inside containers.
+                if event.modifiers() == Qt.ControlModifier and event.key() == Qt.Key_F:
+                    panel = self.parent()
+                    while panel and not hasattr(panel, "_toggle_find_bar"):
+                        panel = panel.parent()
+                    if panel:
+                        panel._toggle_find_bar()
+                        event.accept()
+                        return
                 key_combo = (event.modifiers(), event.key())
                 if key_combo in _APP_SHORTCUT_KEYS:
                     from PySide6.QtCore import QCoreApplication
@@ -154,7 +166,7 @@ class WebViewWrapper(metaclass=_LazyWebViewMeta):
 
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QTabWidget, QLineEdit,
-    QToolButton, QTabBar,
+    QToolButton, QTabBar, QProgressBar, QFrame, QLabel,
 )
 from PySide6.QtCore import Qt, Signal, QSize
 from PySide6.QtGui import QKeySequence, QShortcut
@@ -167,40 +179,63 @@ from theme import compact_toolbar_stylesheet, ICON_SIZE_COMPACT
 class WebPanel(QWidget):
     tabs_changed = Signal()
 
+    _NAV_ICON_SZ = 24
+    _FIND_ICON_SZ = 16
+    _SEC_ICON_SZ = 14
+
     def __init__(self, parent=None):
         super().__init__(parent)
         self._tabs_data = []
+        self._is_loading = False  # tracks load state of the currently visible tab
+
+        # Debounce timer: collapses rapid urlChanged / titleChanged /
+        # currentChanged events into a single disk write after 800 ms of silence.
+        self._persist_timer = QTimer(self)
+        self._persist_timer.setSingleShot(True)
+        self._persist_timer.setInterval(800)
+        self._persist_timer.timeout.connect(self._do_persist_tabs)
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
 
+        # ── Navigation row ────────────────────────────────────────────────
         nav = QHBoxLayout()
         nav.setContentsMargins(4, 4, 4, 0)
-        icon_sz = 24  # Larger icons for web panel
+        self.nav_layout = nav  # exposed so the dock can merge its controls
+        icon_sz = self._NAV_ICON_SZ
         icon_qsize = QSize(icon_sz, icon_sz)
-
-        self.url_bar = QLineEdit()
-        self.url_bar.setPlaceholderText("https://...")
-        self.url_bar.returnPressed.connect(self._navigate_current)
 
         self.btn_back = QToolButton()
         self.btn_back.setIconSize(icon_qsize)
         self.btn_back.setIcon(icon("chevron-left", size=icon_sz))
         self.btn_back.setToolTip("Back")
+        self.btn_back.setEnabled(False)
         self.btn_back.clicked.connect(self._go_back)
 
         self.btn_forward = QToolButton()
         self.btn_forward.setIconSize(icon_qsize)
         self.btn_forward.setIcon(icon("chevron-right", size=icon_sz))
         self.btn_forward.setToolTip("Forward")
+        self.btn_forward.setEnabled(False)
         self.btn_forward.clicked.connect(self._go_forward)
 
+        # Refresh / Stop — icon swaps while page is loading
         self.btn_refresh = QToolButton()
         self.btn_refresh.setIconSize(icon_qsize)
         self.btn_refresh.setIcon(icon("refresh-cw", size=icon_sz))
         self.btn_refresh.setToolTip("Reload page (Ctrl+R / F5)")
-        self.btn_refresh.clicked.connect(self._reload_current)
+        self.btn_refresh.clicked.connect(self._refresh_or_stop)
+
+        # URL bar with a leading connection-security icon
+        self.url_bar = QLineEdit()
+        self.url_bar.setPlaceholderText("Search or enter address\u2026")
+        self.url_bar.returnPressed.connect(self._navigate_current)
+        self._security_action = self.url_bar.addAction(
+            icon("globe", size=self._SEC_ICON_SZ),
+            QLineEdit.ActionPosition.LeadingPosition,
+        )
+        self._security_action.setVisible(False)
 
         self.btn_bookmark = QToolButton()
         self.btn_bookmark.setIconSize(icon_qsize)
@@ -211,10 +246,11 @@ class WebPanel(QWidget):
         self.btn_add = QToolButton()
         self.btn_add.setIconSize(icon_qsize)
         self.btn_add.setIcon(icon("plus", size=icon_sz))
-        self.btn_add.setToolTip("New tab")
+        self.btn_add.setToolTip("New tab (Ctrl+T)")
         self.btn_add.clicked.connect(self.add_tab)
 
-        for btn in (self.btn_back, self.btn_forward, self.btn_refresh, self.btn_bookmark, self.btn_add):
+        for btn in (self.btn_back, self.btn_forward, self.btn_refresh,
+                    self.btn_bookmark, self.btn_add):
             btn.setStyleSheet(compact_toolbar_stylesheet())
             btn.setAutoRaise(True)
 
@@ -225,6 +261,7 @@ class WebPanel(QWidget):
         nav.addWidget(self.btn_bookmark)
         nav.addWidget(self.btn_add)
 
+        # ── Tab widget ────────────────────────────────────────────────────
         self.tabs = QTabWidget()
         self.tabs.setTabsClosable(True)
         self.tabs.setDocumentMode(True)
@@ -232,14 +269,171 @@ class WebPanel(QWidget):
         self.tabs.tabCloseRequested.connect(self._close_tab)
         self.tabs.currentChanged.connect(self._on_tab_changed)
 
-        layout.addLayout(nav)
-        layout.addWidget(self.tabs)
+        # ── Loading progress bar (3 px strip below nav, hidden when idle) ─
+        self._progress_bar = QProgressBar()
+        self._progress_bar.setTextVisible(False)
+        self._progress_bar.setFixedHeight(3)
+        self._progress_bar.setRange(0, 100)
+        self._progress_bar.setValue(0)
+        self._progress_bar.hide()
+        self._progress_bar.setStyleSheet(
+            "QProgressBar { background: transparent; border: none; margin: 0; }"
+            "QProgressBar::chunk { background: #4a9eff; border-radius: 1px; }"
+        )
 
-        QShortcut(QKeySequence("Ctrl+R"), self, self._reload_current)
-        QShortcut(QKeySequence("F5"), self, self._reload_current)
+        # ── In-page find bar (hidden by default, opened by Ctrl+F) ────────
+        self._find_bar = self._build_find_bar()
+
+        layout.addLayout(nav)
+        layout.addWidget(self._progress_bar)
+        layout.addWidget(self.tabs)
+        layout.addWidget(self._find_bar)
+
+        # ── Keyboard shortcuts ────────────────────────────────────────────
+        QShortcut(QKeySequence("Ctrl+R"), self, self._refresh_or_stop)
+        QShortcut(QKeySequence("F5"), self, self._refresh_or_stop)
         QShortcut(QKeySequence("F12"), self, self._toggle_devtools)
 
+        # Ctrl+L: focus & select-all the URL bar
+        sc_url = QShortcut(QKeySequence("Ctrl+L"), self)
+        sc_url.setContext(Qt.WidgetWithChildrenShortcut)
+        sc_url.activated.connect(self._focus_url_bar)
+
+        # Ctrl+F: in-panel find bar (also routed here from the web view's
+        # keyPressEvent override so Chromium doesn't swallow it).
+        sc_find = QShortcut(QKeySequence("Ctrl+F"), self)
+        sc_find.setContext(Qt.WidgetWithChildrenShortcut)
+        sc_find.activated.connect(self._toggle_find_bar)
+
         self.restore_tabs()
+
+    # ─────────────────────────────────────────────────────────────────────
+    # Find bar
+    # ─────────────────────────────────────────────────────────────────────
+
+    def _build_find_bar(self):
+        bar = QFrame()
+        bar.setObjectName("webFindBar")
+        bar.hide()
+        h = QHBoxLayout(bar)
+        h.setContentsMargins(8, 3, 8, 3)
+        h.setSpacing(4)
+
+        lbl = QLabel("Find:")
+        lbl.setStyleSheet("font-size: 12px;")
+
+        self._find_input = QLineEdit()
+        self._find_input.setPlaceholderText("Search in page\u2026")
+        self._find_input.setMaximumWidth(240)
+        self._find_input.returnPressed.connect(self._find_next)
+        self._find_input.textChanged.connect(self._find_text_changed)
+
+        self._find_result_lbl = QLabel()
+        self._find_result_lbl.setStyleSheet(
+            "color: #9b9b96; font-size: 11px; min-width: 60px;"
+        )
+
+        sz = self._FIND_ICON_SZ
+        qsz = QSize(sz, sz)
+
+        btn_prev = QToolButton()
+        btn_prev.setIcon(icon("arrow-up", size=sz))
+        btn_prev.setIconSize(qsz)
+        btn_prev.setToolTip("Previous match (Shift+Enter)")
+        btn_prev.setAutoRaise(True)
+        btn_prev.clicked.connect(self._find_prev)
+
+        btn_next = QToolButton()
+        btn_next.setIcon(icon("arrow-down", size=sz))
+        btn_next.setIconSize(qsz)
+        btn_next.setToolTip("Next match (Enter)")
+        btn_next.setAutoRaise(True)
+        btn_next.clicked.connect(self._find_next)
+
+        btn_close_find = QToolButton()
+        btn_close_find.setIcon(icon("x", size=sz))
+        btn_close_find.setIconSize(qsz)
+        btn_close_find.setToolTip("Close find bar (Esc)")
+        btn_close_find.setAutoRaise(True)
+        btn_close_find.clicked.connect(self._close_find_bar)
+
+        h.addWidget(lbl)
+        h.addWidget(self._find_input)
+        h.addWidget(btn_prev)
+        h.addWidget(btn_next)
+        h.addWidget(self._find_result_lbl)
+        h.addStretch()
+        h.addWidget(btn_close_find)
+
+        bar.setStyleSheet(
+            "#webFindBar {"
+            "  background: #1c1c1c;"
+            "  border-top: 1px solid #2c2c2c;"
+            "}"
+        )
+
+        sc_esc = QShortcut(QKeySequence("Escape"), bar)
+        sc_esc.setContext(Qt.WidgetWithChildrenShortcut)
+        sc_esc.activated.connect(self._close_find_bar)
+
+        return bar
+
+    def _toggle_find_bar(self):
+        if self._find_bar.isHidden():
+            self._find_bar.show()
+            self._find_input.setFocus()
+            self._find_input.selectAll()
+        else:
+            self._close_find_bar()
+
+    def _close_find_bar(self):
+        self._find_bar.hide()
+        view = self._current_view()
+        if view:
+            view.page().findText("")  # clear highlights
+        self._find_input.clear()
+        self._find_result_lbl.setText("")
+
+    def _find_text_changed(self, text):
+        view = self._current_view()
+        if view:
+            view.page().findText(text, resultCallback=self._on_find_result)
+
+    def _find_next(self):
+        view = self._current_view()
+        if view:
+            view.page().findText(
+                self._find_input.text(),
+                resultCallback=self._on_find_result,
+            )
+
+    def _find_prev(self):
+        view = self._current_view()
+        if view:
+            from PySide6.QtWebEngineCore import QWebEnginePage
+            view.page().findText(
+                self._find_input.text(),
+                QWebEnginePage.FindFlag.FindBackward,
+                resultCallback=self._on_find_result,
+            )
+
+    def _on_find_result(self, result):
+        """Update the match counter label from the findText callback."""
+        try:
+            n = result.numberOfMatches()
+            idx = result.activeMatch()
+            if n == 0 and self._find_input.text():
+                self._find_result_lbl.setText("No matches")
+                self._find_result_lbl.setStyleSheet(
+                    "color: #f87171; font-size: 11px; min-width: 60px;"
+                )
+            else:
+                self._find_result_lbl.setText(f"{idx}/{n}" if n else "")
+                self._find_result_lbl.setStyleSheet(
+                    "color: #9b9b96; font-size: 11px; min-width: 60px;"
+                )
+        except Exception:
+            self._find_result_lbl.setText("")
 
     def _toggle_devtools(self):
         view = self._current_view()
@@ -294,6 +488,10 @@ class WebPanel(QWidget):
         view.setUrl(QUrl(url))
         view.urlChanged.connect(lambda u, v=view: self._on_url_changed(v, u))
         view.titleChanged.connect(lambda t, v=view: self._on_title_changed(v, t))
+        view.iconChanged.connect(lambda ico, v=view: self._on_icon_changed(v, ico))
+        view.loadStarted.connect(lambda v=view: self._on_load_started(v))
+        view.loadProgress.connect(lambda p, v=view: self._on_load_progress(v, p))
+        view.loadFinished.connect(lambda ok, v=view: self._on_load_finished(v, ok))
         index = self.tabs.addTab(view, title)
         self._tabs_data.append({"title": title, "url": url})
         self.tabs.setCurrentIndex(index)
@@ -355,41 +553,147 @@ class WebPanel(QWidget):
             widget.deleteLater()
         self.persist_tabs()
 
-
     def _current_view(self):
         w = self.tabs.currentWidget()
         return w if WEB_AVAILABLE else None
 
-    def _on_tab_changed(self, index):
+    # ─────────────────────────────────────────────────────────────────────
+    # Load lifecycle — progress bar + Stop/Refresh toggle
+    # ─────────────────────────────────────────────────────────────────────
+
+    def _on_load_started(self, view):
+        if self.tabs.currentWidget() is not view:
+            return
+        self._is_loading = True
+        self._progress_bar.setValue(0)
+        self._progress_bar.show()
+        self.btn_refresh.setIcon(icon("x", size=self._NAV_ICON_SZ))
+        self.btn_refresh.setToolTip("Stop loading")
+
+    def _on_load_progress(self, view, progress):
+        if self.tabs.currentWidget() is not view:
+            return
+        self._progress_bar.setValue(progress)
+
+    def _on_load_finished(self, view, ok):
+        if self.tabs.currentWidget() is not view:
+            return
+        self._is_loading = False
+        self._progress_bar.hide()
+        self._progress_bar.setValue(0)
+        self.btn_refresh.setIcon(icon("refresh-cw", size=self._NAV_ICON_SZ))
+        self.btn_refresh.setToolTip("Reload page (Ctrl+R / F5)")
+        self._update_nav_state()
+
+    def _refresh_or_stop(self):
+        """Reload when idle; stop when a page is loading."""
+        view = self._current_view()
+        if not view:
+            return
+        if self._is_loading:
+            view.stop()
+            self._is_loading = False
+            self._progress_bar.hide()
+            self._progress_bar.setValue(0)
+            self.btn_refresh.setIcon(icon("refresh-cw", size=self._NAV_ICON_SZ))
+            self.btn_refresh.setToolTip("Reload page (Ctrl+R / F5)")
+        else:
+            view.reload()
+
+    # ─────────────────────────────────────────────────────────────────────
+    # Navigation helpers
+    # ─────────────────────────────────────────────────────────────────────
+
+    def _update_nav_state(self):
+        """Enable/disable back & forward buttons to reflect history."""
         view = self._current_view()
         if view:
-            self.url_bar.setText(view.url().toString())
-        self.persist_tabs()
+            self.btn_back.setEnabled(view.history().canGoBack())
+            self.btn_forward.setEnabled(view.history().canGoForward())
+        else:
+            self.btn_back.setEnabled(False)
+            self.btn_forward.setEnabled(False)
+
+    def _update_security_indicator(self, url):
+        """Color-code the leading globe icon to reflect connection security."""
+        scheme = url.scheme().lower() if hasattr(url, "scheme") else ""
+        if scheme == "https":
+            ico = icon("globe", size=self._SEC_ICON_SZ, color="#4ade80")
+            tip = "Secure connection (HTTPS)"
+        elif scheme == "http":
+            ico = icon("globe", size=self._SEC_ICON_SZ, color="#f59e0b")
+            tip = "Not secure (HTTP)"
+        elif scheme == "file":
+            ico = icon("folder-open", size=self._SEC_ICON_SZ)
+            tip = "Local file"
+        else:
+            self._security_action.setVisible(False)
+            return
+        self._security_action.setIcon(ico)
+        self._security_action.setToolTip(tip)
+        self._security_action.setVisible(True)
+
+    def _focus_url_bar(self):
+        """Focus and select-all the URL bar (Ctrl+L)."""
+        self.url_bar.setFocus()
+        self.url_bar.selectAll()
+
+    def _on_tab_changed(self, index):
+        # Reset loading visuals so they match the newly focused tab
+        self._is_loading = False
+        self._progress_bar.hide()
+        self._progress_bar.setValue(0)
+        self.btn_refresh.setIcon(icon("refresh-cw", size=self._NAV_ICON_SZ))
+        self.btn_refresh.setToolTip("Reload page (Ctrl+R / F5)")
+        view = self._current_view()
+        if view:
+            url = view.url()
+            self.url_bar.setText(url.toString())
+            self._update_security_indicator(url)
+        self._update_nav_state()
+        self._schedule_persist()
 
     def _on_url_changed(self, view, url):
         if self.tabs.currentWidget() is view:
             self.url_bar.setText(url.toString())
+            self._update_security_indicator(url)
         idx = self.tabs.indexOf(view)
         if 0 <= idx < len(self._tabs_data):
             self._tabs_data[idx]["url"] = url.toString()
-        self.persist_tabs()
+        self._schedule_persist()
 
     def _on_title_changed(self, view, title):
         idx = self.tabs.indexOf(view)
         if idx >= 0 and title:
-            short = title[:20] + ("…" if len(title) > 20 else "")
+            short = title[:20] + ("\u2026" if len(title) > 20 else "")
             self.tabs.setTabText(idx, short)
             if idx < len(self._tabs_data):
                 self._tabs_data[idx]["title"] = title
-        self.persist_tabs()
+        self._schedule_persist()
+
+    def _on_icon_changed(self, view, web_icon):
+        """Show the site favicon on the tab strip."""
+        idx = self.tabs.indexOf(view)
+        if idx >= 0 and not web_icon.isNull():
+            self.tabs.setTabIcon(idx, web_icon)
 
     def _navigate_current(self):
+        """Navigate the current tab, or fall back to a Google search."""
         view = self._current_view()
         if not view:
             return
-        url = self.url_bar.text().strip()
-        if url and not url.startswith("http"):
-            url = "https://" + url
+        text = self.url_bar.text().strip()
+        if not text:
+            return
+        if text.startswith(("http://", "https://", "file://", "ftp://")):
+            url = text
+        elif "." in text and " " not in text:
+            # Bare domain like "example.com" or "github.com/user/repo"
+            url = "https://" + text
+        else:
+            # Free-text search query
+            from urllib.parse import quote_plus
+            url = "https://www.google.com/search?q=" + quote_plus(text)
         view.setUrl(QUrl(url))
 
     def _go_back(self):
@@ -402,10 +706,6 @@ class WebPanel(QWidget):
         if view:
             view.forward()
 
-    def _reload_current(self):
-        view = self._current_view()
-        if view:
-            view.reload()
 
     def _bookmark_current(self):
         view = self._current_view()
@@ -426,7 +726,12 @@ class WebPanel(QWidget):
         except Exception as e:
             print(f"[WebPanel] Bookmark error: {e}")
 
-    def persist_tabs(self):
+    def _schedule_persist(self):
+        """Debounced persist: restarts the 800 ms timer on every rapid call."""
+        self._persist_timer.start()
+
+    def _do_persist_tabs(self):
+        """Write tab state to disk (called by the debounce timer)."""
         settings = load_settings()
         data = []
         for i in range(self.tabs.count()):
@@ -440,3 +745,8 @@ class WebPanel(QWidget):
             settings["web_tabs"] = data
             save_settings(settings)
         self.tabs_changed.emit()
+
+    def persist_tabs(self):
+        """Immediate (synchronous) persist — used by add_tab and _close_tab."""
+        self._persist_timer.stop()
+        self._do_persist_tabs()

@@ -56,15 +56,19 @@ def is_system_in_light_mode():
     except Exception:
         return False
 
-def get_active_palette():
+def get_active_theme_name():
+    """Return 'dark' or 'light' after resolving the 'system' setting."""
     try:
         from settings import load_settings
         mode = load_settings().get("theme_mode", "dark").lower()
         if mode == "system":
             mode = "light" if is_system_in_light_mode() else "dark"
-        return THEME_PALETTES.get(mode, THEME_PALETTES["dark"])
+        return mode if mode in ("dark", "light") else "dark"
     except Exception:
-        return THEME_PALETTES["dark"]
+        return "dark"
+
+def get_active_palette():
+    return THEME_PALETTES.get(get_active_theme_name(), THEME_PALETTES["dark"])
 
 def get_active_accent():
     try:
@@ -78,7 +82,7 @@ def get_active_accent():
 def get_brand_accent():
     return get_active_accent()["accent"]
 
-ICON_SIZE_TOOLBAR = 24
+ICON_SIZE_TOOLBAR = 28
 ICON_SIZE_COMPACT = 22
 ICON_SIZE_MARKDOWN = 32
 ICON_SIZE_VAULT_TREE = 24
@@ -102,26 +106,65 @@ def resolve_markdown_icon_size(value=None):
 def main_window_stylesheet():
     p = get_active_palette()
     accent = get_active_accent()
+    is_dark = get_active_theme_name() == "dark"
+    from icons import ICONS_DIR
+    close_icon = ICONS_DIR / ("x-bright.svg" if is_dark else "x-dark.svg")
+    # Subtle gradient for the toolbar: two very close shades for depth
+    tb_top = "#1e1e1e" if is_dark else "#fafafa"
+    tb_bot = "#191919" if is_dark else "#f0f0f0"
     return f"""
         QMainWindow {{ background-color: {p['BRAND_BACKGROUND']}; }}
-        QToolBar {{ background-color: {p['BRAND_PANEL']}; border-bottom: 1px solid {p['BRAND_BORDER']}; padding: 6px; spacing: 12px; }}
-        QToolButton {{ color: {p['BRAND_PRIMARY']}; background-color: transparent; border: none; padding: 6px; border-radius: 6px; min-width: 28px; min-height: 28px; }}
+
+        /* ── Toolbar ─────────────────────────────────────────── */
+        QToolBar {{
+            background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                stop:0 {tb_top}, stop:1 {tb_bot});
+            border: none;
+            border-bottom: 1px solid {p['BRAND_BORDER']};
+            padding: 4px 8px;
+            spacing: 2px;
+        }}
+        QToolButton {{
+            color: {p['BRAND_PRIMARY']};
+            background-color: transparent;
+            border: none;
+            padding: 5px 6px;
+            border-radius: 8px;
+            min-width: 24px;
+            min-height: 24px;
+        }}
         QToolButton:hover {{ background-color: {p['BRAND_PANEL_2']}; }}
         QToolButton:pressed {{ background-color: {accent['pressed']}; color: {p['BRAND_BACKGROUND']}; }}
         QToolButton:checked {{ background-color: {accent['accent']}; color: {p['BRAND_BACKGROUND']}; }}
-        QToolBar QToolButton {{ min-width: 65px; min-height: 50px; font-size: 11px; }}
-        QTabWidget::pane {{ border: none; border-top: 1px solid {p['BRAND_BORDER']}; background-color: {p['BRAND_PANEL']}; }}
-        QTabBar {{ background-color: {p['TAB_BAR_BG']}; border-bottom: 1px solid {p['BRAND_BORDER']}; qproperty-drawBase: 0; }}
+        QToolBar QToolButton {{
+            min-width: 60px;
+            min-height: 54px;
+            font-size: 10px;
+            font-family: 'Segoe UI', sans-serif;
+            letter-spacing: 0.2px;
+        }}
+
+        /* ── Tabs ────────────────────────────────────────────── */
+        QTabWidget::pane {{
+            border: none;
+            border-top: 1px solid {p['BRAND_BORDER']};
+            background-color: {p['BRAND_PANEL']};
+        }}
+        QTabBar {{
+            background-color: {p['TAB_BAR_BG']};
+            border-bottom: 1px solid {p['BRAND_BORDER']};
+            qproperty-drawBase: 0;
+        }}
         QTabBar::tab {{
             background-color: transparent;
             color: {p['BRAND_MUTED_FG']};
-            padding: 5px 14px;
-            margin: 4px 2px 0px 2px;
+            padding: 6px 16px;
+            margin: 3px 1px 0px 1px;
             font-size: 11px;
             font-family: 'Segoe UI', sans-serif;
             border-radius: 8px;
             border: none;
-            min-width: 60px;
+            min-width: 64px;
         }}
         QTabBar::tab:selected {{
             background-color: {p['BRAND_PANEL_2']};
@@ -136,22 +179,15 @@ def main_window_stylesheet():
             border-radius: 8px;
         }}
         QTabBar::close-button {{
-            image: url(icons/x.svg);
+            image: url("{close_icon.as_posix()}");
             subcontrol-position: right;
             width: 10px;
             height: 10px;
             border-radius: 4px;
             padding: 2px;
             margin-left: 4px;
-            opacity: 0;
         }}
-        QTabBar::tab:selected > QTabBar::close-button,
-        QTabBar::tab:hover > QTabBar::close-button {{
-            opacity: 1;
-        }}
-        QTabBar::close-button:hover {{
-            background-color: {p['BRAND_BORDER']};
-        }}
+        QTabBar::close-button:hover {{ background-color: {p['BRAND_BORDER']}; }}
         QTabBar QToolButton {{
             background-color: {p['TAB_BAR_BG']};
             border: none;
@@ -163,41 +199,142 @@ def main_window_stylesheet():
             background-color: {p['TAB_HOVER']};
             border-radius: 4px;
         }}
-        QTextEdit, QPlainTextEdit {{ background-color: {p['BRAND_PANEL']}; color: {p['BRAND_PRIMARY']}; border: none; padding: 15px; font-family: 'Consolas', monospace; font-size: 14px; }}
-        QMenuBar {{ background-color: {p['BRAND_BACKGROUND']}; color: {p['BRAND_PRIMARY']}; border-bottom: 1px solid {p['BRAND_BORDER']}; font-size: 13px; }}
-        QMenuBar::item {{ padding: 5px 10px; }}
+
+        /* ── Editors ─────────────────────────────────────────── */
+        QTextEdit, QPlainTextEdit {{
+            background-color: {p['BRAND_PANEL']};
+            color: {p['BRAND_PRIMARY']};
+            border: none;
+            padding: 15px;
+            font-family: 'Consolas', monospace;
+            font-size: 14px;
+        }}
+
+        /* ── Menu bar ────────────────────────────────────────── */
+        QMenuBar {{
+            background-color: {p['BRAND_BACKGROUND']};
+            color: {p['BRAND_PRIMARY']};
+            border-bottom: 1px solid {p['BRAND_BORDER']};
+            font-size: 13px;
+            font-family: 'Segoe UI', sans-serif;
+            padding: 2px 4px;
+        }}
+        QMenuBar::item {{ padding: 5px 10px; border-radius: 5px; }}
         QMenuBar::item:selected {{ background-color: {p['BRAND_PANEL']}; }}
-        QMenu {{ background-color: {p['BRAND_PANEL']}; color: {p['BRAND_PRIMARY']}; border: 1px solid {p['BRAND_BORDER']}; font-size: 13px; }}
-        QMenu::item {{ padding: 6px 60px 6px 20px; }}
+        QMenu {{
+            background-color: {p['BRAND_PANEL']};
+            color: {p['BRAND_PRIMARY']};
+            border: 1px solid {p['BRAND_BORDER']};
+            border-radius: 10px;
+            padding: 4px;
+            font-size: 13px;
+        }}
+        QMenu::item {{ padding: 7px 48px 7px 18px; border-radius: 6px; }}
         QMenu::item:selected {{ background-color: {p['BRAND_PANEL_2']}; }}
-        QMenu::separator {{ height: 1px; background: {p['BRAND_MUTED']}; margin: 4px 0px; }}
-        QStatusBar {{ background-color: {p['BRAND_BACKGROUND']}; color: {p['BRAND_MUTED_FG']}; border-top: 1px solid {p['BRAND_BORDER']}; }}
+        QMenu::separator {{ height: 1px; background: {p['BRAND_BORDER']}; margin: 4px 8px; }}
+
+        /* ── Status bar ──────────────────────────────────────── */
+        QStatusBar {{
+            background-color: {p['BRAND_BACKGROUND']};
+            color: {p['BRAND_MUTED_FG']};
+            border-top: 1px solid {p['BRAND_BORDER']};
+            padding: 2px 8px;
+            font-size: 11px;
+        }}
+
+        /* ── Dialogs / message boxes ─────────────────────────── */
         QFileDialog {{ background-color: {p['BRAND_PANEL']}; color: {p['BRAND_PRIMARY']}; }}
         QMessageBox {{ background-color: {p['BRAND_PANEL']}; color: {p['BRAND_PRIMARY']}; }}
-        QPushButton {{ background-color: {accent['accent']}; color: {accent['accent_fg']}; border: none; padding: 5px 10px; border-radius: 6px; font-weight: bold; }}
-        QPushButton:hover {{ background-color: {accent['hover']}; opacity: 0.9; }}
-        QPushButton:pressed {{ background-color: {accent['pressed']}; }}
         QDialog {{ background-color: {p['BRAND_BACKGROUND']}; color: {p['BRAND_PRIMARY']}; }}
-        QLineEdit, QSpinBox, QCheckBox {{ color: {p['BRAND_PRIMARY']}; }}
-        QLineEdit, QSpinBox {{ background-color: {p['BRAND_MUTED']}; border: 1px solid {p['BRAND_BORDER']}; padding: 6px; border-radius: 6px; }}
+
+        /* ── Buttons ─────────────────────────────────────────── */
+        QPushButton {{
+            background-color: {accent['accent']};
+            color: {accent['accent_fg']};
+            border: none;
+            padding: 7px 14px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 12px;
+            letter-spacing: 0.2px;
+        }}
+        QPushButton:hover {{ background-color: {accent['hover']}; }}
+        QPushButton:pressed {{ background-color: {accent['pressed']}; }}
+
+        /* ── Labels ──────────────────────────────────────────── */
         QLabel {{ color: {p['BRAND_PRIMARY']}; }}
-        QComboBox {{ background-color: {p['BRAND_PANEL']}; color: {p['BRAND_PRIMARY']}; border: 1px solid {p['BRAND_BORDER']}; padding: 5px; border-radius: 6px; }}
-        QComboBox QAbstractItemView {{ background-color: {p['BRAND_PANEL']}; color: {p['BRAND_PRIMARY']}; border: 1px solid {p['BRAND_BORDER']}; selection-background-color: {accent['accent']}; selection-color: {accent['accent_fg']}; }}
-        
-        QToolTip {{ background-color: {p['BRAND_PANEL']}; color: {p['BRAND_PRIMARY']}; border: 1px solid {p['BRAND_BORDER']}; padding: 4px; border-radius: 4px; font-family: 'Segoe UI', sans-serif; }}
-        
-        QScrollBar:vertical {{ background: {p['BRAND_BACKGROUND']}; width: 14px; margin: 0px; }}
-        QScrollBar::handle:vertical {{ background: {p['BRAND_MUTED_FG']}; min-height: 20px; border-radius: 6px; margin: 2px; }}
+
+        /* ── Inputs ──────────────────────────────────────────── */
+        QLineEdit, QSpinBox, QCheckBox {{ color: {p['BRAND_PRIMARY']}; }}
+        QLineEdit, QSpinBox {{
+            background-color: {p['BRAND_MUTED']};
+            border: 1px solid {p['BRAND_BORDER']};
+            padding: 7px 10px;
+            border-radius: 8px;
+            font-size: 13px;
+        }}
+        QLineEdit:focus, QSpinBox:focus {{
+            border: 1px solid {accent['accent']};
+        }}
+        QComboBox {{
+            background-color: {p['BRAND_PANEL']};
+            color: {p['BRAND_PRIMARY']};
+            border: 1px solid {p['BRAND_BORDER']};
+            padding: 6px 10px;
+            border-radius: 8px;
+        }}
+        QComboBox QAbstractItemView {{
+            background-color: {p['BRAND_PANEL']};
+            color: {p['BRAND_PRIMARY']};
+            border: 1px solid {p['BRAND_BORDER']};
+            border-radius: 8px;
+            selection-background-color: {accent['accent']};
+            selection-color: {accent['accent_fg']};
+        }}
+
+        /* ── Tooltips ────────────────────────────────────────── */
+        QToolTip {{
+            background-color: {p['BRAND_PANEL']};
+            color: {p['BRAND_PRIMARY']};
+            border: 1px solid {p['BRAND_BORDER']};
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-family: 'Segoe UI', sans-serif;
+            font-size: 12px;
+        }}
+
+        /* ── Scrollbars (macOS-style thin bars) ──────────────── */
+        QScrollBar:vertical {{
+            background: transparent;
+            width: 8px;
+            margin: 0px;
+        }}
+        QScrollBar::handle:vertical {{
+            background: {p['BRAND_MUTED_FG']};
+            min-height: 24px;
+            border-radius: 4px;
+            margin: 1px 2px;
+        }}
         QScrollBar::handle:vertical:hover {{ background: {accent['accent']}; }}
         QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{ height: 0px; }}
         QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {{ background: none; }}
-        
-        QScrollBar:horizontal {{ background: {p['BRAND_BACKGROUND']}; height: 14px; margin: 0px; }}
-        QScrollBar::handle:horizontal {{ background: {p['BRAND_MUTED_FG']}; min-width: 20px; border-radius: 6px; margin: 2px; }}
+
+        QScrollBar:horizontal {{
+            background: transparent;
+            height: 8px;
+            margin: 0px;
+        }}
+        QScrollBar::handle:horizontal {{
+            background: {p['BRAND_MUTED_FG']};
+            min-width: 24px;
+            border-radius: 4px;
+            margin: 2px 1px;
+        }}
         QScrollBar::handle:horizontal:hover {{ background: {accent['accent']}; }}
         QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {{ width: 0px; }}
         QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal {{ background: none; }}
     """
+
 
 
 def editor_stylesheet():

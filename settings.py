@@ -35,6 +35,7 @@ DEFAULT_SETTINGS = {
     "onboarding_completed": False,
     "last_run_version": "0.0.0",
     "file_search_scope": "active_vault",
+    "show_toolbar": True,
     "toolbar_order": ["new", "vault", "bookmarks", "open", "save", "tts", "web", "settings"],
 }
 
@@ -50,6 +51,8 @@ def _migrate_settings(data):
     if "web_tabs" not in data or not data["web_tabs"]:
         url = data.get("web_url", DEFAULT_SETTINGS["web_url"])
         data["web_tabs"] = [{"title": "Web", "url": url}]
+    # Always show the main toolbar by default so users see it on every launch.
+    data["show_toolbar"] = True
     return data
 
 

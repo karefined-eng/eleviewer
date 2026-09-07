@@ -7,26 +7,32 @@ MUTED_COLOR_HEX = "#888888"   # Normal / Inactive state
 
 
 def _draw_icon_pixmap(ext: str, size: int, color_hex: str) -> QPixmap:
-    """Draws a minimalist, Lucide-inspired line-art document icon without background fill or text clutter."""
+    """Draws a minimalist, Lucide-inspired line-art document icon without background fill or text clutter.
+    Renders at 2× size internally then scales down for crisp HiDPI output.
+    """
     ext = ext.lower()
     if ext and not ext.startswith("."):
         ext = "." + ext
 
     stroke_color = QColor(color_hex)
-    pixmap = QPixmap(size, size)
+
+    # Render at 2× to get crisp sub-pixel edges after smooth downscale
+    render_size = size * 2
+    pixmap = QPixmap(render_size, render_size)
     pixmap.fill(Qt.transparent)
 
     painter = QPainter(pixmap)
     painter.setRenderHint(QPainter.Antialiasing)
+    painter.setRenderHint(QPainter.SmoothPixmapTransform)
 
-    # Calculate proportional line width and padding (matching Lucide 1.5px stroke on 24px grid)
-    stroke_width = max(1.2, size * 0.075)
-    margin = max(2.0, size * 0.12)
-    w = size - margin * 2
-    h = size - margin * 2
+    # Calculate proportional line width and padding at 2× grid
+    stroke_width = max(1.4, render_size * 0.065)
+    margin = max(2.0, render_size * 0.12)
+    w = render_size - margin * 2
+    h = render_size - margin * 2
     x = margin
     y = margin
-    fold = max(3.5, w * 0.30)
+    fold = max(3.5, w * 0.24)
 
     # 1. Outer page outline with top-right folded corner (pure line art, NO background fill)
     page_path = QPainterPath()
@@ -61,7 +67,7 @@ def _draw_icon_pixmap(ext: str, size: int, color_hex: str) -> QPixmap:
         painter.drawLine(QPointF(x + w * 0.28, l3_y), QPointF(x + w * 0.55, l3_y))
 
     elif ext == ".pdf":
-        # Lucide File: pure uncluttered page outline with folded corner (exactly like lecture-04.pdf in demo)
+        # Lucide File: pure uncluttered page outline with folded corner
         pass
 
     elif ext in (".xlsx", ".xls", ".csv", ".tsv"):
@@ -107,7 +113,10 @@ def _draw_icon_pixmap(ext: str, size: int, color_hex: str) -> QPixmap:
         painter.drawLine(QPointF(x + w * 0.28, l3_y), QPointF(x + w * 0.55, l3_y))
 
     painter.end()
-    return pixmap
+
+    # Smooth downscale to final size
+    return pixmap.scaled(size, size, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+
 
 
 def file_type_icon(ext: str, size: int = 20, active: bool = False) -> QIcon:
