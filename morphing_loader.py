@@ -49,11 +49,11 @@ class MorphingLogo(QWidget):
         
         p = self._progress
         
-        # 6 phases instead of 4
-        phase = int(p * 6)
-        if phase > 5: phase = 5
+        # 10 phases
+        phase = int(p * 10)
+        if phase > 9: phase = 9
         
-        local_p = (p * 6) - phase
+        local_p = (p * 10) - phase
         if local_p < 0.2:
             t = 0.0
         elif local_p > 0.8:
@@ -79,25 +79,45 @@ class MorphingLogo(QWidget):
         kf1_m = (0, 0, 0, 1.4, 255)
         kf1_b = (0, 0, 0, 0.0, 0)
         
-        # 2: Greater-than >
-        kf2_t = (-spacing*0.7, spacing*0.5, 45, 0.8, 255)
+        # 2: Cross X
+        kf2_t = (0, 0, 45, 1.2, 255)
         kf2_m = (0, 0, 0, 0.0, 0)
-        kf2_b = (spacing*0.7, spacing*0.5, -45, 0.8, 255)
+        kf2_b = (0, 0, -45, 1.2, 255)
         
-        # 3: Less-than <
-        kf3_t = (-spacing*0.7, -spacing*0.5, -45, 0.8, 255)
-        kf3_m = (0, 0, 0, 0.0, 0)
-        kf3_b = (spacing*0.7, -spacing*0.5, 45, 0.8, 255)
+        # 3: Asterisk *
+        kf3_t = (0, 0, 60, 1.4, 255)
+        kf3_m = (0, 0, 0, 1.4, 255)
+        kf3_b = (0, 0, -60, 1.4, 255)
         
-        # 4: Equal =
-        kf4_t = (-spacing*0.5, 0, 0, 1.0, 255)
+        # 4: Greater-than >
+        kf4_t = (-spacing*0.7, spacing*0.5, 45, 0.8, 255)
         kf4_m = (0, 0, 0, 0.0, 0)
-        kf4_b = (spacing*0.5, 0, 0, 1.0, 255)
+        kf4_b = (spacing*0.7, spacing*0.5, -45, 0.8, 255)
         
-        # 5: Not-equal !=
-        kf5_t = (-spacing*0.4, 0, 0, 0.8, 255)
-        kf5_m = (0, 0, 45, 1.4, 255)
-        kf5_b = (spacing*0.4, 0, 0, 0.8, 255)
+        # 5: Less-than <
+        kf5_t = (-spacing*0.7, -spacing*0.5, -45, 0.8, 255)
+        kf5_m = (0, 0, 0, 0.0, 0)
+        kf5_b = (spacing*0.7, -spacing*0.5, 45, 0.8, 255)
+        
+        # 6: Equal =
+        kf6_t = (-spacing*0.5, 0, 0, 1.0, 255)
+        kf6_m = (0, 0, 0, 0.0, 0)
+        kf6_b = (spacing*0.5, 0, 0, 1.0, 255)
+        
+        # 7: Not-equal !=
+        kf7_t = (-spacing*0.4, 0, 0, 0.8, 255)
+        kf7_m = (0, 0, 45, 1.4, 255)
+        kf7_b = (spacing*0.4, 0, 0, 0.8, 255)
+        
+        # 8: Z-shape Z
+        kf8_t = (-spacing, 0, 0, 1.0, 255)
+        kf8_m = (0, 0, -45, 1.4, 255)
+        kf8_b = (spacing, 0, 0, 1.0, 255)
+        
+        # 9: Minus -
+        kf9_t = (0, 0, 0, 0.0, 0)
+        kf9_m = (0, 0, 0, 1.0, 255)
+        kf9_b = (0, 0, 0, 0.0, 0)
         
         keyframes = [
             (kf0_t, kf0_m, kf0_b),
@@ -106,6 +126,10 @@ class MorphingLogo(QWidget):
             (kf3_t, kf3_m, kf3_b),
             (kf4_t, kf4_m, kf4_b),
             (kf5_t, kf5_m, kf5_b),
+            (kf6_t, kf6_m, kf6_b),
+            (kf7_t, kf7_m, kf7_b),
+            (kf8_t, kf8_m, kf8_b),
+            (kf9_t, kf9_m, kf9_b),
             (kf0_t, kf0_m, kf0_b)
         ]
         

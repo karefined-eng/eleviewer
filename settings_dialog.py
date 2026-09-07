@@ -3,7 +3,7 @@ from PySide6.QtWidgets import (
     QCheckBox, QSpinBox, QPushButton, QFormLayout, QTabWidget,
     QComboBox, QWidget, QListWidget, QFileDialog
 )
-from PySide6.QtCore import QEvent, Qt
+from PySide6.QtCore import Qt
 
 from settings import load_settings, save_settings, DEFAULT_SETTINGS, DEFAULT_WEB_TABS
 from theme import (
@@ -18,7 +18,6 @@ class SettingsDialog(QDialog):
         self.setWindowTitle("Settings")
         self.resize(580, 500)
         self.settings = load_settings()
-        self._in_file_dialog = False
         # FIX: WA_DeleteOnClose=True ensures dialog is freed on close
         self.setAttribute(Qt.WA_DeleteOnClose, True)
         self.setWindowModality(Qt.ApplicationModal)
@@ -216,13 +215,9 @@ class SettingsDialog(QDialog):
         dl_browse_btn = QPushButton("Browse...")
 
         def _browse_dl():
-            self._in_file_dialog = True
-            try:
-                folder = QFileDialog.getExistingDirectory(self, "Select Download Folder")
-                if folder:
-                    self.download_folder_input.setText(folder)
-            finally:
-                self._in_file_dialog = False
+            folder = QFileDialog.getExistingDirectory(self, "Select Download Folder")
+            if folder:
+                self.download_folder_input.setText(folder)
 
         dl_browse_btn.clicked.connect(_browse_dl)
         dl_layout.addWidget(self.download_folder_input)
@@ -305,13 +300,9 @@ class SettingsDialog(QDialog):
         browse_btn = QPushButton("Browse...")
 
         def _browse():
-            self._in_file_dialog = True
-            try:
-                folder = QFileDialog.getExistingDirectory(self, "Select Default Save Folder")
-                if folder:
-                    self.save_folder_input.setText(folder)
-            finally:
-                self._in_file_dialog = False
+            folder = QFileDialog.getExistingDirectory(self, "Select Default Save Folder")
+            if folder:
+                self.save_folder_input.setText(folder)
 
         browse_btn.clicked.connect(_browse)
         folder_layout.addWidget(self.save_folder_input)
@@ -328,24 +319,16 @@ class SettingsDialog(QDialog):
         btn_remove = QPushButton("Remove")
 
         def _add_vault():
-            self._in_file_dialog = True
-            try:
-                folder = QFileDialog.getExistingDirectory(self, "Select Vault Folder")
-                if folder:
-                    self.vault_list.addItem(folder)
-            finally:
-                self._in_file_dialog = False
+            folder = QFileDialog.getExistingDirectory(self, "Select Vault Folder")
+            if folder:
+                self.vault_list.addItem(folder)
 
         def _edit_vault():
             current = self.vault_list.currentItem()
             if current:
-                self._in_file_dialog = True
-                try:
-                    folder = QFileDialog.getExistingDirectory(self, "Select Vault Folder", current.text())
-                    if folder:
-                        current.setText(folder)
-                finally:
-                    self._in_file_dialog = False
+                folder = QFileDialog.getExistingDirectory(self, "Select Vault Folder", current.text())
+                if folder:
+                    current.setText(folder)
 
         def _remove_vault():
             row = self.vault_list.currentRow()
@@ -416,9 +399,3 @@ class SettingsDialog(QDialog):
 
     def get_settings(self):
         return self.settings
-
-    def event(self, ev):
-        if ev.type() == QEvent.WindowDeactivate and not self._in_file_dialog:
-            self.reject()
-            return True
-        return super().event(ev)

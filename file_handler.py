@@ -1,10 +1,19 @@
 from pathlib import Path
+import os
 
 # Heavy viewers are lazily imported inside create_viewer_widget() for <100ms cold start
 
 
 BINARY_FORMATS = {"docx", "xlsx", "pdf", "pptx"}
 TEXT_RESTORE_FORMATS = {"txt", "md", "csv", "tsv", "html", "htm", ""}
+
+# Reading larger text files would freeze the UI thread, so they are refused
+# before a viewer is created rather than shown as document content.
+MAX_TEXT_FILE_BYTES = 25 * 1024 * 1024
+
+
+class FileOpenError(Exception):
+    """Raised when a file cannot be opened as a document."""
 
 
 def get_file_extension(file_path):
@@ -21,13 +30,22 @@ def is_binary_format(file_path):
 # FIX: UTF-8 with latin-1 fallback prevents UnicodeDecodeError crash
 def _read_file_safely(file_path: str) -> str:
     try:
-        with open(file_path, "r", encoding="utf-8") as f:
-            return f.read()
-    except UnicodeDecodeError:
-        with open(file_path, "r", encoding="latin-1", errors="replace") as f:
-            return f.read()
+        size = os.path.getsize(file_path)
+        if size > MAX_TEXT_FILE_BYTES:
+            raise FileOpenError(
+                f"This file is too large to open as text "
+                f"({size / (1024 * 1024):.0f} MB; the limit is 25 MB)."
+            )
+        try:
+            with open(file_path, "r", encoding="utf-8") as f:
+                return f.read()
+        except UnicodeDecodeError:
+            with open(file_path, "r", encoding="latin-1", errors="replace") as f:
+                return f.read()
     except OSError as e:
-        return f"[EleViewer] Could not read file: {e}"
+        # Raise instead of returning an error string: unreadable file content
+        # must never become editable text that can be saved over the real file.
+        raise FileOpenError(f"Could not read file: {e}") from e
 
 
 def create_viewer_widget(file_path, content=None):
