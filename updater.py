@@ -160,8 +160,7 @@ class UpdateDialog(QDialog):
         self.expected_hash = expected_hash
         self.setWindowTitle(f"Update Available - {tag_name}")
         self.resize(500, 380)
-
-        layout = QVBoxLayout(self)
+        layout = QVBoxLayout(self)
 
         title = QLabel(f"A new version of EleViewer ({tag_name}) is available!")
         title.setStyleSheet("font-size: 15px; font-weight: bold; margin-bottom: 5px;")
@@ -175,9 +174,9 @@ class UpdateDialog(QDialog):
         self.notes_area.setReadOnly(True)
         self.notes_area.setPlainText(release_notes)
         layout.addWidget(self.notes_area)
-        
-        from morphing_loader import MorphingHamburger
-        self.loader_anim = MorphingHamburger(size=48)
+
+        from morphing_loader import MorphingLogo
+        self.loader_anim = MorphingLogo(size=48)
         self.loader_anim.setVisible(False)
         
         status_layout = QHBoxLayout()

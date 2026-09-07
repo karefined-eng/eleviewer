@@ -147,13 +147,13 @@ if len(sys.argv) > 1:
 
 from PySide6.QtCore import QEventLoop, QTimer, Qt
 from PySide6.QtWidgets import QWidget, QVBoxLayout
-from morphing_loader import MorphingHamburger
+from morphing_loader import MorphingLogo
 
 splash = QWidget()
 splash.setWindowFlags(Qt.SplashScreen | Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)
 splash.setAttribute(Qt.WA_TranslucentBackground)
 splash_layout = QVBoxLayout(splash)
-loader = MorphingHamburger(size=120)
+loader = MorphingLogo(size=120)
 splash_layout.addWidget(loader)
 loader.start()
 splash.show()
