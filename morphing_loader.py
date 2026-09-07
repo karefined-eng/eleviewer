@@ -2,10 +2,10 @@ import math
 from PySide6.QtWidgets import QWidget
 from PySide6.QtCore import Qt, QVariantAnimation, QRectF
 from PySide6.QtGui import QPainter, QColor
-from theme import BRAND_PRIMARY, get_brand_accent
+from theme import BRAND_PRIMARY, get_brand_accent, BRAND_PANEL
 
 class MorphingLogo(QWidget):
-    def __init__(self, parent=None, size=64, duration=3000):
+    def __init__(self, parent=None, size=64, duration=4500):
         super().__init__(parent)
         self.setFixedSize(size, size)
         self._progress = 0.0
@@ -31,18 +31,16 @@ class MorphingLogo(QWidget):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing)
         
+        # Draw background rounded rect
+        painter.setBrush(QColor(BRAND_PANEL))
+        painter.setPen(QColor("#2c2c2c"))
+        painter.drawRoundedRect(
+            1, 1, self.width()-2, self.height()-2,
+            self.width() * 0.2, self.height() * 0.2
+        )
+        
         cx, cy = self.width() / 2, self.height() / 2
         scale = self.width() / 32.0
-        
-        # Original logo dimensions from branding_logo.py:
-        # Top: w=14, h=3. y=9 (center is 10.5)
-        # Mid: w=10, h=3. y=14.5 (center is 16)
-        # Bot: w=14, h=3. y=20 (center is 21.5)
-        # The center of the 32x32 canvas is 16.
-        # So relative to cx,cy:
-        # Top y-offset = -5.5
-        # Mid y-offset = 0
-        # Bot y-offset = 5.5
         
         h = 3 * scale
         spacing = 5.5 * scale
@@ -51,10 +49,11 @@ class MorphingLogo(QWidget):
         
         p = self._progress
         
-        phase = int(p * 4)
-        if phase > 3: phase = 3
+        # 6 phases instead of 4
+        phase = int(p * 6)
+        if phase > 5: phase = 5
         
-        local_p = (p * 4) - phase
+        local_p = (p * 6) - phase
         if local_p < 0.2:
             t = 0.0
         elif local_p > 0.8:
@@ -75,26 +74,38 @@ class MorphingLogo(QWidget):
         kf0_m = (0, 0, 0, 1.0, 255)
         kf0_b = (spacing, 0, 0, 1.0, 255)
         
-        # 1: Greater-than >
-        kf1_t = (-spacing*0.7, spacing*0.5, 45, 0.8, 255)
-        kf1_m = (0, 0, 0, 0.0, 0)
-        kf1_b = (spacing*0.7, spacing*0.5, -45, 0.8, 255)
+        # 1: Plus +
+        kf1_t = (0, 0, 90, 1.2, 255)
+        kf1_m = (0, 0, 0, 1.4, 255)
+        kf1_b = (0, 0, 0, 0.0, 0)
         
-        # 2: Less-than <
-        kf2_t = (-spacing*0.7, -spacing*0.5, -45, 0.8, 255)
+        # 2: Greater-than >
+        kf2_t = (-spacing*0.7, spacing*0.5, 45, 0.8, 255)
         kf2_m = (0, 0, 0, 0.0, 0)
-        kf2_b = (spacing*0.7, -spacing*0.5, 45, 0.8, 255)
+        kf2_b = (spacing*0.7, spacing*0.5, -45, 0.8, 255)
         
-        # 3: Not-equal !=
-        kf3_t = (-spacing*0.4, 0, 0, 0.8, 255)
-        kf3_m = (0, 0, 45, 1.4, 255)
-        kf3_b = (spacing*0.4, 0, 0, 0.8, 255)
+        # 3: Less-than <
+        kf3_t = (-spacing*0.7, -spacing*0.5, -45, 0.8, 255)
+        kf3_m = (0, 0, 0, 0.0, 0)
+        kf3_b = (spacing*0.7, -spacing*0.5, 45, 0.8, 255)
+        
+        # 4: Equal =
+        kf4_t = (-spacing*0.5, 0, 0, 1.0, 255)
+        kf4_m = (0, 0, 0, 0.0, 0)
+        kf4_b = (spacing*0.5, 0, 0, 1.0, 255)
+        
+        # 5: Not-equal !=
+        kf5_t = (-spacing*0.4, 0, 0, 0.8, 255)
+        kf5_m = (0, 0, 45, 1.4, 255)
+        kf5_b = (spacing*0.4, 0, 0, 0.8, 255)
         
         keyframes = [
             (kf0_t, kf0_m, kf0_b),
             (kf1_t, kf1_m, kf1_b),
             (kf2_t, kf2_m, kf2_b),
             (kf3_t, kf3_m, kf3_b),
+            (kf4_t, kf4_m, kf4_b),
+            (kf5_t, kf5_m, kf5_b),
             (kf0_t, kf0_m, kf0_b)
         ]
         
@@ -124,7 +135,6 @@ class MorphingLogo(QWidget):
             painter.translate(x_off, y_off)
             painter.rotate(rot)
             
-            # Middle bar uses accent color and is naturally shorter when in logo state
             base_color = QColor(get_brand_accent() if is_middle else BRAND_PRIMARY)
             base_color.setAlpha(int(alpha))
             painter.setBrush(base_color)
