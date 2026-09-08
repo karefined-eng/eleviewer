@@ -7,36 +7,50 @@
   </p>
 </div>
 
-A lightweight Windows document editor and web browser built for deep research. EleViewer supports DOCX, XLSX, PPTX, MD, TXT, CSV, TSV, HTML, and PDF, all powered natively by Python and PySide6.
+A lightweight Windows document editor and web browser built for deep research and focused study. EleViewer opens and edits DOCX, XLSX, PPTX, MD, TXT, CSV, TSV, HTML, and PDF files natively—no heavy third-party suites or cloud rendering needed.
+
+---
 
 ## 📚 Why EleViewer? (The Killer Features)
 
-Instead of a generic text editor, EleViewer is an interconnected workspace designed to eliminate context switching during your study or research sessions.
+Instead of forcing you to juggle separate reader, editor, and browser windows, EleViewer combines your documents and research into one interconnected workspace.
 
-*   **🚀 The Unified Workspace**
-    *   **Split-Screen Web Panel (`Ctrl+T`):** Browse the web directly alongside your local documents. Hyperlinks inside your PDFs or Markdown notes open in the Web Panel instead of kicking you out to Chrome.
-    *   **Vaults & Live Search (`Alt+V`):** Connect your local study folders. The embedded background search engine silently scans everything, allowing you to instantly search across hundreds of course files simultaneously.
-    *   **Persistent Bookmarks (`Ctrl+D`):** Drop a bookmark on page 342 of a massive textbook or deep within a Markdown file. EleViewer remembers the exact scroll coordinate so you can jump back instantly later.
-    *   **Global Quick Note (`Alt+E`):** A system-wide Windows hotkey. Press `Alt+E` from anywhere in Windows to instantly bring EleViewer to the front and open a new blank scratchpad.
+* **🚀 The Unified Workspace**
+  * **Split-Screen Web Panel (`Ctrl+T`):** Browse web pages and lecture notes right alongside your documents. Web links inside PDFs or notes open directly in the side panel with page zoom controls and dedicated file downloads.
+  * **Vaults & Live Search (`Alt+V`):** Connect your course folders. An embedded background search engine scans your files silently so you can find exact terms across hundreds of study documents in seconds.
+  * **Session Restore & Persistent Bookmarks (`Ctrl+D`):** EleViewer remembers your open tabs and the exact reading position across your documents, so you can pick up right where you left off.
+  * **Global Quick Note (`Alt+E`):** A system-wide hotkey. Press `Alt+E` from anywhere in Windows to instantly bring EleViewer forward and open a clean scratchpad.
 
-*   **🔊 Advanced Reading & Data Tools**
-    *   **Hybrid Neural Text-to-Speech (`F9`):** Reads documents aloud to you. It automatically uses high-quality Microsoft Neural voices when online, and seamlessly falls back to native Windows offline voices when disconnected.
-    *   **Dual-Mode CSV Workstation:** Toggle instantly between a beautiful Table Grid View and a raw text editor, with automatic encoding detection so your data never looks garbled.
+* **🎯 Interactive Learning & Focus**
+  * **Interactive Playground Tutorials:** Learn power-user workflows with hands-on, spotlight tours (**Help > Interactive Tutorials**).
+  * **Distraction-Free Mode (`Ctrl+Alt+T`):** Instantly toggle the main toolbar on or off to maximize your vertical reading space.
+  * **Action-First Onboarding:** Start experimenting with split-screen research and note-taking from your very first launch.
 
-*   **📁 Universal File Support (Zero Cloud Rendering)**
-    *   Opens & edits DOCX, XLSX, PPTX, PDF, MD, TXT, CSV, TSV and HTML natively — no heavy LibreOffice wrappers and no uploading files to a cloud renderer.
-    *   Inline Image Extraction natively renders embedded pictures inside DOCX and PPTX files.
+* **🔊 Advanced Reading & Data Tools**
+  * **Universal Read Aloud (`F9`):** Listens to your documents on the go. High-quality neural voices when online, with an automatic fallback to Windows offline voices when disconnected.
+  * **Dual-Mode Data Workstation:** Toggle instantly between a structured table view and a raw text editor for CSV and tabular data.
 
-*   **✨ Security & Reliability**
-    *   **Atomic Writes:** Zero-byte file corruption prevention on sudden crash or power loss.
-    *   **Zero Telemetry:** No mandatory logins, no tracking. Your files stay local.
+* **📁 Universal File Support (Zero Cloud Uploads)**
+  * Opens and edits DOCX, XLSX, PPTX, PDF, MD, TXT, CSV, TSV, and HTML natively.
+  * Extracts embedded images inside Word and PowerPoint files automatically.
+
+* **✨ Privacy & Data Integrity**
+  * **Crash-Resistant Saving:** Atomic writes protect your files from corruption during sudden reboots or power loss.
+  * **Zero Telemetry:** No user tracking, no forced accounts, and no telemetry. All files remain strictly on your computer.
+
+---
 
 ## 🚀 Quick Start
 
-### For End Users
-EleViewer is a portable `~129 MB` standalone Windows executable. No installation required.
-1. Download the latest `EleViewer.exe` from the [Releases page](https://github.com/karefined-eng/eleviewer/releases).
-2. Run `EleViewer.exe`.
+### Install via Windows Package Manager (Recommended)
+Open PowerShell or Command Prompt and run:
+```powershell
+winget install karefined-eng.EleViewer
+```
+
+### Manual Download
+1. Download the latest installer (`EleViewer_Setup_v1.4.0.exe`) or portable zip (`EleViewer-Portable.zip`) from the [Releases page](https://github.com/karefined-eng/eleviewer/releases).
+2. Run the installer or extract the portable folder and launch `EleViewer.exe`.
 
 ### For Developers
 **Prerequisites:** Windows 10/11, Python 3.9+, Git.
@@ -57,51 +71,58 @@ python -m venv .venv
 ```bash
 pip install -r requirements.txt
 ```
-*(Note: To use the embedded Web Panel, ensure you have the optional `PySide6-WebEngine` package installed, which is included in the requirements).*
 
 4. Run the application:
 ```bash
 python main.py
 ```
 
-## ⌨️ Keyboard Shortcuts & Usage
+---
+
+## ⌨️ Keyboard Shortcuts & Quick Reference
 
 | Shortcut | Action |
 |---|---|
-| `Alt+E` | System-Wide Quick Note / Summon |
-| `Ctrl+N` | New File picker |
-| `Ctrl+O` / `Ctrl+S` | Open file / Save file |
+| `Alt+E` | Global Quick Note / Bring EleViewer Forward |
+| `Ctrl+N` | New Document Picker |
+| `Ctrl+O` / `Ctrl+S` | Open File / Save File |
 | `Ctrl+Shift+S` | Save As |
-| `Ctrl+W` | Close tab |
-| `Ctrl+Shift+T` | Reopen closed tab |
-| `Ctrl+F` / `Ctrl+H`| Find in document / Find and Replace |
-| `Ctrl+Q` | Quick switcher (search files) |
-| `Alt+V` | Toggle Vault (Folder Explorer) |
-| `Ctrl+Alt+B`| Toggle Bookmarks Panel |
-| `Ctrl+D` | Bookmark current file position / page |
-| `F9` | Read Aloud / Toggle TTS Bar |
+| `Ctrl+W` | Close Current Tab |
+| `Ctrl+Shift+T` | Reopen Last Closed Tab |
+| `Ctrl+Tab` / `Ctrl+Shift+Tab` | Cycle Through Active Tabs |
+| `Ctrl+F` / `Ctrl+H` | Find / Replace in Document |
+| `Ctrl+Q` | Quick Switcher (Instant File Search) |
+| `Alt+V` | Toggle Study Vault Sidebar |
+| `Ctrl+Alt+B` | Toggle Bookmarks Panel |
+| `Ctrl+D` | Bookmark Current Document Position |
 | `Ctrl+T` | Open Web Browser Panel / New Web Tab |
-| `Ctrl++` / `Ctrl+-` | Zoom In / Zoom Out (Web Panel) |
-| `Alt+S` | Open Settings |
+| `Ctrl+Alt+T` | Toggle Toolbar (Distraction-Free Mode) |
+| `Ctrl++` / `Ctrl+-` / `Ctrl+0` | Web Panel Zoom In / Zoom Out / Reset Zoom |
+| `F9` | Read Aloud / Toggle Speech Bar |
+| `Alt+S` | Open Settings & Preferences |
+| `F1` | Keyboard Shortcuts & Help |
+
+---
 
 ## 🛠️ Building & Architecture
 
-EleViewer uses a factory pattern for file handling. `filehandler.py` routes files to the correct viewer module (e.g., `docxviewer.py`, `xlsxviewer.py`, `pdfviewer.py`).
+EleViewer uses a lightweight factory router in `file_handler.py` to route documents to their dedicated viewers (such as `pdf_viewer.py`, `docx_viewer.py`, `markdown_renderer.py`, and `xlsx_viewer.py`).
 
-**Packaging:**
-The release workflow uses Nuitka `--onefile` plus Inno Setup to produce a standalone portable executable and a Windows installer.
+**Local Compilation:**
 ```bash
-nuitka --onefile --plugin-enable=pyside6 --include-qt-plugins=sensible,styles --disable-console main.py
+nuitka --standalone --lto=yes --enable-plugin=pyside6 --include-qt-plugins=sensible,styles,qwebengine --disable-console main.py
 ```
 
 **Testing:**
-All tests are run via `pytest` from the repository root:
+Run the complete automated test suite via `pytest`:
 ```bash
 pytest -s
 ```
 
+---
+
 ## 🤝 Contributing
-This project is open-source. Feel free to fork it, create a branch, and submit a pull request!
+Contributions, issue reports, and suggestions are welcome! Feel free to fork the repository, open an issue, or submit a pull request.
 
 ## 📄 License
-GNU GPLv3 License — see the `LICENSE` file for details.
+Distributed under the GNU General Public License v3 (GPLv3). See [LICENSE](LICENSE) for full details.

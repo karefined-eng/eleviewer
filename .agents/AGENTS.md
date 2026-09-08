@@ -8,6 +8,9 @@ This repository is a Python + PySide6 desktop app for browsing and studying loca
 - The main UI shell is [ui.py](../ui.py).
 - File routing happens in [file_handler.py](../file_handler.py).
 - Viewer-specific logic lives in [markdown_renderer.py](../markdown_renderer.py), [docx_viewer.py](../docx_viewer.py), [pptx_viewer.py](../pptx_viewer.py), [pdf_viewer.py](../pdf_viewer.py), [xlsx_viewer.py](../xlsx_viewer.py), and [csv_viewer.py](../csv_viewer.py).
+- Interactive tutorials and onboarding live in [tutorials.py](../tutorials.py) and [onboarding.py](../onboarding.py).
+- Web browsing panel lives in [web_panel.py](../web_panel.py).
+- Versioning single source of truth is [version.py](../version.py).
 - The app is intentionally lightweight. Prefer native Python/Qt rendering and small caching or debouncing changes over introducing new runtime dependencies.
 - There is no Rust-based viewer implementation in the current repository; do not add Rust or PyO3 work unless the user explicitly asks for it.
 
@@ -21,12 +24,19 @@ This repository is a Python + PySide6 desktop app for browsing and studying loca
 ## Implementation rules
 - Keep UI responsiveness in mind for preview-heavy paths. Debouncing, caching, and skipping redundant renders are preferred when the user is typing or revisiting the same content.
 - Preserve existing keyboard shortcuts and document navigation behavior unless the task explicitly changes them.
+- **Tutorial & Dialog Geometry Invariants:** Spotlight overlays in `tutorials.py` must clamp card coordinates strictly within visible window bounds (`max(margin, min(win_w - card_w - margin, card_x))`) to prevent dialogs from rendering off-screen.
+- **Version Alignment:** When bumping versions, update [version.py](../version.py), [setup.iss](../setup.iss), [version_sync.py](../version_sync.py), and the Winget manifests in `winget/`.
+
 ## Copywriting & Documentation
-- **No Developer Jargon in User Copy:** User-facing files (Welcome guide, marketing sites, README intros) MUST strictly avoid developer jargon (e.g., SQLite, QThread, bleach, chardet, pyttsx3). Translate these into plain English (e.g., "background search engine", "security sanitization"). Keep readability at a 6th-to-8th grade level (Flesch-Kincaid). Developer docs (`DEVELOPER_ONBOARDING.md`, code comments) should remain technical.
+- **No Developer Jargon in User Copy:** User-facing files (Welcome guide, marketing sites, README intros, release notes) MUST strictly avoid developer jargon (e.g., SQLite, QThread, bleach, chardet, pyttsx3). Translate these into plain English (e.g., "background search engine", "security sanitization"). Keep readability at a 6th-to-8th grade level (Flesch-Kincaid). Developer docs (`DEVELOPER_ONBOARDING.md`, code comments) should remain technical.
 - **Lead with Killer Features:** Do not bury the lede. Always highlight EleViewer's unique unified workspace features first: Split-Screen Web Panel, Vaults & Live Search, Session Restore, Persistent Bookmarks, and the Global Quick Note (Alt+E). Generic features (like "opens DOCX") should be listed last.
 - Avoid adding new packages unless the task truly requires them.
 
-## Validation
-- Run the relevant root-level tests with `pytest -s <test_file>.py`.
-- If the change touches a viewer, do a quick manual smoke check by launching the app with `python main.py`.
+## Release & Distribution
+- The production CI/CD pipeline is defined in `.github/workflows/build.yml`. It triggers on tags matching `v[0-9]+.[0-9]+.[0-9]+`.
+- The pipeline compiles with Nuitka C++ (LTO enabled), builds the Inno Setup installer, packages the portable zip, generates the Winget installer manifest with dynamic SHA256 hashes, creates the GitHub Release, and submits to the Windows Package Manager.
+- Windows Package Manager manifests reside in `winget/karefined-eng.EleViewer*.yaml`.
 
+## Validation
+- Run the full root-level test suite with `python -m pytest`.
+- If the change touches a viewer, do a quick manual smoke check by launching the app with `python main.py`.
