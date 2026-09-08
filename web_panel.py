@@ -66,9 +66,11 @@ def get_web_view_class():
                 request.accept()
                 if request.toggleOn():
                     self.setWindowFlag(Qt.Window, True)
+                    self.setWindowFlag(Qt.FramelessWindowHint, True)
                     self.showFullScreen()
                 else:
                     self.setWindowFlag(Qt.Window, False)
+                    self.setWindowFlag(Qt.FramelessWindowHint, False)
                     self.show()
                 
             def _auto_deny_permissions(self, security_origin, feature):
