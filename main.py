@@ -161,13 +161,18 @@ screen_geo = QGuiApplication.primaryScreen().geometry()
 splash.move((screen_geo.width() - 120) // 2, (screen_geo.height() - 120) // 2)
 splash.show()
 
-loop = QEventLoop()
-QTimer.singleShot(1500, loop.quit)
-loop.exec()
-
-splash.close()
-
 window.show()
+splash.raise_()
+
+from PySide6.QtCore import QPropertyAnimation
+splash._anim = QPropertyAnimation(splash, b"windowOpacity")
+splash._anim.setDuration(500)
+splash._anim.setStartValue(1.0)
+splash._anim.setEndValue(0.0)
+splash._anim.finished.connect(splash.close)
+
+# Wait 1000ms for window to render and user to see splash, then fade out
+QTimer.singleShot(1000, splash._anim.start)
 
 if not settings.get("onboarding_completed", False):
     from onboarding import OnboardingManager

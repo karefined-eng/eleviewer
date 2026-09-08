@@ -592,6 +592,7 @@ class MainWindow(QMainWindow):
         self.toolbar = DraggableToolBar("Main Toolbar")
         self.toolbar.setMovable(False)
         self.toolbar.setIconSize(QSize(ICON_SIZE_TOOLBAR, ICON_SIZE_TOOLBAR))
+        self.toolbar.setStyleSheet("QToolButton { margin: 0px 6px; padding: 4px; border-radius: 6px; }")
         self._apply_toolbar_style()
         self.addToolBar(self.toolbar)
 
@@ -1546,6 +1547,11 @@ class MainWindow(QMainWindow):
             file_path = tab_info.get("file_path")
             content = tab_info.get("content", "")
             is_active = tab_info.get("is_active", False)
+            
+            # Fix: Ignore empty, unmodified tabs to ensure Welcome Screen triggers if this is the only tab
+            if not file_path and not content and not tab_info.get("is_modified", False):
+                continue
+                
             scroll_y = tab_info.get("scroll_y", tab_info.get("scroll_pos", 0))
             zoom = tab_info.get("zoom", 1.0)
             pdf_page = tab_info.get("pdf_page", 0)
@@ -1647,6 +1653,8 @@ class MainWindow(QMainWindow):
         self._add_menu_action(menu, "Settings...", self.open_settings, "Alt+S")
 
         help_menu = menu.addMenu("Help")
+        self._add_menu_action(help_menu, "Interactive Tutorials (New!)", self.start_tutorial)
+        help_menu.addSeparator()
         self._add_menu_action(help_menu, "Keyboard Shortcuts", self.open_shortcuts_dialog, "F1")
         self._add_menu_action(help_menu, "Getting Started Guide", self.open_getting_started)
         self._add_menu_action(help_menu, "Check for Updates...", self.check_for_updates_manual)
