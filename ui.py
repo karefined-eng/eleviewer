@@ -576,7 +576,7 @@ class MainWindow(QMainWindow):
             return
         from settings import load_settings
         settings_data = load_settings()
-        style_name = settings_data.get("toolbar_button_style", "icon_only")
+        style_name = settings_data.get("toolbar_button_style", "text_under_icon")
         if style_name == "icon_only":
             self.toolbar.setToolButtonStyle(Qt.ToolButtonIconOnly)
         elif style_name == "text_beside_icon":
@@ -675,6 +675,7 @@ class MainWindow(QMainWindow):
         self.quick_menu.addAction(icon("settings", size=16), "Settings...", self.open_settings)
         self.quick_menu.addAction("Keyboard Shortcuts", self.open_shortcuts_dialog)
         self.quick_menu.addAction("Check for Updates", self.check_for_updates_manual)
+        self.quick_menu.addAction("Submit Feedback / Feature Request", self.open_feedback_dialog)
         self.quick_menu.addSeparator()
         self.quick_menu.addAction("Toggle Main Toolbar", self.toggle_main_toolbar)
         self.quick_menu.addSeparator()
@@ -1642,6 +1643,8 @@ class MainWindow(QMainWindow):
         tabs_info = []
         for i in range(self.tabs.count()):
             editor = self.tabs.widget(i)
+            if getattr(editor, "is_welcome_tab", False):
+                continue
             file_path = getattr(editor, "file_path", None)
             if file_path and os.path.exists(file_path):
                 content = ""
@@ -2512,7 +2515,12 @@ class MainWindow(QMainWindow):
         btn_max.clicked.connect(_toggle_maximize)
 
         def _toggle_float():
-            self._web_dock.setFloating(not self._web_dock.isFloating())
+            is_floating = not self._web_dock.isFloating()
+            self._web_dock.setFloating(is_floating)
+            if is_floating:
+                self._web_dock.showMaximized()
+            else:
+                self._web_dock.showNormal()
 
         btn_float.clicked.connect(_toggle_float)
 
