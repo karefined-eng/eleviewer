@@ -16,6 +16,8 @@ class OnboardingManager(QObject):
         self.note_opened = False
         self.bookmark_added = False
         self.web_opened = False
+        self.search_opened = False
+        self.settings_opened = False
         
     def start(self):
         # Open Web Panel immediately to showcase the split-screen layout
@@ -59,6 +61,24 @@ class OnboardingManager(QObject):
                 self.web_opened = True
                 self._show_success("Web Panel Opened (Ctrl+T)")
         self.window.toggle_web_panel = hooked_toggle_web
+
+        # Hook Quick Switcher (Ctrl+Q)
+        orig_quick_switcher = self.window.open_quick_switcher
+        def hooked_quick_switcher():
+            orig_quick_switcher()
+            if not self.search_opened:
+                self.search_opened = True
+                self._show_success("Quick Switcher Opened (Ctrl+Q)")
+        self.window.open_quick_switcher = hooked_quick_switcher
+
+        # Hook Settings (Alt+S)
+        orig_open_settings = self.window.open_settings
+        def hooked_open_settings():
+            orig_open_settings()
+            if not self.settings_opened:
+                self.settings_opened = True
+                self._show_success("Settings Opened (Alt+S)")
+        self.window.open_settings = hooked_open_settings
 
     def _show_success(self, msg):
         # Temporarily make the status bar text green and bold

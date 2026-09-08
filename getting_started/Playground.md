@@ -17,5 +17,13 @@ Press `Ctrl+T` to open the web panel (if it isn't already).
 ## 4. Zoom the Web
 Click into the web panel and press `Ctrl + +` to zoom in.
 
+## 5. Search Your Vault
+Press `Ctrl+Q` to quickly search your files.
+*(Instantly jump between documents without taking your hands off the keyboard.)*
+
+## 6. Customize Your Space
+Press `Alt+S` to open your Settings.
+*(Head to the Web Browser Panel tab to find advanced options like hardware acceleration and context menus.)*
+
 ---
 *Once you've tried these, you're ready to start studying! You can close this tab anytime.*
