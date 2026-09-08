@@ -1063,14 +1063,14 @@ class MainWindow(QMainWindow):
         from PySide6.QtGui import QPixmap, QIcon
         from theme import get_active_palette, get_brand_accent, get_active_accent
         p = get_active_palette()
-        from branding_logo import create_eleviewer_pixmap
         from icons import icon
         from recent_files import load_recent_files
         from bookmark_manager import load_bookmarks
+        import os
         
         w = QWidget()
         w.is_welcome_tab = True
-        # Outer layout
+        
         outer_layout = QVBoxLayout(w)
         outer_layout.setContentsMargins(0, 0, 0, 0)
 
@@ -1079,16 +1079,15 @@ class MainWindow(QMainWindow):
         wrapper_layout.setContentsMargins(0, 0, 0, 0)
         wrapper_layout.addStretch()
 
-        # Constrained content wrapper — stays readable on maximized windows
         content = QWidget()
-        content.setMaximumWidth(1000)
-        content.setMinimumWidth(650)
+        content.setMaximumWidth(800)
+        content.setMinimumWidth(550)
         content.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
         
         main_layout = QVBoxLayout(content)
         main_layout.setAlignment(Qt.AlignTop)
         main_layout.setContentsMargins(40, 72, 40, 40)
-        main_layout.setSpacing(22)
+        main_layout.setSpacing(40)
         
         wrapper_layout.addWidget(content, 1)
         wrapper_layout.addStretch()
@@ -1096,35 +1095,74 @@ class MainWindow(QMainWindow):
         outer_layout.addWidget(wrapper)
         outer_layout.addStretch()
         
-        # 1. Hero Section (Logo + Title)
+        # 1. Hero Section
         hero = QWidget()
         hero_layout = QVBoxLayout(hero)
         hero_layout.setAlignment(Qt.AlignCenter)
-        hero_layout.setSpacing(15)
-        
-        logo_lbl = QLabel()
-        logo_lbl.setMinimumSize(72, 72)
-        logo_lbl.setPixmap(create_eleviewer_pixmap(72))
-        logo_lbl.setAlignment(Qt.AlignCenter)
+        hero_layout.setSpacing(8)
         
         title = QLabel("EleViewer")
-        title.setMinimumHeight(40)
-        title.setStyleSheet(f"font-size: 32px; font-weight: bold; color: {p['BRAND_PRIMARY']};")
+        title.setStyleSheet(f"font-size: 28px; font-weight: bold; color: {p['BRAND_PRIMARY']};")
         title.setAlignment(Qt.AlignCenter)
         
-        subtitle = QLabel("Keep your document, PDF, notes, and reading tools together in one offline Windows workspace.")
-        subtitle.setWordWrap(True)
+        subtitle = QLabel("Choose a tool to open in the workspace.")
         subtitle.setAlignment(Qt.AlignCenter)
-        subtitle.setMinimumHeight(48)
-        subtitle.setMaximumWidth(700)
-        subtitle.setStyleSheet(f"color: {p['BRAND_MUTED_FG']}; font-size: 14px; line-height: 1.6;")
+        subtitle.setStyleSheet(f"color: {p['BRAND_MUTED_FG']}; font-size: 14px;")
         
-        hero_layout.addWidget(logo_lbl)
         hero_layout.addWidget(title)
-        hero_layout.addWidget(subtitle, 0, Qt.AlignHCenter)
+        hero_layout.addWidget(subtitle)
         main_layout.addWidget(hero)
         
-        # 2. Smart Omnibar (inline — URL routing + live vault file search)
+        # 2. Minimalist Action Cards
+        action_bar = QWidget()
+        action_bar_layout = QHBoxLayout(action_bar)
+        action_bar_layout.setSpacing(16)
+        action_bar_layout.setContentsMargins(0, 0, 0, 0)
+        action_bar_layout.setAlignment(Qt.AlignCenter)
+        
+        card_style = f"""
+            QToolButton {{
+                background: {p['BRAND_PANEL_2']};
+                color: {p['BRAND_PRIMARY']};
+                border: 1px solid transparent;
+                border-radius: 12px;
+                padding: 24px 20px;
+                font-size: 14px;
+                font-weight: 500;
+            }}
+            QToolButton:hover {{
+                background: {p['BRAND_PANEL']};
+                border: 1px solid {p['BRAND_BORDER']};
+            }}
+            QToolButton:pressed {{
+                background: {p['BRAND_PANEL_2']};
+            }}
+        """
+        
+        buttons_info = [
+            ("Review", "folder", self.open_file, "Open a course document (Ctrl+O)"),
+            ("Terminal", "panel-left", self.add_vault, "Add a local course folder (Alt+V)"),
+            ("Browser", "globe", self.toggle_web_panel, "Open the web panel (Ctrl+T)"),
+        ]
+        
+        for label, ico, slot, tooltip in buttons_info:
+            btn = QToolButton()
+            btn.setText(label)
+            btn.setIcon(icon(ico, size=24))
+            btn.setIconSize(QSize(24, 24))
+            btn.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
+            btn.setCursor(Qt.PointingHandCursor)
+            btn.setToolTip(tooltip)
+            btn.setAccessibleName(label)
+            btn.setAccessibleDescription(tooltip)
+            btn.setStyleSheet(card_style)
+            btn.setFixedSize(140, 110)
+            btn.clicked.connect(slot)
+            action_bar_layout.addWidget(btn)
+            
+        main_layout.addWidget(action_bar)
+        
+        # 3. Smart Omnibar
         omni_wrapper = QWidget()
         omni_wrapper.setObjectName("OmniWrapper")
         omni_wrapper_layout = QVBoxLayout(omni_wrapper)
@@ -1133,45 +1171,42 @@ class MainWindow(QMainWindow):
 
         omni_bar_row = QWidget()
         omni_bar_row.setObjectName("OmniBarRow")
-        omni_bar_row.setMinimumHeight(50)
+        omni_bar_row.setMinimumHeight(44)
         accent = get_brand_accent()
         omni_bar_row.setStyleSheet(f"""
             QWidget#OmniBarRow {{
-                background: {p['BRAND_PANEL_2']};
-                border: 1px solid {p['BRAND_BORDER']};
-                border-radius: 12px;
+                background: transparent;
+                border-bottom: 1px solid {p['BRAND_BORDER']};
             }}
             QWidget#OmniBarRow:focus-within {{
-                border: 1px solid {accent}44;
+                border-bottom: 2px solid {accent};
             }}
         """)
         omni_row_layout = QHBoxLayout(omni_bar_row)
-        omni_row_layout.setContentsMargins(16, 4, 16, 4)
+        omni_row_layout.setContentsMargins(8, 0, 8, 0)
         omni_row_layout.setSpacing(12)
 
         omni_search_icon = QLabel()
-        omni_search_icon.setPixmap(icon("search", size=20).pixmap(20, 20))
+        omni_search_icon.setPixmap(icon("search", size=18).pixmap(18, 18))
 
         omni_input = QLineEdit()
         omni_input.setPlaceholderText("Search course files or paste a web link...")
+        omni_input.setAccessibleName("Global Search Bar")
+        omni_input.setAccessibleDescription("Search across your vaults or paste a URL to open the web panel")
         omni_input.setStyleSheet(f"""
             QLineEdit {{
                 background: transparent;
                 border: none;
                 color: {p['BRAND_PRIMARY']};
-                font-size: 16px;
-                padding: 14px 0;
+                font-size: 14px;
+                padding: 10px 0;
             }}
             QLineEdit::placeholder {{ color: {p['BRAND_MUTED_FG']}; }}
-            QLineEdit:focus {{
-                border-bottom: 2px solid {accent};
-            }}
         """)
 
         omni_row_layout.addWidget(omni_search_icon)
         omni_row_layout.addWidget(omni_input, 1)
 
-        # Live results list (hidden by default)
         omni_results = QListWidget()
         omni_results.setObjectName("OmniResults")
         omni_results.setStyleSheet(f"""
@@ -1205,6 +1240,7 @@ class MainWindow(QMainWindow):
             host = t.split("/", 1)[0].lower()
             return any(host.endswith(tld) for tld in common_tlds)
 
+        from PySide6.QtCore import QTimer
         omni_timer = QTimer(w)
         omni_timer.setSingleShot(True)
         omni_timer.setInterval(200)
@@ -1214,18 +1250,16 @@ class MainWindow(QMainWindow):
             if not text or _is_url(text):
                 omni_results.hide()
                 return
-            # Vault file search
             from settings import load_settings as _ls
-            import os as _os
             vaults = _ls().get("vault_paths", [])
             matches = []
             for vault in vaults:
-                if not _os.path.isdir(vault):
+                if not os.path.isdir(vault):
                     continue
-                for root, _, files in _os.walk(vault):
+                for root, _, files in os.walk(vault):
                     for f in files:
                         if text.lower() in f.lower():
-                            matches.append(_os.path.join(root, f))
+                            matches.append(os.path.join(root, f))
                         if len(matches) >= 10:
                             break
                     if len(matches) >= 10:
@@ -1233,7 +1267,7 @@ class MainWindow(QMainWindow):
             omni_results.clear()
             if matches:
                 for path in matches:
-                    item = QListWidgetItem(icon("file", size=14), _os.path.basename(path))
+                    item = QListWidgetItem(icon("file", size=14), os.path.basename(path))
                     item.setData(Qt.UserRole, path)
                     item.setToolTip(path)
                     omni_results.addItem(item)
@@ -1259,7 +1293,6 @@ class MainWindow(QMainWindow):
                 self.open_web_tab_with_url(url)
                 omni_input.clear()
             else:
-                # Open top result or fall back to vault search dialog
                 if omni_results.count() > 0:
                     item = omni_results.item(0)
                     path = item.data(Qt.UserRole)
@@ -1283,213 +1316,38 @@ class MainWindow(QMainWindow):
 
         main_layout.addWidget(omni_wrapper)
         
-        # 3. First actions
-        action_bar = QWidget()
-        action_bar_layout = QGridLayout(action_bar)
-        action_bar_layout.setSpacing(12)
-        action_bar_layout.setContentsMargins(0, 0, 0, 0)
-        
-        accent_colors = get_active_accent()
-        primary_btn_style = f"""
-            QToolButton {{
-                background: {accent_colors['accent']}18;
-                color: {accent_colors['accent']};
-                border: 1px solid {accent_colors['accent']}44;
-                border-radius: 10px;
-                padding: 12px 20px;
-                font-size: 13px;
-                font-weight: bold;
-            }}
-            QToolButton:hover {{
-                background: {accent_colors['accent']}28;
-                border: 1px solid {accent_colors['accent']}88;
-            }}
-            QToolButton:pressed {{
-                background: {accent_colors['accent']}38;
-            }}
-        """
-        secondary_btn_style = f"""
-            QToolButton {{
-                background: transparent;
-                color: {p['BRAND_PRIMARY']};
-                border: 1px solid {p['BRAND_BORDER']};
-                border-radius: 10px;
-                padding: 12px 18px;
-                font-size: 13px;
-            }}
-            QToolButton:hover {{
-                background: {p['BRAND_PANEL_2']};
-                border: 1px solid {p['BRAND_BORDER']};
-            }}
-            QToolButton:pressed {{
-                background: {p['BRAND_PANEL']};
-            }}
-        """
-        tertiary_btn_style = f"""
-            QToolButton {{
-                background: transparent;
-                color: {p['BRAND_MUTED_FG']};
-                border: 1px solid {p['BRAND_BORDER']};
-                border-radius: 10px;
-                padding: 12px 18px;
-                font-size: 13px;
-            }}
-            QToolButton:hover {{
-                background: {p['BRAND_PANEL_2']};
-                color: {p['BRAND_PRIMARY']};
-                border: 1px solid {p['BRAND_BORDER']};
-            }}
-            QToolButton:pressed {{
-                background: {p['BRAND_PANEL']};
-            }}
-        """
-        
-        buttons_info = [
-            ("Open a Course File", "folder-open", self.open_file, primary_btn_style,
-             "Open a Word document, PDF, slide deck, spreadsheet, or note (Ctrl+O)"),
-            ("Add a Course Folder", "panel-left", self.add_vault, secondary_btn_style,
-             "Add a local course folder so you can find its files quickly (Alt+V)"),
-            ("Try the Sample Note", "play", self.open_sample_note, tertiary_btn_style,
-             "Open a short note that shows the basic EleViewer workflow"),
-            ("Getting Started", "book-open", self.open_getting_started, tertiary_btn_style,
-             "Open the interactive guide with shortcuts and study workflows (F1)"),
-        ]
-        
-        for i, (label, ico, slot, style, tooltip) in enumerate(buttons_info):
-            btn = QToolButton()
-            btn.setText(label)
-            btn.setIcon(icon(ico, size=16))
-            btn.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
-            btn.setCursor(Qt.PointingHandCursor)
-            btn.setToolTip(tooltip)
-            btn.setAccessibleName(label)
-            btn.setStyleSheet(style)
-            btn.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
-            btn.setMinimumHeight(44)
-            btn.clicked.connect(slot)
-            
-            row = i // 2
-            col = i % 2
-            action_bar_layout.addWidget(btn, row, col)
-            
-        main_layout.addWidget(action_bar)
-
-        action_hint = QLabel("Open a document, then press Ctrl+O again to open the PDF you need. Both stay open in tabs.")
-        action_hint.setAlignment(Qt.AlignCenter)
-        action_hint.setWordWrap(True)
-        action_hint.setStyleSheet(f"color: {p['BRAND_MUTED_FG']}; font-size: 12px; margin-top: 2px; margin-bottom: 4px;")
-        main_layout.addWidget(action_hint)
-        
-        # 4. Two Columns: Recent Files & Shortcuts
-        columns = QWidget()
-        cols_layout = QHBoxLayout(columns)
-        cols_layout.setSpacing(40)
-        cols_layout.setContentsMargins(0, 0, 0, 0)
-        cols_layout.setAlignment(Qt.AlignTop)
-        
-        # LEFT: Activity (Recent & Bookmarks)
-        left_col = QFrame()
-        left_col.setStyleSheet(f"QFrame {{ background: {p['BRAND_PANEL']}; border: 1px solid {p['BRAND_BORDER']}; border-radius: 12px; }}")
-        left_layout = QVBoxLayout(left_col)
-        left_layout.setSpacing(15)
-        left_layout.setContentsMargins(24, 24, 24, 24)
+        # 4. Bottom section (Recent Files)
+        bottom_row = QWidget()
+        bottom_layout = QHBoxLayout(bottom_row)
+        bottom_layout.setContentsMargins(0, 0, 0, 0)
         
         recent_lbl = QLabel("Recent files")
-        recent_lbl.setStyleSheet(f"color: {p['BRAND_PRIMARY']}; font-size: 13px; font-weight: 600; border: none; background: transparent;")
-        left_layout.addWidget(recent_lbl)
+        recent_lbl.setStyleSheet(f"color: {p['BRAND_PRIMARY']}; font-size: 13px; font-weight: 600;")
+        bottom_layout.addWidget(recent_lbl)
+        bottom_layout.addStretch()
+        
+        main_layout.addWidget(bottom_row)
         
         recent_list = QListWidget()
         recent_list.setStyleSheet(f"""
-            QListWidget {{ background: transparent; border: none; color: {p['BRAND_PRIMARY']}; outline: none; font-size: 14px; }}
-            QListWidget::item {{ padding: 8px 4px; border-radius: 6px; }}
+            QListWidget {{ background: transparent; border: none; color: {p['BRAND_PRIMARY']}; outline: none; font-size: 13px; }}
+            QListWidget::item {{ padding: 6px; border-radius: 6px; }}
             QListWidget::item:hover {{ background: {p['BRAND_PANEL_2']}; }}
         """)
         recent_list.setSelectionMode(QListWidget.NoSelection)
         recent_list.setCursor(Qt.PointingHandCursor)
-        recent_list.setMinimumHeight(170)
-        recent_files = load_recent_files(validate=True)[:5]
+        recent_list.setMinimumHeight(120)
+        recent_files = load_recent_files(validate=True)[:4]
         if not recent_files:
-            recent_list.addItem(QListWidgetItem("Open a file to see it here"))
+            recent_list.addItem(QListWidgetItem("No recent files"))
         else:
             for path in recent_files:
-                item = QListWidgetItem(icon("file", size=16), os.path.basename(path))
+                item = QListWidgetItem(icon("file", size=14), os.path.basename(path))
                 item.setData(Qt.UserRole, path)
                 recent_list.addItem(item)
         recent_list.itemClicked.connect(lambda it: self._open_vault_file(it.data(Qt.UserRole)) if it.data(Qt.UserRole) else None)
-        left_layout.addWidget(recent_list)
         
-        bm_lbl = QLabel("Bookmarks")
-        bm_lbl.setStyleSheet(f"color: {p['BRAND_PRIMARY']}; font-size: 13px; font-weight: 600; margin-top: 10px; border: none; background: transparent;")
-        left_layout.addWidget(bm_lbl)
-        
-        bm_list = QListWidget()
-        bm_list.setStyleSheet(f"""
-            QListWidget {{ background: transparent; border: none; color: {p['BRAND_PRIMARY']}; outline: none; font-size: 14px; }}
-            QListWidget::item {{ padding: 8px 4px; border-radius: 6px; }}
-            QListWidget::item:hover {{ background: {p['BRAND_PANEL_2']}; }}
-        """)
-        bm_list.setSelectionMode(QListWidget.NoSelection)
-        bm_list.setCursor(Qt.PointingHandCursor)
-        bm_list.setMinimumHeight(120)
-        bms = load_bookmarks()[:3]
-        if not bms:
-            bm_list.addItem(QListWidgetItem("Bookmark a page to see it here"))
-        else:
-            for b in bms:
-                item = QListWidgetItem(icon("bookmark", size=16), b.get("label", "Bookmark"))
-                item.setData(Qt.UserRole, b)
-                bm_list.addItem(item)
-        
-        def _handle_bm(it):
-            b = it.data(Qt.UserRole)
-            if b:
-                self._open_vault_file(b["file_path"])
-                w = self.tabs.currentWidget()
-                if hasattr(w, "go_to_bookmark"): w.go_to_bookmark(b.get("page_number", 0), b.get("scroll_position_y", 0.0))
-        bm_list.itemClicked.connect(_handle_bm)
-        left_layout.addWidget(bm_list)
-        left_layout.addStretch()
-        
-        # RIGHT: Keyboard Shortcuts
-        right_col = QFrame()
-        right_col.setStyleSheet(f"QFrame {{ background: {p['BRAND_PANEL']}; border: 1px solid {p['BRAND_BORDER']}; border-radius: 12px; }}")
-        right_layout = QVBoxLayout(right_col)
-        right_layout.setSpacing(15)
-        right_layout.setContentsMargins(24, 24, 24, 24)
-        
-        shortcuts_lbl = QLabel("Keyboard shortcuts")
-        shortcuts_lbl.setStyleSheet(f"color: {p['BRAND_PRIMARY']}; font-size: 13px; font-weight: 600; border: none; background: transparent;")
-        right_layout.addWidget(shortcuts_lbl)
-
-        shortcuts = [
-            ("Ctrl+O", "Open file"),
-            ("Ctrl+D", "Save your place"),
-            ("Ctrl+Alt+B", "Show bookmarks"),
-            ("F9", "Read Aloud"),
-            ("Ctrl+T", "Research in browser"),
-            ("Alt+V", "Course folder"),
-            ("Ctrl+Q", "Find a file"),
-            ("Ctrl+W", "Close this tab"),
-        ]
-        grid = QWidget()
-        grid.setStyleSheet("background: transparent; border: none;")
-        grid_layout = QGridLayout(grid)
-        grid_layout.setSpacing(16)
-        grid_layout.setContentsMargins(0, 8, 0, 0)
-        for i, (key, desc) in enumerate(shortcuts):
-            k_lbl = QLabel(key)
-            k_lbl.setStyleSheet(f"background: {p['BRAND_PANEL_2']}; padding: 6px 10px; border: 1px solid {p['BRAND_BORDER']}; border-radius: 6px; font-family: monospace; color: {get_brand_accent()}; font-size: 12px; font-weight: bold;")
-            d_lbl = QLabel(desc)
-            d_lbl.setStyleSheet(f"color: {p['BRAND_MUTED_FG']}; font-size: 13px; background: transparent; border: none;")
-            grid_layout.addWidget(k_lbl, i, 0)
-            grid_layout.addWidget(d_lbl, i, 1)
-            
-        right_layout.addWidget(grid)
-        right_layout.addStretch()
-        
-        cols_layout.addWidget(left_col)
-        cols_layout.addWidget(right_col)
-        main_layout.addWidget(columns)
+        main_layout.addWidget(recent_list)
         main_layout.addStretch()
         
         return w
