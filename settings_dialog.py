@@ -27,6 +27,7 @@ class SettingsDialog(QDialog):
         layout.setSpacing(12)
 
         tabs = QTabWidget()
+        tabs.setAccessibleName("Settings Categories")
         tabs.addTab(self._build_general_tab(), "Startup & Defaults")
         tabs.addTab(self._build_editor_tab(), "Text Editing")
         tabs.addTab(self._build_pdf_tab(), "PDF Reading")
@@ -291,22 +292,27 @@ class SettingsDialog(QDialog):
         adv_layout = QVBoxLayout(adv_group)
         
         self.web_context_menus_check = QCheckBox("Enable Context Menus (Right-click)")
+        self.web_context_menus_check.setAccessibleDescription("Check to allow right-click context menus in the browser panel")
         self.web_context_menus_check.setChecked(self.settings.get("web_context_menus", False))
         adv_layout.addWidget(self.web_context_menus_check)
         
         self.web_webgl_check = QCheckBox("Enable 3D Apps & WebGL (High Resource Usage)")
+        self.web_webgl_check.setAccessibleDescription("Check to enable hardware-accelerated 3D graphics in the browser")
         self.web_webgl_check.setChecked(self.settings.get("web_webgl", False))
         adv_layout.addWidget(self.web_webgl_check)
         
         self.web_extensions_check = QCheckBox("Allow Browser Extensions (Experimental)")
+        self.web_extensions_check.setAccessibleDescription("Check to allow Chrome extensions in the browser panel")
         self.web_extensions_check.setChecked(self.settings.get("web_extensions", False))
         adv_layout.addWidget(self.web_extensions_check)
         
         self.web_passwords_check = QCheckBox("Save Passwords & Form Data")
+        self.web_passwords_check.setAccessibleDescription("Check to let the browser store your passwords and auto-fill forms")
         self.web_passwords_check.setChecked(self.settings.get("web_passwords", False))
         adv_layout.addWidget(self.web_passwords_check)
         
         self.web_history_check = QCheckBox("Enable Global Browser History")
+        self.web_history_check.setAccessibleDescription("Check to save a history of all websites you visit")
         self.web_history_check.setChecked(self.settings.get("web_history", False))
         adv_layout.addWidget(self.web_history_check)
         
