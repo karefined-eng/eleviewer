@@ -286,6 +286,32 @@ class SettingsDialog(QDialog):
         self.web_ad_blocker_check.setChecked(self.settings.get("web_ad_blocker", True))
         form.addRow(self.web_ad_blocker_check)
 
+        from PySide6.QtWidgets import QGroupBox, QVBoxLayout
+        adv_group = QGroupBox("Advanced Settings (Requires Restart)")
+        adv_layout = QVBoxLayout(adv_group)
+        
+        self.web_context_menus_check = QCheckBox("Enable Context Menus (Right-click)")
+        self.web_context_menus_check.setChecked(self.settings.get("web_context_menus", False))
+        adv_layout.addWidget(self.web_context_menus_check)
+        
+        self.web_webgl_check = QCheckBox("Enable 3D Apps & WebGL (High Resource Usage)")
+        self.web_webgl_check.setChecked(self.settings.get("web_webgl", False))
+        adv_layout.addWidget(self.web_webgl_check)
+        
+        self.web_extensions_check = QCheckBox("Allow Browser Extensions (Experimental)")
+        self.web_extensions_check.setChecked(self.settings.get("web_extensions", False))
+        adv_layout.addWidget(self.web_extensions_check)
+        
+        self.web_passwords_check = QCheckBox("Save Passwords & Form Data")
+        self.web_passwords_check.setChecked(self.settings.get("web_passwords", False))
+        adv_layout.addWidget(self.web_passwords_check)
+        
+        self.web_history_check = QCheckBox("Enable Global Browser History")
+        self.web_history_check.setChecked(self.settings.get("web_history", False))
+        adv_layout.addWidget(self.web_history_check)
+        
+        form.addRow(adv_group)
+
         self.clear_web_data_btn = QPushButton("Clear Web Data (Cookies & Cache)")
         def _clear_web_data():
             from PySide6.QtWidgets import QMessageBox
@@ -462,6 +488,11 @@ class SettingsDialog(QDialog):
             "web_restore_tabs": self.web_restore_tabs_check.isChecked(),
             "web_search_engine": self.web_search_engine_combo.currentData(),
             "web_ad_blocker": self.web_ad_blocker_check.isChecked(),
+            "web_context_menus": self.web_context_menus_check.isChecked(),
+            "web_webgl": self.web_webgl_check.isChecked(),
+            "web_extensions": self.web_extensions_check.isChecked(),
+            "web_passwords": self.web_passwords_check.isChecked(),
+            "web_history": self.web_history_check.isChecked(),
             "tts_engine": self.tts_engine_combo.currentData(),
             "tts_speed": self.tts_speed_combo.currentData(),
             "tts_read_mode": self.tts_mode_combo.currentData(),
