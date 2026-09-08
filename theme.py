@@ -141,9 +141,9 @@ def main_window_stylesheet():
             background: transparent;
             border: none;
             border-radius: 6px;
-            padding: 4px 6px;
-            min-width: 54px;
-            min-height: 50px;
+            padding: 2px 4px;
+            min-width: 24px;
+            min-height: 24px;
             font-size: 11px;
             font-family: 'Segoe UI', -apple-system, sans-serif;
             text-align: center;
@@ -249,7 +249,7 @@ def main_window_stylesheet():
             background-color: {p['BRAND_BACKGROUND']};
             color: {p['BRAND_MUTED_FG']};
             border-top: 1px solid {p['BRAND_BORDER']};
-            padding: 2px 8px;
+            padding: 0px 8px;
             font-size: 11px;
         }}
 

@@ -30,7 +30,7 @@ DEFAULT_SETTINGS = {
     "draft_autosave_interval_seconds": 60,
     "theme_mode": "dark",
     "theme_accent": "grey",
-    "toolbar_button_style": "text_under_icon",
+    "toolbar_button_style": "icon_only",
     "show_toolbar": True,
     "toolbar_order": ["new", "vault", "bookmarks", "open", "save", "tts", "web", "settings"],
     "default_download_folder": "",

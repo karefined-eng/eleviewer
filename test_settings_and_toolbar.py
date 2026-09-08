@@ -59,26 +59,26 @@ def test_settings_dialog_tabs_and_controls():
     app.processEvents()
 
 
-def test_toolbar_text_under_icon_and_style_switching():
-    # Ensure default is text_under_icon
+def test_toolbar_style_switching():
+    # Ensure default is icon_only
     settings = load_settings()
-    settings["toolbar_button_style"] = "text_under_icon"
+    settings["toolbar_button_style"] = "icon_only"
     save_settings(settings)
 
     window = MainWindow()
+    assert window.toolbar.toolButtonStyle() == Qt.ToolButtonIconOnly
+
+    # Switch to text_under_icon
+    settings["toolbar_button_style"] = "text_under_icon"
+    save_settings(settings)
+    window._apply_toolbar_style()
     assert window.toolbar.toolButtonStyle() == Qt.ToolButtonTextUnderIcon
 
-    # Switch to icon_only
+    # Switch back to icon_only
     settings["toolbar_button_style"] = "icon_only"
     save_settings(settings)
     window._apply_toolbar_style()
     assert window.toolbar.toolButtonStyle() == Qt.ToolButtonIconOnly
-
-    # Switch back to text_under_icon
-    settings["toolbar_button_style"] = "text_under_icon"
-    save_settings(settings)
-    window._apply_toolbar_style()
-    assert window.toolbar.toolButtonStyle() == Qt.ToolButtonTextUnderIcon
 
     window.close()
     window.deleteLater()
