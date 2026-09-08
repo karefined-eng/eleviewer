@@ -181,33 +181,33 @@ def start_tutorial(main_window):
         
     steps = [
         {
-            "title": "Welcome to EleViewer!",
-            "desc": "This quick tutorial will show you the key features to turbo-charge your study workflow.",
+            "title": "Welcome to the Playground!",
+            "desc": "This quick interactive tour will show you the hidden power-user moves in EleViewer.",
             "widget": None,
             "action": None
         },
         {
-            "title": "Global Search",
-            "desc": "Press Ctrl+Q anywhere to search across all your course vaults instantly.",
-            "widget": main_window.quick_menu.parentWidget() if hasattr(main_window, 'quick_menu') else None,
+            "title": "Customizing the Toolbar",
+            "desc": "Did you know the toolbar is fully customizable? Just click and drag any icon to rearrange it, or drag it completely off the bar to remove it!",
+            "widget": main_window.toolbar if hasattr(main_window, 'toolbar') else None,
             "action": None
         },
         {
-            "title": "The Web Panel",
-            "desc": "Research alongside your documents without leaving the app. Let's open it now!",
+            "title": "Split Screen Mode",
+            "desc": "Need to view two documents at once? Right-click any tab at the top and select 'Split screen with this tab'.",
+            "widget": main_window.tabs if hasattr(main_window, 'tabs') else None,
+            "action": None
+        },
+        {
+            "title": "Web Panel Fullscreen",
+            "desc": "When researching in the Web Panel, click the 'Expand to Full Window' button on its top-right corner to pop it into full screen mode.",
             "widget": get_tool_btn("web"),
             "action": lambda: main_window.open_web_tab_with_url("https://google.com") if not getattr(main_window, 'web_panel', None) or not main_window.web_panel.isVisible() else None
         },
         {
-            "title": "Vaults",
-            "desc": "Keep all your local course folders organized here.",
-            "widget": get_tool_btn("vault"),
-            "action": lambda: main_window.toggle_vault_panel() if getattr(main_window, 'vault_panel', None) and not main_window.vault_panel.isVisible() else None
-        },
-        {
-            "title": "You're all set!",
-            "desc": "Explore the settings (Alt+S) to customize EleViewer. Happy studying!",
-            "widget": get_tool_btn("settings"),
+            "title": "Say Hello!",
+            "desc": "Have an idea or just want to say thank you? Open the Help menu and click 'Submit Feedback...'. We read everything!",
+            "widget": main_window.menuBar() if hasattr(main_window, 'menuBar') else None,
             "action": None
         }
     ]
