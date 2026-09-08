@@ -165,3 +165,94 @@ class MorphingLogo(QWidget):
         draw_bar(cur_m, is_middle=True)
         draw_bar(cur_b, is_middle=False)
 
+
+class GlowingLogo(QWidget):
+    """A fast, elegant 'sweeping light' animation for the splash screen."""
+    def __init__(self, parent=None, size=64, duration=1500):
+        super().__init__(parent)
+        self.setFixedSize(size, size)
+        self._progress = 0.0
+        
+        self.anim = QVariantAnimation(self)
+        self.anim.setStartValue(0.0)
+        self.anim.setEndValue(1.0)
+        self.anim.setDuration(duration)
+        self.anim.valueChanged.connect(self._on_progress)
+        self.anim.setLoopCount(-1)  # Infinite
+        
+    def start(self):
+        self.anim.start()
+        
+    def stop(self):
+        self.anim.stop()
+        
+    def _on_progress(self, p):
+        self._progress = p
+        self.update()
+        
+    def paintEvent(self, event):
+        from PySide6.QtGui import QLinearGradient, QPainterPath
+        
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.Antialiasing)
+        
+        # Draw background rounded rect
+        painter.setBrush(QColor(BRAND_PANEL))
+        painter.setPen(QColor("#2c2c2c"))
+        painter.drawRoundedRect(
+            1, 1, self.width()-2, self.height()-2,
+            self.width() * 0.2, self.height() * 0.2
+        )
+        
+        cx, cy = self.width() / 2, self.height() / 2
+        scale = self.width() / 32.0
+        
+        h = 3 * scale
+        spacing = 5.5 * scale
+        top_w = 14 * scale
+        mid_w = 10 * scale
+        
+        painter.translate(cx, cy)
+        
+        # Create a path for the logo bars so we can mask the glow
+        logo_path = QPainterPath()
+        
+        # Top
+        logo_path.addRoundedRect(QRectF(-top_w/2, -spacing - h/2, top_w, h), h/2, h/2)
+        # Middle
+        logo_path.addRoundedRect(QRectF(-mid_w/2, -h/2, mid_w, h), h/2, h/2)
+        # Bottom
+        logo_path.addRoundedRect(QRectF(-top_w/2, spacing - h/2, top_w, h), h/2, h/2)
+        
+        # Draw the base logo
+        painter.setPen(Qt.NoPen)
+        # We need to draw them with their respective colors
+        painter.setBrush(QColor(BRAND_PRIMARY))
+        painter.drawRoundedRect(QRectF(-top_w/2, -spacing - h/2, top_w, h), h/2, h/2)
+        painter.drawRoundedRect(QRectF(-top_w/2, spacing - h/2, top_w, h), h/2, h/2)
+        
+        painter.setBrush(QColor(get_brand_accent()))
+        painter.drawRoundedRect(QRectF(-mid_w/2, -h/2, mid_w, h), h/2, h/2)
+        
+        # Draw the sweeping glow
+        # The glow moves from top-left to bottom-right across the logo
+        painter.setClipPath(logo_path)
+        
+        # Calculate gradient position based on progress
+        # We want the glow to sweep fully across, so start before the logo and end after
+        offset = (self._progress * 3.0) - 1.0  # Range -1.0 to +2.0
+        
+        y_pos = offset * self.height() - (self.height() / 2)
+        
+        # Tilted gradient
+        grad = QLinearGradient(0, y_pos - 20, 0, y_pos + 20)
+        grad.setColorAt(0.0, QColor(255, 255, 255, 0))
+        grad.setColorAt(0.5, QColor(255, 255, 255, 180)) # Bright center
+        grad.setColorAt(1.0, QColor(255, 255, 255, 0))
+        
+        # Add a slight tilt to the gradient
+        painter.rotate(25)
+        painter.setBrush(grad)
+        painter.drawRect(-self.width(), -self.height(), self.width()*2, self.height()*2)
+        painter.rotate(-25)
+

@@ -147,13 +147,13 @@ if len(sys.argv) > 1:
 from PySide6.QtCore import QEventLoop, QTimer, Qt
 from PySide6.QtWidgets import QWidget, QVBoxLayout
 from PySide6.QtGui import QGuiApplication
-from morphing_loader import MorphingLogo
+from morphing_loader import GlowingLogo
 
 splash = QWidget()
 splash.setWindowFlags(Qt.SplashScreen | Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)
 splash.setAttribute(Qt.WA_TranslucentBackground)
 splash_layout = QVBoxLayout(splash)
-loader = MorphingLogo(size=120)
+loader = GlowingLogo(size=120)
 splash_layout.addWidget(loader)
 loader.start()
 
