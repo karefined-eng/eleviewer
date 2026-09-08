@@ -19,6 +19,9 @@ def get_persistent_profile():
                 "adnxs.com", "amazon-adsystem.com"
             )
             def interceptRequest(self, info):
+                from settings import load_settings
+                if not load_settings().get("web_ad_blocker", True):
+                    return
                 url_str = info.requestUrl().toString()
                 if any(kw in url_str for kw in self.AD_KEYWORDS):
                     info.block(True)
@@ -77,7 +80,8 @@ def get_web_view_class():
                 self.page().setFeaturePermission(security_origin, feature, QWebEnginePage.PermissionPolicy.PermissionDeniedByUser)
 
             def _inject_ad_blocker(self, ok):
-                if ok:
+                from settings import load_settings
+                if ok and load_settings().get("web_ad_blocker", True):
                     js = """
                     (function() {
                         if (window._eleAdBlock) return;
@@ -1058,7 +1062,14 @@ class WebPanel(QWidget):
         else:
             # Free-text search query
             from urllib.parse import quote_plus
-            url = "https://www.google.com/search?q=" + quote_plus(text)
+            from settings import load_settings
+            engine = load_settings().get("web_search_engine", "google")
+            if engine == "duckduckgo":
+                url = "https://duckduckgo.com/?q=" + quote_plus(text)
+            elif engine == "bing":
+                url = "https://www.bing.com/search?q=" + quote_plus(text)
+            else:
+                url = "https://www.google.com/search?q=" + quote_plus(text)
         view.setUrl(QUrl(url))
 
     def _go_back(self):
