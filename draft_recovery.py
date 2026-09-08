@@ -161,7 +161,7 @@ class DraftManager(QObject):
                 try:
                     with open(r["draft_path"], "r", encoding="utf-8") as f:
                         content = f.read()
-                    
+
                     editor = EditorTab()
                     if r["original_path"]:
                         editor.file_path = r["original_path"]
@@ -172,12 +172,19 @@ class DraftManager(QObject):
                         editor.setPlainText(content)
                         editor.is_modified = True
                         self.main_window._add_editor_tab(editor, r["tab_title"] + " (Recovered)")
-                        
+                    r["recovered"] = True
+
                 except Exception as e:
                     print(f"Failed to recover draft: {e}")
-        
-        # Cleanup all after asking
+        # If the user declines, keep the drafts so they can be offered again
+        # on a later launch instead of silently destroying them now.
+
+        # Remove only drafts that no longer hold anything unique: those already
+        # reflected in open tabs (never offered) and those just recovered.
+        # Declined or failed drafts stay on disk for a later attempt.
         for r in recoverable:
+            if r in to_recover and not r.get("recovered"):
+                continue
             try:
                 r["draft_path"].unlink()
                 r["meta_path"].unlink()
