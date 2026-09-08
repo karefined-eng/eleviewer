@@ -29,7 +29,7 @@ from icons import icon
 from theme import (
     editor_stylesheet, compact_toolbar_stylesheet, ICON_SIZE_COMPACT,
     BRAND_BACKGROUND, BRAND_PRIMARY, BRAND_BORDER, BRAND_PANEL,
-    BRAND_MUTED_FG, get_brand_accent,
+    BRAND_MUTED_FG, get_brand_accent, get_active_palette,
 )
 
 

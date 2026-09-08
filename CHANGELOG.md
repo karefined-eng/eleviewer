@@ -8,23 +8,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.4.0] - 2026-09-08
 
 ### Added
-- **Advanced Web Panel Settings:** New toggles in Settings for Context Menus, 3D Apps (WebGL), Browser Extensions, Password Saving, and Global History.
-- **Web Panel Zoom Controls:** Full page zoom support with keyboard shortcuts (`Ctrl++`, `Ctrl+-`, `Ctrl+0`) and a live zoom percentage badge.
-- **Integrated Download Manager:** Native file download handling in the Web Panel with an animated progress bar and customizable downloads folder.
-- **Web View Context Menu:** Right-click menu providing quick navigation, bookmarks, and zoom controls.
-- **Action-First Interactive Onboarding:** A dynamic playground that teaches core features interactively on first launch.
-- **Toggleable Main Toolbar:** A "Distraction-Free Mode" accessible via `Ctrl+Alt+T` to hide the main toolbar for focused reading.
-- **Visual Bookmarks:** Type-specific icons for web links and local document files.
+- **Interactive Playground Tutorials:** Guided spotlight tutorials that teach power-user features interactively (**Help > Interactive Tutorials**).
+- **Split-Screen Web Panel Enhancements:** Integrated downloads manager with progress bars, page zoom controls (`Ctrl++`, `Ctrl+-`, `Ctrl+0`), and right-click context menu with copy and navigation.
+- **Minimalist Welcome Screen:** Clean card dashboard with quick actions (Open File, Add Vault, Web Panel), live vault search, and clean recent files list.
+- **Action-First Interactive Onboarding:** Dynamic playground that introduces core workspace capabilities right from launch.
+- **Accessibility Support:** Comprehensive screen reader support for the Welcome Screen, Settings dialog, and main toolbar.
+- **Distraction-Free Mode:** Easily toggle the main toolbar on or off (`Ctrl+Alt+T`) for focused study.
+- **Visual Bookmarks:** Clear indicators distinguishing web links from local study files.
 
 ### Changed
-- **Compact Web Browser Header:** Streamlined the web panel's navigation row by integrating Expand, Pop Out, and Close controls natively.
-- **Expanded Settings & Preferences:** Completely reorganized into six dedicated tabs for a cleaner configuration experience.
-- **Intuitive Toolbar Labels:** Reverted to clear text labels under icons by default, with new layout options in Settings (Icons only, Icons beside text).
-- **Theme-Aware UI Elements:** Tab close buttons and web panel headers now dynamically sync with Dark and Light modes for better contrast.
-- **Feedback Dialog Fail-Safe:** If the network fails, the feedback form automatically falls back to your default web browser with a pre-filled GitHub issue.
+- **Expanded Settings & Preferences:** Reorganized into six dedicated tabs for web downloads, default zoom, fonts, document view modes, and search.
+- **Intuitive Toolbar Labels:** Clear text labels under icons by default, with customizable layout options in Settings.
+- **Fail-Safe Feedback Dialog:** Automatic browser fallback if direct submission encounters network issues.
+- **Ergonomic Toolbar Spacing:** Generous padding and margins around main toolbar icons.
 
 ### Fixed
-- **Web Panel Layout Margins:** Tightened native-feeling margins and fixed empty control icons.
-- **Split-View Tab Duplication:** Focusing existing tabs now correctly checks both left and right split panes instead of opening duplicates.
-- **Search Typing Latency:** Eliminated UI freezes on the Welcome screen by adding a 200ms delay to live vault searches.
-- **Settings Overwrite Bug:** Resolved an issue where toggling the formatting toolbar could overwrite other user preferences.
+- **Welcome Screen Action Cards:** Fixed button layout and icon rendering so action labels and icons display with crisp proportions.
+- **Icon Asset Coverage:** Added missing SVG assets for files, folders, downloads, and history.
+- **Loading Screen Transition:** Splash screen smoothly fades into the main window, eliminating launch flicker.
+- **Empty Startup Session Bug:** Closed sessions with blank notes now properly return to the Welcome dashboard.
+- **Search Typing Responsiveness:** Added debounced search delays to keep typing responsive during live vault queries.
+- **Split-View Tab Duplication:** Focusing existing tabs correctly checks both split panes.

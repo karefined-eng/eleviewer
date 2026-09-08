@@ -19,12 +19,24 @@ else:
 _cache: dict[tuple[str, int, str], QIcon] = {}
 
 
+_ALIASES = {
+    "circle-help": "help-circle",
+    "folder": "folder-open",
+    "folder-open": "folder",
+    "sidebar": "panel-left",
+    "file": "file-plus",
+}
+
+
 def icon(name: str, size: int = ICON_SIZE_TOOLBAR, color: str = "#c0c0c0") -> QIcon:
     key = (name, size, color)
     if key in _cache:
         return _cache[key]
 
     svg_path = ICONS_DIR / f"{name}.svg"
+    if not svg_path.exists() and name in _ALIASES:
+        svg_path = ICONS_DIR / f"{_ALIASES[name]}.svg"
+
     if not svg_path.exists():
         return QIcon()
 
