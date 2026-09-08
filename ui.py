@@ -449,7 +449,7 @@ class MainWindow(QMainWindow):
         self.main_menu_btn = QToolButton()
         self.main_menu_btn.setIcon(icon("menu", size=14))
         self.main_menu_btn.setToolTip("Main Menu")
-        self.main_menu_btn.setStyleSheet(f"background: transparent; border: none; padding-right: 8px;")
+        self.main_menu_btn.setStyleSheet(f"background: transparent; border: none; padding: 2px 8px 2px 2px; min-height: 16px; min-width: 16px;")
         self.main_menu_btn.setCursor(Qt.PointingHandCursor)
         self.main_menu_btn.setPopupMode(QToolButton.InstantPopup)
         
@@ -571,7 +571,7 @@ class MainWindow(QMainWindow):
             return
         from settings import load_settings
         settings_data = load_settings()
-        style_name = settings_data.get("toolbar_button_style", "text_under_icon")
+        style_name = settings_data.get("toolbar_button_style", "icon_only")
         if style_name == "icon_only":
             self.toolbar.setToolButtonStyle(Qt.ToolButtonIconOnly)
         elif style_name == "text_beside_icon":
@@ -666,9 +666,14 @@ class MainWindow(QMainWindow):
             save_settings(s)
         self.toolbar.order_changed.connect(save_order)
         
-        # Populate the quick menu in the status bar with the toolbar actions
-        for action in self.toolbar.actions():
-            self.quick_menu.addAction(action)
+        # Populate the quick menu in the status bar with distinct app controls
+        self.quick_menu.addAction(icon("settings", size=16), "Settings...", self.open_settings)
+        self.quick_menu.addAction("Keyboard Shortcuts", self.open_shortcuts_dialog)
+        self.quick_menu.addAction("Check for Updates", self.check_for_updates_manual)
+        self.quick_menu.addSeparator()
+        self.quick_menu.addAction("Toggle Main Toolbar", self.toggle_main_toolbar)
+        self.quick_menu.addSeparator()
+        self.quick_menu.addAction(icon("x", size=16), "Quit", self._quit_from_tray)
 
         self.toolbar.setVisible(bool(load_settings().get("show_toolbar", True)))
 
@@ -2234,6 +2239,9 @@ class MainWindow(QMainWindow):
         editor = self.current_editor()
         if not editor:
             return False
+        if getattr(editor, "read_only", False):
+            self.show_status_message("This file opens in read-only view — nothing to save", 3000)
+            return False
         path = getattr(editor, "file_path", None)
         if not path:
             self.save_file_as()
@@ -2275,6 +2283,15 @@ class MainWindow(QMainWindow):
         from markdown_renderer import MarkdownViewer
         from docx_viewer import DocxViewer
         from xlsx_viewer import XlsxViewer
+        if isinstance(editor, DocxViewer):
+            reply = QMessageBox.warning(
+                self, "Export as Plain Text",
+                "Word documents open in a lossless read view, so saving exports plain text only — "
+                "formatting and images cannot be preserved.\n\nContinue?",
+                QMessageBox.Yes | QMessageBox.No, QMessageBox.No,
+            )
+            if reply != QMessageBox.Yes:
+                return
         if isinstance(editor, MarkdownViewer):
             current_ext = ".html" if getattr(editor, "is_html", False) else ".md"
         elif isinstance(editor, DocxViewer): current_ext = ".docx"

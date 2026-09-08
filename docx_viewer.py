@@ -1,5 +1,5 @@
 from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QTextBrowser, QToolButton,
+    QWidget, QVBoxLayout, QHBoxLayout, QTextBrowser, QToolButton, QLabel,
 )
 from PySide6.QtCore import Signal, QSize
 
@@ -35,9 +35,10 @@ from theme import (
 
 class DocxViewer(QWidget):
     """
-    DOCX viewer and editor.
+    DOCX viewer.
     Renders rich HTML with embedded Base64 images via mammoth (in QTextBrowser)
-    or fallback to python-docx text+image extraction.
+    or fallback to python-docx text+image extraction. Read-only: writing back
+    to .docx could only produce plain text, so saving is intentionally disabled.
     """
 
     textChanged = Signal()
@@ -47,12 +48,26 @@ class DocxViewer(QWidget):
 
         self.file_path = file_path
         self.is_modified = False
+        self.read_only = True
         self.docx_content = None
         self._bookmark_callback = None
 
         layout = QVBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
+
+        # Read-only info banner, matching the XLSX viewer's pattern
+        banner_row = QHBoxLayout()
+        banner_row.setContentsMargins(6, 3, 6, 3)
+        p = get_active_palette()
+        self._readonly_label = QLabel(
+            "View-only — Word documents open in a lossless read view. "
+            "Saving is disabled to protect formatting and images."
+        )
+        self._readonly_label.setStyleSheet(f"color: {p['BRAND_PRIMARY']}; font-size: 11px;")
+        banner_row.addWidget(self._readonly_label)
+        banner_row.addStretch()
+        layout.addLayout(banner_row)
 
         toolbar = QHBoxLayout()
         toolbar.setContentsMargins(4, 4, 4, 4)
@@ -353,8 +368,7 @@ class DocxViewer(QWidget):
         """
 
     def _on_text_changed(self):
-        """Mark as modified when user edits."""
-        self.is_modified = True
+        # The view is read-only; text changes are programmatic renders, never user edits.
         self.textChanged.emit()
 
     def _bookmark_payload(self):
@@ -374,8 +388,9 @@ class DocxViewer(QWidget):
 
     def to_docx_bytes(self):
         """
-        Convert current editor content back to DOCX bytes.
-        Creates a new document with the edited text.
+        Export current content as plain-text DOCX bytes.
+        Lossy by nature (formatting/images dropped) — callers must warn first;
+        the viewer itself never triggers a save.
         """
         try:
             new_doc = Document()

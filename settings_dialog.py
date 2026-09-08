@@ -75,10 +75,10 @@ class SettingsDialog(QDialog):
         form.addRow("Theme accent color:", self.theme_combo)
 
         self.toolbar_style_combo = QComboBox()
-        self.toolbar_style_combo.addItem("Icons with text labels (Default)", "text_under_icon")
-        self.toolbar_style_combo.addItem("Icons only (Compact)", "icon_only")
+        self.toolbar_style_combo.addItem("Icons with text labels", "text_under_icon")
+        self.toolbar_style_combo.addItem("Icons only (Default)", "icon_only")
         self.toolbar_style_combo.addItem("Icons beside text labels", "text_beside_icon")
-        current_tb_style = self.settings.get("toolbar_button_style", "text_under_icon")
+        current_tb_style = self.settings.get("toolbar_button_style", "icon_only")
         self.toolbar_style_combo.setCurrentIndex(max(0, self.toolbar_style_combo.findData(current_tb_style)))
         form.addRow("Toolbar layout style:", self.toolbar_style_combo)
 
