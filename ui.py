@@ -1664,6 +1664,10 @@ class MainWindow(QMainWindow):
 
         self.update_menus()
 
+    def start_tutorial(self):
+        from tutorials import start_tutorial
+        start_tutorial(self)
+
     def open_shortcuts_dialog(self):
         """F1: Show a student-friendly in-app keyboard shortcuts overlay."""
         from PySide6.QtWidgets import (
