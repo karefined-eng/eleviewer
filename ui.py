@@ -242,6 +242,11 @@ class MainWindow(QMainWindow):
         self.tabs.currentChanged.connect(self.update_status_bar)
         self.update_status_bar()
         self._check_for_updates_async()
+
+        # Crash-safety net: snapshots modified (including untitled) tabs that the
+        # regular autosave skips, and offers recovery on the next launch.
+        from draft_recovery import DraftManager
+        self.draft_manager = DraftManager(self)
         
         # Register global URL handlers so links in PDFs, Markdown, HTML, What's New, etc. open in EleViewer instead of external browser!
         from PySide6.QtGui import QDesktopServices
