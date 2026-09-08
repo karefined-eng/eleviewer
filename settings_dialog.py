@@ -86,6 +86,48 @@ class SettingsDialog(QDialog):
         self.show_toolbar_check.setChecked(self.settings.get("show_toolbar", True))
         form.addRow(self.show_toolbar_check)
 
+        from PySide6.QtWidgets import QListWidget, QListWidgetItem
+        from PySide6.QtCore import Qt
+
+        self.toolbar_icons_list = QListWidget()
+        self.toolbar_icons_list.setMaximumHeight(150)
+        
+        self.available_icons = [
+            ("new", "New File"),
+            ("vault", "Toggle Vault"),
+            ("bookmarks", "Bookmarks"),
+            ("open", "Open File"),
+            ("save", "Save File"),
+            ("tts", "Read Aloud"),
+            ("web", "Web Panel"),
+            ("settings", "Settings")
+        ]
+        
+        current_order = self.settings.get("toolbar_order", ["new", "vault", "bookmarks", "open", "save", "tts", "web", "settings"])
+        
+        ordered_icons = []
+        for icon_id in current_order:
+            for act_id, name in self.available_icons:
+                if act_id == icon_id:
+                    ordered_icons.append((act_id, name))
+                    break
+                    
+        for act_id, name in self.available_icons:
+            if act_id not in current_order:
+                ordered_icons.append((act_id, name))
+                
+        for act_id, name in ordered_icons:
+            item = QListWidgetItem(name)
+            item.setData(Qt.UserRole, act_id)
+            item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
+            if act_id in current_order:
+                item.setCheckState(Qt.Checked)
+            else:
+                item.setCheckState(Qt.Unchecked)
+            self.toolbar_icons_list.addItem(item)
+            
+        form.addRow("Enabled Toolbar Icons:", self.toolbar_icons_list)
+
         self.fresh_session_combo = QComboBox()
         self.fresh_session_combo.addItem("Show the welcome screen", "welcome")
         self.fresh_session_combo.addItem("Open a blank note", "blank_tab")
@@ -365,6 +407,11 @@ class SettingsDialog(QDialog):
             "show_toolbar": self.show_toolbar_check.isChecked(),
             "fresh_session_behavior": self.fresh_session_combo.currentData(),
             "restore_session": self.restore_session_check.isChecked(),
+            "toolbar_order": [
+                self.toolbar_icons_list.item(i).data(Qt.UserRole)
+                for i in range(self.toolbar_icons_list.count())
+                if self.toolbar_icons_list.item(i).checkState() == Qt.Checked
+            ],
             "autosave_enabled": self.autosave_check.isChecked(),
             "autosave_interval_seconds": self.interval_spin.value(),
             "draft_autosave_enabled": self.draft_autosave_check.isChecked(),

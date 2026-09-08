@@ -84,10 +84,19 @@ def get_web_view_class():
                         window._eleAdBlock = true;
                         setInterval(function() {
                             var btn = document.querySelector('.ytp-ad-skip-button, .ytp-skip-ad-button, .ytp-ad-skip-button-modern');
-                            if (btn) btn.click();
+                            if (btn) {
+                                btn.click();
+                                btn.click();
+                            }
                             var ads = document.querySelectorAll('.video-ads, .ytp-ad-module, .ytp-ad-overlay-container, #player-ads');
                             ads.forEach(function(a) { a.style.display = 'none'; });
-                        }, 1000);
+                            
+                            var adShowing = document.querySelector('.ad-showing');
+                            if (adShowing) {
+                                var video = document.querySelector('video');
+                                if (video && video.duration) video.currentTime = video.duration;
+                            }
+                        }, 500);
                     })();
                     """
                     self.page().runJavaScript(js)
