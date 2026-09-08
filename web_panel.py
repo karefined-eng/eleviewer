@@ -39,7 +39,9 @@ def get_persistent_profile():
         settings = _web_profile.settings()
         settings.setAttribute(QWebEngineSettings.WebAttribute.FullScreenSupportEnabled, True)
         settings.setAttribute(QWebEngineSettings.WebAttribute.PluginsEnabled, True)
-        settings.setAttribute(QWebEngineSettings.WebAttribute.WebGLEnabled, False)
+        from settings import load_settings
+        webgl_enabled = load_settings().get("web_webgl", False)
+        settings.setAttribute(QWebEngineSettings.WebAttribute.WebGLEnabled, webgl_enabled)
         settings.setAttribute(QWebEngineSettings.WebAttribute.PdfViewerEnabled, False)
         settings.setAttribute(QWebEngineSettings.WebAttribute.JavascriptCanOpenWindows, False)
         settings.setAttribute(QWebEngineSettings.WebAttribute.PlaybackRequiresUserGesture, True)
@@ -192,6 +194,10 @@ def get_web_view_class():
 
             def contextMenuEvent(self, event):
                 """Custom right-click menu with app-relevant actions."""
+                from settings import load_settings
+                if not load_settings().get("web_context_menus", False):
+                    event.accept()
+                    return
                 try:
                     from PySide6.QtWidgets import QMenu, QApplication
                     from icons import icon as _icon
