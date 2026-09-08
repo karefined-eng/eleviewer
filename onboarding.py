@@ -21,7 +21,10 @@ class OnboardingManager(QObject):
         
     def start(self):
         # Open Web Panel immediately to showcase the split-screen layout
-        if self.window._web_dock is None or not self.window._web_dock.isVisible():
+        web_dock = getattr(self.window, "_web_dock", None)
+        web_panel = getattr(self.window, "web_panel", None)
+        is_visible = (web_dock.isVisible() if web_dock else False) or (web_panel.isVisible() if web_panel else False)
+        if not is_visible:
             self.window.toggle_web_panel()
             
         # Open the interactive Playground document
@@ -36,49 +39,64 @@ class OnboardingManager(QObject):
 
     def _hook_actions(self):
         # Hook Alt+E (bring_to_front_and_new_note)
-        orig_bring_to_front = self.window.bring_to_front_and_new_note
-        def hooked_bring_to_front():
-            orig_bring_to_front()
-            if not self.note_opened:
-                self.note_opened = True
-                self._show_success("Quick Note Opened (Alt+E)")
-        self.window.bring_to_front_and_new_note = hooked_bring_to_front
+        if hasattr(self.window, "bring_to_front_and_new_note"):
+            orig_bring_to_front = self.window.bring_to_front_and_new_note
+            def hooked_bring_to_front():
+                orig_bring_to_front()
+                if not self.note_opened:
+                    self.note_opened = True
+                    self._show_success("Quick Note Opened (Alt+E)")
+            self.window.bring_to_front_and_new_note = hooked_bring_to_front
+        elif hasattr(self.window, "open_scratchpad"):
+            orig_scratchpad = self.window.open_scratchpad
+            def hooked_scratchpad():
+                orig_scratchpad()
+                if not self.note_opened:
+                    self.note_opened = True
+                    self._show_success("Quick Note Opened (Alt+E)")
+            self.window.open_scratchpad = hooked_scratchpad
         
         # Hook Bookmark (add_bookmark_from_editor)
-        orig_add_bookmark = self.window._add_bookmark_from_editor
-        def hooked_add_bookmark(editor, data):
-            orig_add_bookmark(editor, data)
-            if not self.bookmark_added:
-                self.bookmark_added = True
-                self._show_success("Bookmark Added (Ctrl+D)")
-        self.window._add_bookmark_from_editor = hooked_add_bookmark
+        if hasattr(self.window, "_add_bookmark_from_editor"):
+            orig_add_bookmark = self.window._add_bookmark_from_editor
+            def hooked_add_bookmark(editor, data):
+                orig_add_bookmark(editor, data)
+                if not self.bookmark_added:
+                    self.bookmark_added = True
+                    self._show_success("Bookmark Added (Ctrl+D)")
+            self.window._add_bookmark_from_editor = hooked_add_bookmark
 
         # Hook Web Panel toggle (just in case they close and reopen it)
         orig_toggle_web = self.window.toggle_web_panel
         def hooked_toggle_web():
             orig_toggle_web()
-            if not self.web_opened and self.window._web_dock and self.window._web_dock.isVisible():
+            dock = getattr(self.window, "_web_dock", None)
+            panel = getattr(self.window, "web_panel", None)
+            vis = (dock.isVisible() if dock else False) or (panel.isVisible() if panel else False)
+            if not self.web_opened and vis:
                 self.web_opened = True
                 self._show_success("Web Panel Opened (Ctrl+T)")
         self.window.toggle_web_panel = hooked_toggle_web
 
         # Hook Quick Switcher (Ctrl+Q)
-        orig_quick_switcher = self.window.open_quick_switcher
-        def hooked_quick_switcher():
-            orig_quick_switcher()
-            if not self.search_opened:
-                self.search_opened = True
-                self._show_success("Quick Switcher Opened (Ctrl+Q)")
-        self.window.open_quick_switcher = hooked_quick_switcher
+        if hasattr(self.window, "open_quick_switcher"):
+            orig_quick_switcher = self.window.open_quick_switcher
+            def hooked_quick_switcher():
+                orig_quick_switcher()
+                if not self.search_opened:
+                    self.search_opened = True
+                    self._show_success("Quick Switcher Opened (Ctrl+Q)")
+            self.window.open_quick_switcher = hooked_quick_switcher
 
         # Hook Settings (Alt+S)
-        orig_open_settings = self.window.open_settings
-        def hooked_open_settings():
-            orig_open_settings()
-            if not self.settings_opened:
-                self.settings_opened = True
-                self._show_success("Settings Opened (Alt+S)")
-        self.window.open_settings = hooked_open_settings
+        if hasattr(self.window, "open_settings"):
+            orig_open_settings = self.window.open_settings
+            def hooked_open_settings():
+                orig_open_settings()
+                if not self.settings_opened:
+                    self.settings_opened = True
+                    self._show_success("Settings Opened (Alt+S)")
+            self.window.open_settings = hooked_open_settings
 
     def _show_success(self, msg):
         # Temporarily make the status bar text green and bold

@@ -1106,7 +1106,7 @@ class MainWindow(QMainWindow):
         title.setStyleSheet(f"font-size: 28px; font-weight: bold; color: {p['BRAND_PRIMARY']};")
         title.setAlignment(Qt.AlignCenter)
         
-        subtitle = QLabel("Choose a tool to open in the workspace.")
+        subtitle = QLabel("Your study workspace for documents, notes, and side-by-side web research.")
         subtitle.setAlignment(Qt.AlignCenter)
         subtitle.setStyleSheet(f"color: {p['BRAND_MUTED_FG']}; font-size: 14px;")
         
@@ -1123,13 +1123,17 @@ class MainWindow(QMainWindow):
         
         card_style = f"""
             QToolButton {{
+                min-width: 140px;
+                max-width: 140px;
+                min-height: 96px;
+                max-height: 96px;
                 background: {p['BRAND_PANEL_2']};
                 color: {p['BRAND_PRIMARY']};
                 border: 1px solid transparent;
                 border-radius: 12px;
-                padding: 24px 20px;
-                font-size: 14px;
+                font-size: 13px;
                 font-weight: 500;
+                padding-top: 18px;
             }}
             QToolButton:hover {{
                 background: {p['BRAND_PANEL']};
@@ -1141,9 +1145,9 @@ class MainWindow(QMainWindow):
         """
         
         buttons_info = [
-            ("Review", "folder", self.open_file, "Open a course document (Ctrl+O)"),
-            ("Terminal", "panel-left", self.add_vault, "Add a local course folder (Alt+V)"),
-            ("Browser", "globe", self.toggle_web_panel, "Open the web panel (Ctrl+T)"),
+            ("Open File", "folder-open", self.open_file, "Open a course document or note (Ctrl+O)"),
+            ("Add Vault", "panel-left", self.add_vault, "Add a course folder or study vault (Alt+V)"),
+            ("Web Panel", "globe", self.toggle_web_panel, "Open split-screen web browser (Ctrl+T)"),
         ]
         
         for label, ico, slot, tooltip in buttons_info:
@@ -1157,7 +1161,7 @@ class MainWindow(QMainWindow):
             btn.setAccessibleName(label)
             btn.setAccessibleDescription(tooltip)
             btn.setStyleSheet(card_style)
-            btn.setFixedSize(140, 110)
+            btn.setFixedSize(140, 100)
             btn.clicked.connect(slot)
             action_bar_layout.addWidget(btn)
             
@@ -1332,20 +1336,24 @@ class MainWindow(QMainWindow):
         recent_list = QListWidget()
         recent_list.setStyleSheet(f"""
             QListWidget {{ background: transparent; border: none; color: {p['BRAND_PRIMARY']}; outline: none; font-size: 13px; }}
-            QListWidget::item {{ padding: 6px; border-radius: 6px; }}
+            QListWidget::item {{ padding: 6px 8px; border-radius: 6px; }}
             QListWidget::item:hover {{ background: {p['BRAND_PANEL_2']}; }}
         """)
         recent_list.setSelectionMode(QListWidget.NoSelection)
         recent_list.setCursor(Qt.PointingHandCursor)
-        recent_list.setMinimumHeight(120)
+        recent_list.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        recent_list.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         recent_files = load_recent_files(validate=True)[:4]
         if not recent_files:
             recent_list.addItem(QListWidgetItem("No recent files"))
+            recent_list.setFixedHeight(36)
         else:
             for path in recent_files:
                 item = QListWidgetItem(icon("file", size=14), os.path.basename(path))
                 item.setData(Qt.UserRole, path)
+                item.setToolTip(path)
                 recent_list.addItem(item)
+            recent_list.setFixedHeight(len(recent_files) * 36)
         recent_list.itemClicked.connect(lambda it: self._open_vault_file(it.data(Qt.UserRole)) if it.data(Qt.UserRole) else None)
         
         main_layout.addWidget(recent_list)
