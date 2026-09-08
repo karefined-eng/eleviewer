@@ -138,6 +138,7 @@ def main_window_stylesheet():
         QToolButton:checked {{ background-color: {accent['accent']}; color: {p['BRAND_BACKGROUND']}; }}
         QToolBar QToolButton {{
             color: {p['BRAND_PRIMARY']};
+            background: transparent;
             border: none;
             border-radius: 6px;
             padding: 4px 6px;
@@ -146,6 +147,12 @@ def main_window_stylesheet():
             font-size: 11px;
             font-family: 'Segoe UI', -apple-system, sans-serif;
             text-align: center;
+        }}
+        QToolBar QToolButton:hover {{
+            background: {p['BRAND_PANEL_2']};
+        }}
+        QToolBar QToolButton:pressed {{
+            background: {p['BRAND_BORDER']};
         }}
 
         /* ── Tabs ────────────────────────────────────────────── */

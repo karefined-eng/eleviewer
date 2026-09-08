@@ -1076,8 +1076,8 @@ class MainWindow(QMainWindow):
         
         main_layout = QVBoxLayout(content)
         main_layout.setAlignment(Qt.AlignTop)
-        main_layout.setContentsMargins(40, 48, 40, 40)
-        main_layout.setSpacing(28)
+        main_layout.setContentsMargins(40, 72, 40, 40)
+        main_layout.setSpacing(22)
         
         wrapper_layout.addWidget(content, 1)
         wrapper_layout.addStretch()
@@ -1104,8 +1104,9 @@ class MainWindow(QMainWindow):
         subtitle = QLabel("Keep your document, PDF, notes, and reading tools together in one offline Windows workspace.")
         subtitle.setWordWrap(True)
         subtitle.setAlignment(Qt.AlignCenter)
-        subtitle.setMaximumWidth(600)
-        subtitle.setStyleSheet(f"color: {p['BRAND_PRIMARY']}; opacity: 0.78; font-size: 14px; line-height: 1.5;")
+        subtitle.setMinimumHeight(48)
+        subtitle.setMaximumWidth(700)
+        subtitle.setStyleSheet(f"color: {p['BRAND_MUTED_FG']}; font-size: 14px; line-height: 1.6;")
         
         hero_layout.addWidget(logo_lbl)
         hero_layout.addWidget(title)
@@ -1280,39 +1281,23 @@ class MainWindow(QMainWindow):
         accent_colors = get_active_accent()
         primary_btn_style = f"""
             QToolButton {{
-                background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 {accent_colors['accent']}, stop:1 {accent_colors['pressed']});
-                color: {accent_colors['accent_fg']};
-                border: none;
+                background: {accent_colors['accent']}18;
+                color: {accent_colors['accent']};
+                border: 1px solid {accent_colors['accent']}44;
                 border-radius: 10px;
                 padding: 12px 20px;
                 font-size: 13px;
                 font-weight: bold;
             }}
             QToolButton:hover {{
-                background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 {accent_colors['hover']}, stop:1 {accent_colors['accent']});
+                background: {accent_colors['accent']}28;
+                border: 1px solid {accent_colors['accent']}88;
             }}
             QToolButton:pressed {{
-                background: {accent_colors['pressed']};
+                background: {accent_colors['accent']}38;
             }}
         """
         secondary_btn_style = f"""
-            QToolButton {{
-                background: {p['BRAND_PANEL_2']};
-                color: {p['BRAND_PRIMARY']};
-                border: 1px solid {p['BRAND_BORDER']};
-                border-radius: 10px;
-                padding: 12px 18px;
-                font-size: 13px;
-            }}
-            QToolButton:hover {{
-                background: {p['BRAND_BORDER']};
-                border: 1px solid {accent_colors['accent']}44;
-            }}
-            QToolButton:pressed {{
-                background: {p['BRAND_PANEL']};
-            }}
-        """
-        tertiary_btn_style = f"""
             QToolButton {{
                 background: transparent;
                 color: {p['BRAND_PRIMARY']};
@@ -1323,7 +1308,25 @@ class MainWindow(QMainWindow):
             }}
             QToolButton:hover {{
                 background: {p['BRAND_PANEL_2']};
-                border: 1px solid {accent_colors['accent']}44;
+                border: 1px solid {p['BRAND_BORDER']};
+            }}
+            QToolButton:pressed {{
+                background: {p['BRAND_PANEL']};
+            }}
+        """
+        tertiary_btn_style = f"""
+            QToolButton {{
+                background: transparent;
+                color: {p['BRAND_MUTED_FG']};
+                border: 1px solid {p['BRAND_BORDER']};
+                border-radius: 10px;
+                padding: 12px 18px;
+                font-size: 13px;
+            }}
+            QToolButton:hover {{
+                background: {p['BRAND_PANEL_2']};
+                color: {p['BRAND_PRIMARY']};
+                border: 1px solid {p['BRAND_BORDER']};
             }}
             QToolButton:pressed {{
                 background: {p['BRAND_PANEL']};
@@ -1363,7 +1366,7 @@ class MainWindow(QMainWindow):
         action_hint = QLabel("Open a document, then press Ctrl+O again to open the PDF you need. Both stay open in tabs.")
         action_hint.setAlignment(Qt.AlignCenter)
         action_hint.setWordWrap(True)
-        action_hint.setStyleSheet(f"color: {p['BRAND_MUTED_FG']}; font-size: 12px; margin-top: 4px; margin-bottom: 8px;")
+        action_hint.setStyleSheet(f"color: {p['BRAND_MUTED_FG']}; font-size: 12px; margin-top: 2px; margin-bottom: 4px;")
         main_layout.addWidget(action_hint)
         
         # 4. Two Columns: Recent Files & Shortcuts

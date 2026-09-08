@@ -5,7 +5,7 @@ from PySide6.QtGui import QPainter, QColor
 from theme import BRAND_PRIMARY, get_brand_accent, BRAND_PANEL
 
 class MorphingLogo(QWidget):
-    def __init__(self, parent=None, size=64, duration=4500):
+    def __init__(self, parent=None, size=64, duration=6500):
         super().__init__(parent)
         self.setFixedSize(size, size)
         self._progress = 0.0
@@ -49,17 +49,19 @@ class MorphingLogo(QWidget):
         
         p = self._progress
         
-        # 10 phases
-        phase = int(p * 10)
-        if phase > 9: phase = 9
+        # 10 phases: Logo → Э → л → е → В → и → е → в → е → р → Logo
+        num_phases = 10
+        phase = int(p * num_phases)
+        if phase > num_phases - 1: phase = num_phases - 1
         
-        local_p = (p * 10) - phase
-        if local_p < 0.2:
+        local_p = (p * num_phases) - phase
+        # Ease: hold at start/end, cubic in-out in middle
+        if local_p < 0.15:
             t = 0.0
-        elif local_p > 0.8:
+        elif local_p > 0.85:
             t = 1.0
         else:
-            t = (local_p - 0.2) / 0.6
+            t = (local_p - 0.15) / 0.7
             if t < 0.5:
                 t = 4 * t * t * t
             else:
@@ -68,69 +70,71 @@ class MorphingLogo(QWidget):
         def lerp(a, b, t):
             return a + (b - a) * t
 
-        # Keyframes: (y_offset, x_offset, rot, length_mult, alpha)
-        # 0: Logo
-        kf0_t = (-spacing, 0, 0, 1.0, 255)
-        kf0_m = (0, 0, 0, 1.0, 255)
-        kf0_b = (spacing, 0, 0, 1.0, 255)
+        # Each keyframe: (y_offset, x_offset, rotation, length_mult, alpha)
+        s = spacing  # shorthand
         
-        # 1: Plus +
-        kf1_t = (0, 0, 90, 1.2, 255)
-        kf1_m = (0, 0, 0, 1.4, 255)
-        kf1_b = (0, 0, 0, 0.0, 0)
+        # 0: Logo — the EleViewer "E" (three horizontal bars)
+        kf0_t = (-s,   0,        0,   1.0, 255)
+        kf0_m = ( 0,   0,        0,   1.0, 255)
+        kf0_b = ( s,   0,        0,   1.0, 255)
         
-        # 2: Cross X
-        kf2_t = (0, 0, 45, 1.2, 255)
-        kf2_m = (0, 0, 0, 0.0, 0)
-        kf2_b = (0, 0, -45, 1.2, 255)
+        # 1: Э — reversed E, bars shift right slightly, middle shorter
+        kf1_t = (-s,   s*0.15,   0,   0.9, 255)
+        kf1_m = ( 0,  -s*0.1,    0,   0.65, 255)
+        kf1_b = ( s,   s*0.15,   0,   0.9, 255)
         
-        # 3: Asterisk *
-        kf3_t = (0, 0, 60, 1.4, 255)
-        kf3_m = (0, 0, 0, 1.4, 255)
-        kf3_b = (0, 0, -60, 1.4, 255)
+        # 2: л — Lambda / tent shape (two legs meeting at top)
+        kf2_t = ( 0,  -s*0.5,   65,   1.1, 255)
+        kf2_m = ( 0,   0,        0,   0.0,   0)
+        kf2_b = ( 0,   s*0.5,  -65,   1.1, 255)
         
-        # 4: Greater-than >
-        kf4_t = (-spacing*0.7, spacing*0.5, 45, 0.8, 255)
-        kf4_m = (0, 0, 0, 0.0, 0)
-        kf4_b = (spacing*0.7, spacing*0.5, -45, 0.8, 255)
+        # 3: е — three horizontal bars (same as logo — brand flash!)
+        kf3_t = (-s,   0,        0,   1.0, 255)
+        kf3_m = ( 0,   0,        0,   1.0, 255)
+        kf3_b = ( s,   0,        0,   1.0, 255)
         
-        # 5: Less-than <
-        kf5_t = (-spacing*0.7, -spacing*0.5, -45, 0.8, 255)
-        kf5_m = (0, 0, 0, 0.0, 0)
-        kf5_b = (spacing*0.7, -spacing*0.5, 45, 0.8, 255)
+        # 4: В — vertical stem + two horizontal bumps (like B)
+        kf4_t = ( 0,  -s*0.4,   90,   1.2, 255)
+        kf4_m = (-s*0.4, s*0.2,  0,   0.7, 255)
+        kf4_b = ( s*0.4, s*0.2,  0,   0.7, 255)
         
-        # 6: Equal =
-        kf6_t = (-spacing*0.5, 0, 0, 1.0, 255)
-        kf6_m = (0, 0, 0, 0.0, 0)
-        kf6_b = (spacing*0.5, 0, 0, 1.0, 255)
+        # 5: и — two verticals + diagonal (reversed N)
+        kf5_t = ( 0,  -s*0.5,   90,   1.1, 255)
+        kf5_m = ( 0,   0,      -40,   1.3, 255)
+        kf5_b = ( 0,   s*0.5,   90,   1.1, 255)
         
-        # 7: Not-equal !=
-        kf7_t = (-spacing*0.4, 0, 0, 0.8, 255)
-        kf7_m = (0, 0, 45, 1.4, 255)
-        kf7_b = (spacing*0.4, 0, 0, 0.8, 255)
+        # 6: е — three horizontal bars again (second brand flash)
+        kf6_t = (-s,   0,        0,   1.0, 255)
+        kf6_m = ( 0,   0,        0,   1.0, 255)
+        kf6_b = ( s,   0,        0,   1.0, 255)
         
-        # 8: Z-shape Z
-        kf8_t = (-spacing, 0, 0, 1.0, 255)
-        kf8_m = (0, 0, -45, 1.4, 255)
-        kf8_b = (spacing, 0, 0, 1.0, 255)
+        # 7: в — vertical stem + two smaller bumps (lowercase в)
+        kf7_t = ( 0,  -s*0.3,   90,   1.0, 255)
+        kf7_m = (-s*0.3, s*0.15, 0,   0.55, 255)
+        kf7_b = ( s*0.3, s*0.15, 0,   0.55, 255)
         
-        # 9: Minus -
-        kf9_t = (0, 0, 0, 0.0, 0)
-        kf9_m = (0, 0, 0, 1.0, 255)
-        kf9_b = (0, 0, 0, 0.0, 0)
+        # 8: е — three horizontal bars (third brand flash)
+        kf8_t = (-s,   0,        0,   1.0, 255)
+        kf8_m = ( 0,   0,        0,   1.0, 255)
+        kf8_b = ( s,   0,        0,   1.0, 255)
+        
+        # 9: р — vertical stem + top-right arm (like P)
+        kf9_t = (-s*0.4, s*0.3,  0,   0.7, 255)
+        kf9_m = ( 0,     0,      0,   0.0,   0)
+        kf9_b = ( 0,    -s*0.3, 90,   1.2, 255)
         
         keyframes = [
-            (kf0_t, kf0_m, kf0_b),
-            (kf1_t, kf1_m, kf1_b),
-            (kf2_t, kf2_m, kf2_b),
-            (kf3_t, kf3_m, kf3_b),
-            (kf4_t, kf4_m, kf4_b),
-            (kf5_t, kf5_m, kf5_b),
-            (kf6_t, kf6_m, kf6_b),
-            (kf7_t, kf7_m, kf7_b),
-            (kf8_t, kf8_m, kf8_b),
-            (kf9_t, kf9_m, kf9_b),
-            (kf0_t, kf0_m, kf0_b)
+            (kf0_t, kf0_m, kf0_b),  # Logo
+            (kf1_t, kf1_m, kf1_b),  # Э
+            (kf2_t, kf2_m, kf2_b),  # л
+            (kf3_t, kf3_m, kf3_b),  # е
+            (kf4_t, kf4_m, kf4_b),  # В
+            (kf5_t, kf5_m, kf5_b),  # и
+            (kf6_t, kf6_m, kf6_b),  # е
+            (kf7_t, kf7_m, kf7_b),  # в
+            (kf8_t, kf8_m, kf8_b),  # е
+            (kf9_t, kf9_m, kf9_b),  # р
+            (kf0_t, kf0_m, kf0_b),  # Logo (loop)
         ]
         
         start_kf = keyframes[phase]
@@ -172,3 +176,4 @@ class MorphingLogo(QWidget):
         draw_bar(cur_t, is_middle=False)
         draw_bar(cur_m, is_middle=True)
         draw_bar(cur_b, is_middle=False)
+
