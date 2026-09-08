@@ -232,6 +232,14 @@ class SettingsDialog(QDialog):
         form.setContentsMargins(12, 12, 12, 12)
         form.setSpacing(10)
 
+        self.web_search_engine_combo = QComboBox()
+        self.web_search_engine_combo.addItem("Google", "google")
+        self.web_search_engine_combo.addItem("DuckDuckGo", "duckduckgo")
+        self.web_search_engine_combo.addItem("Bing", "bing")
+        current_engine = self.settings.get("web_search_engine", "google")
+        self.web_search_engine_combo.setCurrentIndex(max(0, self.web_search_engine_combo.findData(current_engine)))
+        form.addRow("Default search engine:", self.web_search_engine_combo)
+
         self.web_url_input = QLineEdit()
         self.web_url_input.setPlaceholderText("https://example.com")
         self.web_url_input.setText(self.settings.get("web_url", DEFAULT_SETTINGS["web_url"]))
@@ -274,7 +282,28 @@ class SettingsDialog(QDialog):
         self.web_restore_tabs_check.setChecked(self.settings.get("web_restore_tabs", True))
         form.addRow(self.web_restore_tabs_check)
 
-        tab_count = len(self.settings.get("web_tabs", DEFAULT_WEB_TABS))
+        self.web_ad_blocker_check = QCheckBox("Enable built-in ad blocker (YouTube, general ads)")
+        self.web_ad_blocker_check.setChecked(self.settings.get("web_ad_blocker", True))
+        form.addRow(self.web_ad_blocker_check)
+
+        self.clear_web_data_btn = QPushButton("Clear Web Data (Cookies & Cache)")
+        def _clear_web_data():
+            from PySide6.QtWidgets import QMessageBox
+            try:
+                from web_panel import get_persistent_profile
+                reply = QMessageBox.question(self, "Clear Web Data", "Are you sure you want to clear all cookies, cache, and history? You will be logged out of all sites.", QMessageBox.Yes | QMessageBox.No)
+                if reply == QMessageBox.Yes:
+                    profile = get_persistent_profile()
+                    profile.clearAllVisitedLinks()
+                    profile.cookieStore().deleteAllCookies()
+                    profile.clearHttpCache()
+                    QMessageBox.information(self, "Cleared", "Web data has been cleared.")
+            except Exception as e:
+                QMessageBox.warning(self, "Error", f"Failed to clear web data: {e}")
+        self.clear_web_data_btn.clicked.connect(_clear_web_data)
+        form.addRow("", self.clear_web_data_btn)
+
+        tab_count = len(self.settings.get("web_tabs", []))
         form.addRow("Currently saved web tabs:", QLabel(str(tab_count)))
         return w
 
@@ -431,6 +460,8 @@ class SettingsDialog(QDialog):
             "default_download_folder": self.download_folder_input.text().strip(),
             "web_intercept_links": self.web_intercept_check.isChecked(),
             "web_restore_tabs": self.web_restore_tabs_check.isChecked(),
+            "web_search_engine": self.web_search_engine_combo.currentData(),
+            "web_ad_blocker": self.web_ad_blocker_check.isChecked(),
             "tts_engine": self.tts_engine_combo.currentData(),
             "tts_speed": self.tts_speed_combo.currentData(),
             "tts_read_mode": self.tts_mode_combo.currentData(),

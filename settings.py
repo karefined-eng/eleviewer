@@ -37,6 +37,8 @@ DEFAULT_SETTINGS = {
     "web_default_zoom": 100,
     "web_intercept_links": True,
     "web_restore_tabs": True,
+    "web_search_engine": "google",
+    "web_ad_blocker": True,
     "editor_font_size": 14,
     "editor_font_family": "Segoe UI",
     "editor_word_wrap": True,
