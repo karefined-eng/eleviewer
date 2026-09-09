@@ -64,5 +64,6 @@ node_modules/
 PROJECT_LOG.md
 context/                      # Private planning notes & AI session logs — not shipped
 .zcode/                       # Internal AI planning logs
+eleviewer-site/               # Ignored nested website repository
 .gitignore
 A Homepage loading.txt
