@@ -66,11 +66,12 @@ jobs:
           Copy-Item $depends.FullName $dependsPath -Force
           Write-Output "Installed Dependency Walker at $dependsPath"
 
-      - name: Compile with Nuitka (cached standalone build)
+      - name: Compile with Nuitka (cached standalone build with LTO)
         run: |
+          # Keep LTO enabled to prioritize the compact release-size target.
           python -m nuitka `
             --mode=standalone `
-            --lto=no `
+            --lto=yes `
             --enable-plugins=pyside6 `
             --include-qt-plugins=sensible,styles,webview `
             --windows-icon-from-ico=icons/eleviewer.ico `
