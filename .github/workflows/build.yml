@@ -57,7 +57,7 @@ jobs:
             --standalone `
             --lto=yes `
             --enable-plugin=pyside6 `
-            --include-qt-plugins=sensible,styles,qwebengine `
+            --include-qt-plugins=sensible,styles,webview `
             --windows-icon-from-ico=icons/eleviewer.ico `
             --windows-company-name="karefined-eng" `
             --windows-product-name="EleViewer" `
@@ -66,7 +66,7 @@ jobs:
             --windows-file-description="Lightweight Document Viewer & Study Workspace" `
             --include-data-dir=icons=icons `
             --include-data-dir=getting_started=getting_started `
-            --disable-console `
+            --windows-console-mode=disable `
             --output-filename=EleViewer.exe `
             main.py
 
