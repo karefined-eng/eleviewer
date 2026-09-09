@@ -58,5 +58,5 @@ if __name__ == "__main__":
         f"Generated: {manifest['generated_at']}\n",
         encoding="utf-8"
     )
-    print(f"✓ Hash written to {OUTPUT_PATH}")
+    print(f"Hash written to {OUTPUT_PATH}")
     print(f"  SHA-256: {digest}")
