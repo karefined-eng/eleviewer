@@ -165,14 +165,23 @@ window.show()
 splash.raise_()
 
 from PySide6.QtCore import QPropertyAnimation
-splash._anim = QPropertyAnimation(splash, b"windowOpacity")
+from PySide6.QtWidgets import QGraphicsOpacityEffect
+
+effect = QGraphicsOpacityEffect(loader)
+loader.setGraphicsEffect(effect)
+
+splash._anim = QPropertyAnimation(effect, b"opacity")
 splash._anim.setDuration(500)
 splash._anim.setStartValue(1.0)
 splash._anim.setEndValue(0.0)
 splash._anim.finished.connect(splash.close)
 
+def begin_fade():
+    loader.stop()
+    splash._anim.start()
+
 # Wait 1000ms for window to render and user to see splash, then fade out
-QTimer.singleShot(1000, splash._anim.start)
+QTimer.singleShot(1000, begin_fade)
 
 if not settings.get("onboarding_completed", False):
     from onboarding import OnboardingManager
