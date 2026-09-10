@@ -571,6 +571,13 @@ class MainWindow(QMainWindow):
                 lambda idx=i-1: self.tabs.setCurrentIndex(min(idx, self.tabs.count()-1)) if self.tabs.count() > 0 else None
             )
 
+    def open_bookmark_manager(self):
+        from bookmark_manager_ui import BookmarkManagerDialog
+        dlg = BookmarkManagerDialog(self)
+        dlg.exec()
+        if hasattr(self, 'bookmarks_panel') and self.bookmarks_panel:
+            self.bookmarks_panel.refresh()
+
     def _apply_toolbar_style(self):
         if not hasattr(self, 'toolbar') or not self.toolbar:
             return
@@ -1649,6 +1656,8 @@ class MainWindow(QMainWindow):
         self.pinned_menu = session_menu.addMenu("Pinned Files")
         self.bookmarks_menu = session_menu.addMenu("Bookmarks")
         self._add_menu_action(self.bookmarks_menu, "Bookmark Current Tab", self.bookmark_current_tab, "Ctrl+D")
+        self.bookmarks_menu.addSeparator()
+        self._add_menu_action(self.bookmarks_menu, "Bookmark Manager", self.open_bookmark_manager, "Ctrl+Shift+O")
 
         view_menu = menu.addMenu("View")
         self.action_toggle_toolbar = view_menu.addAction("Show Main Toolbar")
