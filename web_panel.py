@@ -452,11 +452,24 @@ class WebPanel(QWidget):
         # ── Download status bar (hidden by default) ───────────────────────
         self._download_bar = self._build_download_bar()
 
+        # ——— Bookmarks Bar ————————————————————————————————————————————————
+        self.bookmarks_bar_widget = QWidget()
+        self.bookmarks_bar_layout = QHBoxLayout(self.bookmarks_bar_widget)
+        self.bookmarks_bar_layout.setContentsMargins(4, 2, 4, 2)
+        self.bookmarks_bar_layout.setSpacing(6)
+        self.bookmarks_bar_layout.setAlignment(Qt.AlignLeft)
+        
+        from theme import BRAND_MUTED, BRAND_BACKGROUND
+        self.bookmarks_bar_widget.setStyleSheet(f"QWidget {{ border-bottom: 1px solid {BRAND_MUTED}; background: {BRAND_BACKGROUND}; }}")
+
         layout.addLayout(nav)
+        layout.addWidget(self.bookmarks_bar_widget)
         layout.addWidget(self._progress_bar)
         layout.addWidget(self.tabs)
         layout.addWidget(self._find_bar)
         layout.addWidget(self._download_bar)
+        
+        self.refresh_bookmarks_bar()
 
         # ── Connect download handling on the shared profile ───────────────
         get_persistent_profile().downloadRequested.connect(self._on_download_requested)
@@ -580,6 +593,10 @@ class WebPanel(QWidget):
         act_dl = menu.addAction(icon("download", size=14), "Downloads")
         act_dl.setShortcut("Ctrl+J")
         act_dl.triggered.connect(self._show_downloads_dialog)
+
+        act_bm = menu.addAction(icon("bookmark", size=14), "Bookmark Manager")
+        act_bm.setShortcut("Ctrl+Shift+O")
+        act_bm.triggered.connect(self._open_bookmark_manager)
         
         menu.addSeparator()
         
@@ -602,6 +619,44 @@ class WebPanel(QWidget):
         dlg = HistoryDialog(self.window())
         dlg.url_requested.connect(self.open_url_in_new_tab)
         dlg.exec()
+
+    def _open_bookmark_manager(self):
+        from bookmark_manager_ui import BookmarkManagerDialog
+        dlg = BookmarkManagerDialog(self)
+        dlg.exec()
+        if hasattr(self, 'bookmarks_bar_widget'):
+            self.refresh_bookmarks_bar()
+        window = self.window()
+        if hasattr(window, 'bookmarks_panel') and window.bookmarks_panel:
+            window.bookmarks_panel.refresh()
+
+    def refresh_bookmarks_bar(self):
+        while self.bookmarks_bar_layout.count():
+            item = self.bookmarks_bar_layout.takeAt(0)
+            if item.widget():
+                item.widget().deleteLater()
+                
+        from bookmark_manager import load_bookmarks
+        from theme import compact_toolbar_stylesheet
+        bookmarks = load_bookmarks(validate=False)
+        web_bms = [b for b in bookmarks if b.get('file_path', '').startswith(('http://', 'https://'))]
+        
+        if not web_bms:
+            self.bookmarks_bar_widget.hide()
+            return
+            
+        self.bookmarks_bar_widget.show()
+        for b in web_bms:
+            btn = QToolButton()
+            btn.setText(b.get('label', 'Unnamed')[:20])
+            btn.setIcon(icon("globe", size=14))
+            btn.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+            btn.setToolTip(b.get('file_path', ''))
+            btn.setStyleSheet(compact_toolbar_stylesheet())
+            btn.setAutoRaise(True)
+            # Use default args in lambda to capture loop variable
+            btn.clicked.connect(lambda checked=False, url=b.get('file_path'): self.open_url_in_new_tab(url))
+            self.bookmarks_bar_layout.addWidget(btn)
 
     def _show_downloads_dialog(self):
         from web_downloads import DownloadsDialog
