@@ -114,9 +114,20 @@ class BookmarkPanel(QWidget):
         layout.setContentsMargins(4, 4, 4, 4)
         layout.setSpacing(4)
 
+        header_layout = QHBoxLayout()
         header = QLabel("BOOKMARKS")
         header.setStyleSheet(f"color: {BRAND_MUTED_FG}; font-size: 11px; font-weight: bold; padding: 4px;")
-        layout.addWidget(header)
+        
+        self.btn_export = QToolButton()
+        self.btn_export.setIcon(icon("download", size=14))
+        self.btn_export.setToolTip("Export Bookmarks (Chrome HTML format)")
+        self.btn_export.setStyleSheet(compact_toolbar_stylesheet())
+        self.btn_export.clicked.connect(self._export_bookmarks)
+        
+        header_layout.addWidget(header)
+        header_layout.addStretch()
+        header_layout.addWidget(self.btn_export)
+        layout.addLayout(header_layout)
 
         self.list_widget = QListWidget()
         self.list_widget.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
@@ -138,6 +149,17 @@ class BookmarkPanel(QWidget):
         layout.addWidget(self.list_widget)
 
         self.refresh()
+
+    def _export_bookmarks(self):
+        from PySide6.QtWidgets import QFileDialog, QMessageBox
+        from bookmark_manager import export_bookmarks_html
+        path, _ = QFileDialog.getSaveFileName(self, "Export Bookmarks", "", "HTML Files (*.html)")
+        if path:
+            try:
+                export_bookmarks_html(path)
+                QMessageBox.information(self, "Export Successful", f"Bookmarks exported to {path}")
+            except Exception as e:
+                QMessageBox.warning(self, "Export Failed", f"Failed to export bookmarks:\n{e}")
 
     def refresh(self):
         self.list_widget.clear()
