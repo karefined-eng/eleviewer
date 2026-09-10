@@ -32,7 +32,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: |
-            ~\AppData\Local\Nuitka\Nuitka\Cache
+            ~\AppData\Local\Nuitka1\Nuitka\Cache
             main.build
           key: ${{ runner.os }}-nuitka-4.2.1-${{ hashFiles('**/*.py', 'requirements.txt', '.github/workflows/build.yml') }}
           restore-keys: |
