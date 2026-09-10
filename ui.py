@@ -2360,6 +2360,7 @@ class MainWindow(QMainWindow):
 
         for btn in (btn_max, btn_float, btn_close):
             btn.setStyleSheet(compact_toolbar_stylesheet())
+            btn.setFixedSize(28, 28)
             btn.setAutoRaise(True)
 
         self._web_sep = QFrame()

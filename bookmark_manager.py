@@ -103,3 +103,23 @@ def get_bookmark(bookmark_id):
         if bookmark.get("id") == bookmark_id:
             return bookmark
     return None
+
+def export_bookmarks_html(out_path):
+    bookmarks = load_bookmarks(validate=False)
+    lines = [
+        '<!DOCTYPE NETSCAPE-Bookmark-file-1>',
+        '<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">',
+        '<TITLE>Bookmarks</TITLE>',
+        '<H1>Bookmarks</H1>',
+        '<DL><p>'
+    ]
+    for b in bookmarks:
+        url = b.get('file_path', '')
+        if not url.startswith('http'):
+            url = 'file:///' + url.replace('\\', '/')
+        import html
+        label = html.escape(b.get('label', 'Unnamed Bookmark'))
+        lines.append(f'    <DT><A HREF="{url}">{label}</A>')
+    lines.append('</DL><p>')
+    with open(out_path, 'w', encoding='utf-8') as f:
+        f.write('\n'.join(lines))

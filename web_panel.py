@@ -70,13 +70,41 @@ def get_web_view_class():
             def _handle_fullscreen(self, request):
                 request.accept()
                 if request.toggleOn():
-                    self.setWindowFlag(Qt.Window, True)
-                    self.setWindowFlag(Qt.FramelessWindowHint, True)
-                    self.showFullScreen()
+                    if getattr(self, '_fs_window', None):
+                        return
+                    
+                    panel = self.parent()
+                    while panel and not hasattr(panel, 'tabs'):
+                        panel = panel.parent()
+                    
+                    if not panel:
+                        self.setWindowFlag(Qt.Window, True)
+                        self.setWindowFlag(Qt.FramelessWindowHint, True)
+                        self.showFullScreen()
+                        return
+                        
+                    self._fs_panel = panel
+                    self._saved_tab_index = panel.tabs.indexOf(self)
+                    self._saved_tab_text = panel.tabs.tabText(self._saved_tab_index)
+                    
+                    from PySide6.QtWidgets import QWidget, QVBoxLayout
+                    self._fs_window = QWidget(panel.window())
+                    self._fs_window.setWindowFlags(Qt.Window | Qt.FramelessWindowHint)
+                    layout = QVBoxLayout(self._fs_window)
+                    layout.setContentsMargins(0, 0, 0, 0)
+                    layout.addWidget(self)
+                    self._fs_window.showFullScreen()
                 else:
-                    self.setWindowFlag(Qt.Window, False)
-                    self.setWindowFlag(Qt.FramelessWindowHint, False)
-                    self.show()
+                    if getattr(self, '_fs_window', None):
+                        self._fs_window.hide()
+                        self._fs_panel.tabs.insertTab(self._saved_tab_index, self, self._saved_tab_text)
+                        self._fs_panel.tabs.setCurrentWidget(self)
+                        self._fs_window.deleteLater()
+                        del self._fs_window
+                    else:
+                        self.setWindowFlag(Qt.Window, False)
+                        self.setWindowFlag(Qt.FramelessWindowHint, False)
+                        self.show()
                 
             def _auto_deny_permissions(self, security_origin, feature):
                 self.page().setFeaturePermission(security_origin, feature, QWebEnginePage.PermissionPolicy.PermissionDeniedByUser)
@@ -386,6 +414,7 @@ class WebPanel(QWidget):
         for btn in (self.btn_back, self.btn_forward, self.btn_refresh,
                     self.btn_bookmark, self.btn_add, self.btn_menu):
             btn.setStyleSheet(compact_toolbar_stylesheet())
+            btn.setFixedSize(28, 28)
             btn.setAutoRaise(True)
 
         nav.addWidget(self.btn_back)
@@ -471,6 +500,75 @@ class WebPanel(QWidget):
 
         self.restore_tabs()
 
+    def _import_cookies(self):
+        from PySide6.QtWidgets import QFileDialog, QMessageBox
+        import json
+        path, _ = QFileDialog.getOpenFileName(self, "Import Cookies", "", "JSON Files (*.json)")
+        if not path: return
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                cookies_data = json.load(f)
+            store = get_persistent_profile().cookieStore()
+            from PySide6.QtNetwork import QNetworkCookie
+            from PySide6.QtCore import QDateTime, QUrl
+            for c_data in cookies_data:
+                c = QNetworkCookie(c_data["name"].encode('utf-8', 'ignore'), c_data["value"].encode('utf-8', 'ignore'))
+                c.setDomain(c_data["domain"])
+                c.setPath(c_data["path"])
+                c.setSecure(c_data.get("secure", False))
+                c.setHttpOnly(c_data.get("httpOnly", False))
+                if "expirationDate" in c_data:
+                    c.setExpirationDate(QDateTime.fromSecsSinceEpoch(int(c_data["expirationDate"])))
+                domain = c_data["domain"]
+                url_str = "https://" + (domain[1:] if domain.startswith(".") else domain) + c_data["path"]
+                store.setCookie(c, QUrl(url_str))
+            QMessageBox.information(self, "Import Successful", f"Successfully imported {len(cookies_data)} cookies.")
+        except Exception as e:
+            QMessageBox.warning(self, "Import Failed", f"Failed to import cookies:\n{str(e)}")
+
+    def _export_cookies(self):
+        self._exported_cookies = []
+        store = get_persistent_profile().cookieStore()
+        
+        def on_cookie(c):
+            self._exported_cookies.append(c)
+            
+        store.cookieAdded.connect(on_cookie)
+        store.loadAllCookies()
+        
+        from PySide6.QtCore import QTimer
+        QTimer.singleShot(1500, lambda: self._do_export_cookies(store, on_cookie))
+        
+    def _do_export_cookies(self, store, on_cookie_slot):
+        try:
+            store.cookieAdded.disconnect(on_cookie_slot)
+        except Exception:
+            pass
+            
+        from PySide6.QtWidgets import QFileDialog, QMessageBox
+        import json
+        path, _ = QFileDialog.getSaveFileName(self, "Export Cookies", "", "JSON Files (*.json)")
+        if not path: return
+        try:
+            out = []
+            for c in self._exported_cookies:
+                d = {
+                    "name": c.name().data().decode('utf-8', 'ignore'),
+                    "value": c.value().data().decode('utf-8', 'ignore'),
+                    "domain": c.domain(),
+                    "path": c.path(),
+                    "secure": c.isSecure(),
+                    "httpOnly": c.isHttpOnly(),
+                }
+                if not c.isSessionCookie():
+                    d["expirationDate"] = c.expirationDate().toSecsSinceEpoch()
+                out.append(d)
+            with open(path, "w", encoding="utf-8") as f:
+                json.dump(out, f, indent=4)
+            QMessageBox.information(self, "Export Successful", f"Successfully exported {len(out)} cookies.")
+        except Exception as e:
+            QMessageBox.warning(self, "Export Failed", f"Failed to export cookies:\n{str(e)}")
+
     def _build_nav_menu(self):
         from PySide6.QtWidgets import QMenu
         menu = QMenu(self)
@@ -483,6 +581,14 @@ class WebPanel(QWidget):
         act_dl.setShortcut("Ctrl+J")
         act_dl.triggered.connect(self._show_downloads_dialog)
         
+        menu.addSeparator()
+        
+        act_imp_cookie = menu.addAction(icon("upload", size=14), "Import Cookies...")
+        act_imp_cookie.triggered.connect(self._import_cookies)
+        
+        act_exp_cookie = menu.addAction(icon("download", size=14), "Export Cookies...")
+        act_exp_cookie.triggered.connect(self._export_cookies)
+
         menu.addSeparator()
         
         act_set = menu.addAction(icon("settings", size=14), "Settings")
