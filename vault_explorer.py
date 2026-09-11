@@ -104,7 +104,7 @@ class VaultExplorer(QWidget):
                 outline: none;
             }}
             QTreeWidget::item {{ padding: 5px 6px; border-left: 2px solid transparent; }}
-            QTreeWidget::item:selected {{ background: {p['BRAND_PANEL_2']}; border-left: 2px solid {accent}; color: #ffffff; font-weight: bold; }}
+            QTreeWidget::item:selected {{ background: {p['BRAND_PANEL_2']}; border-left: 2px solid {accent}; color: {p['TAB_SELECTED_FG']}; font-weight: bold; }}
             QTreeWidget::item:hover:!selected {{ background: {p['BRAND_PANEL_2']}; }}
         """)
 
@@ -285,4 +285,3 @@ class VaultExplorer(QWidget):
                 new_item.setIcon(0, icon("folder", size=ICON_SIZE_COMPACT, color="#6cb6ff"))
         else:
             self._last_selected_tree_item = None
-

@@ -75,8 +75,7 @@ class TtsEngine:
                     # Initialize local pyttsx3 engine
                     if PYTTSX3_AVAILABLE:
                         try:
-                            self._pyttsx3_engine = pyttsx3.init()
-                            voices = self._pyttsx3_engine.getProperty("voices") or []
+                            voices = self._initialize_local_engine()
                             self._local_voices = [(v.id, f"[Offline] {v.name}") for v in voices]
                             self._local_available = True
                         except Exception as e:
@@ -163,16 +162,30 @@ class TtsEngine:
         """Synchronous local playback using pyttsx3."""
         if not self._pyttsx3_engine:
             return
-        
-        if voice_id:
+
+        for attempt in range(2):
             try:
-                self._pyttsx3_engine.setProperty("voice", voice_id)
-            except Exception:
-                pass
-        
-        self._pyttsx3_engine.say(text)
-        # This blocks until finished or interrupted by self._pyttsx3_engine.stop()
-        self._pyttsx3_engine.runAndWait()
+                if voice_id:
+                    self._pyttsx3_engine.setProperty("voice", voice_id)
+                self._pyttsx3_engine.say(text)
+                self._pyttsx3_engine.runAndWait()
+                return
+            except Exception as error:
+                if attempt:
+                    self._report_error(f"Offline TTS failed: {error}")
+                    return
+                try:
+                    self._initialize_local_engine()
+                except Exception as reset_error:
+                    self._report_error(f"Offline TTS could not restart: {reset_error}")
+                    return
+
+    def _initialize_local_engine(self):
+        """Create a fresh local engine after a stop/voice-switch failure."""
+        if not PYTTSX3_AVAILABLE:
+            return []
+        self._pyttsx3_engine = pyttsx3.init()
+        return self._pyttsx3_engine.getProperty("voices") or []
 
     def list_voices(self):
         # Return merged list

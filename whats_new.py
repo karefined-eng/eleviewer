@@ -22,7 +22,7 @@ class WhatsNewDialog(QDialog):
                 border: none; 
                 border-top: 1px solid {p['BRAND_BORDER']}; 
                 border-bottom: 1px solid {p['BRAND_BORDER']}; 
-                color: #e0e0e0; 
+                color: {p['BRAND_PRIMARY']};
                 padding: 15px; 
                 font-family: 'Segoe UI', sans-serif; 
                 font-size: 14px; 
@@ -30,13 +30,13 @@ class WhatsNewDialog(QDialog):
             }}
             QPushButton {{
                 background: {accent};
-                color: #131313;
+                color: {p['BRAND_PRIMARY_FG']};
                 border: none;
                 padding: 8px 16px;
                 border-radius: 4px;
                 font-weight: bold;
             }}
-            QPushButton:hover {{ background: #559be6; }}
+            QPushButton:hover {{ background: {get_active_accent()['hover']}; }}
         """)
 
         layout = QVBoxLayout(self)
@@ -45,7 +45,9 @@ class WhatsNewDialog(QDialog):
 
         header_layout = QHBoxLayout()
         title_label = QLabel(f"EleViewer updated to v{app_version}")
-        title_label.setStyleSheet("font-size: 22px; font-weight: bold; color: #ffffff;")
+        title_label.setStyleSheet(
+            f"font-size: 22px; font-weight: bold; color: {p['BRAND_PRIMARY']};"
+        )
         header_layout.addWidget(title_label)
         header_layout.addStretch()
         

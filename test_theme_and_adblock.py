@@ -1,4 +1,4 @@
-from theme import THEME_PALETTES, get_active_palette, main_window_stylesheet
+from theme import THEME_PALETTES, get_active_palette, main_window_stylesheet, xlsx_sheet_tab_stylesheet
 from settings import DEFAULT_SETTINGS
 
 def test_theme_palettes_exist():
@@ -31,6 +31,13 @@ def test_close_button_icon_matches_theme(monkeypatch):
     # The old hover-reveal rules used `opacity` and a child selector, which
     # Qt QSS silently ignores — they must not come back.
     assert "QTabBar::tab:selected > QTabBar::close-button" not in dark_qss
+
+
+def test_xlsx_tabs_follow_active_theme(monkeypatch):
+    monkeypatch.setattr("theme.get_active_theme_name", lambda: "light")
+    light_qss = xlsx_sheet_tab_stylesheet()
+    assert THEME_PALETTES["light"]["BRAND_PANEL"] in light_qss
+    assert THEME_PALETTES["light"]["BRAND_BACKGROUND"] in light_qss
 
 def test_show_toolbar_default():
     assert DEFAULT_SETTINGS.get("show_toolbar") is True
