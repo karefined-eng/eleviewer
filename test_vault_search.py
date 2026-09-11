@@ -50,3 +50,17 @@ def test_vault_search_worker_cancellation(tmp_path):
     worker.run()
     
     assert len(results) == 0 # Should have aborted immediately
+
+def test_vault_search_worker_does_not_match_sibling_path(tmp_path):
+    vault = tmp_path / "vault"
+    sibling = tmp_path / "vault-other"
+    vault.mkdir()
+    sibling.mkdir()
+    (sibling / "outside.md").write_text("outside")
+
+    worker = VaultSearchWorker([str(vault)], "outside")
+    results = []
+    worker.result_found.connect(lambda f, d, v, p: results.append(p))
+    worker.run()
+
+    assert results == []
