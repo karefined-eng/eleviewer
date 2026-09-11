@@ -190,10 +190,12 @@ class DraggableToolBar(QToolBar):
         from PySide6.QtGui import QPainter, QPen, QColor
         from theme import get_active_accent
         painter = QPainter(self)
-        pen = QPen(QColor(get_active_accent()["accent"]), 2)
-        painter.setPen(pen)
-        painter.drawLine(self._drop_indicator_x, 4, self._drop_indicator_x, self.height() - 4)
-        painter.end()
+        try:
+            pen = QPen(QColor(get_active_accent()["accent"]), 2)
+            painter.setPen(pen)
+            painter.drawLine(self._drop_indicator_x, 4, self._drop_indicator_x, self.height() - 4)
+        finally:
+            painter.end()
 
 
 class MainWindow(QMainWindow):
@@ -1066,308 +1068,307 @@ class MainWindow(QMainWindow):
         self.update_status_bar()
 
     def _create_welcome_widget(self):
-        from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QGridLayout, QToolButton, QFrame, QLineEdit, QListWidget, QListWidgetItem, QSizePolicy
-        from PySide6.QtCore import Qt, QSize
-        from PySide6.QtGui import QPixmap, QIcon
-        from theme import get_active_palette, get_brand_accent, get_active_accent
-        p = get_active_palette()
-        from icons import icon
-        from recent_files import load_recent_files
-        from bookmark_manager import load_bookmarks
-        import os
-        
         w = QWidget()
         w.is_welcome_tab = True
-        
-        outer_layout = QVBoxLayout(w)
+        outer_layout = QGridLayout(w)
         outer_layout.setContentsMargins(0, 0, 0, 0)
-
-        wrapper = QWidget()
-        wrapper_layout = QHBoxLayout(wrapper)
-        wrapper_layout.setContentsMargins(0, 0, 0, 0)
-        wrapper_layout.addStretch()
-
-        content = QWidget()
-        content.setMaximumWidth(800)
-        content.setMinimumWidth(550)
-        content.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
         
-        main_layout = QVBoxLayout(content)
-        main_layout.setAlignment(Qt.AlignTop)
-        main_layout.setContentsMargins(40, 72, 40, 40)
-        main_layout.setSpacing(40)
+        content_w = QWidget()
+        content_w.setMaximumWidth(800)
+        main_layout = QVBoxLayout(content_w)
+        main_layout.setContentsMargins(40, 60, 40, 60)
+        main_layout.setSpacing(32)
         
-        wrapper_layout.addWidget(content, 1)
-        wrapper_layout.addStretch()
-        
-        outer_layout.addWidget(wrapper)
-        outer_layout.addStretch()
+        p = get_palette()
         
         # 1. Hero Section
         hero = QWidget()
         hero_layout = QVBoxLayout(hero)
-        hero_layout.setAlignment(Qt.AlignCenter)
+        hero_layout.setContentsMargins(0, 0, 0, 0)
         hero_layout.setSpacing(8)
         
         title = QLabel("EleViewer")
-        title.setStyleSheet(f"font-size: 28px; font-weight: bold; color: {p['BRAND_PRIMARY']};")
-        title.setAlignment(Qt.AlignCenter)
+        title.setStyleSheet(f"""
+            font-size: 42px; 
+            font-weight: 800; 
+            color: {p['BRAND_PRIMARY']};
+            letter-spacing: -1px;
+        """)
         
-        subtitle = QLabel("Your study workspace for documents, notes, and side-by-side web research.")
-        subtitle.setAlignment(Qt.AlignCenter)
-        subtitle.setStyleSheet(f"color: {p['BRAND_MUTED_FG']}; font-size: 14px;")
+        subtitle = QLabel("Your local, zero-telemetry document workstation.")
+        subtitle.setStyleSheet(f"""
+            font-size: 16px; 
+            color: {p['BRAND_MUTED_FG']};
+        """)
         
-        hero_layout.addWidget(title)
-        hero_layout.addWidget(subtitle)
+        hero_layout.addWidget(title, 0, Qt.AlignLeft)
+        hero_layout.addWidget(subtitle, 0, Qt.AlignLeft)
         main_layout.addWidget(hero)
         
-        # 2. Minimalist Action Cards
-        action_bar = QWidget()
-        action_bar_layout = QHBoxLayout(action_bar)
-        action_bar_layout.setSpacing(16)
-        action_bar_layout.setContentsMargins(0, 0, 0, 0)
-        action_bar_layout.setAlignment(Qt.AlignCenter)
-        
-        card_style = f"""
-            QToolButton {{
-                min-width: 140px;
-                max-width: 140px;
-                min-height: 96px;
-                max-height: 96px;
-                background: {p['BRAND_PANEL_2']};
-                color: {p['BRAND_PRIMARY']};
-                border: 1px solid transparent;
-                border-radius: 12px;
-                font-size: 13px;
-                font-weight: 500;
-                padding-top: 18px;
-            }}
-            QToolButton:hover {{
-                background: {p['BRAND_PANEL']};
-                border: 1px solid {p['BRAND_BORDER']};
-            }}
-            QToolButton:pressed {{
-                background: {p['BRAND_PANEL_2']};
-            }}
-        """
-        
-        buttons_info = [
-            ("Open File", "folder-open", self.open_file, "Open a course document or note (Ctrl+O)"),
-            ("Add Vault", "panel-left", self.add_vault, "Add a course folder or study vault (Alt+V)"),
-            ("Web Panel", "globe", self.toggle_web_panel, "Open split-screen web browser (Ctrl+T)"),
-        ]
-        
-        for label, ico, slot, tooltip in buttons_info:
-            btn = QToolButton()
-            btn.setText(label)
-            btn.setIcon(icon(ico, size=24))
-            btn.setIconSize(QSize(24, 24))
-            btn.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
-            btn.setCursor(Qt.PointingHandCursor)
-            btn.setToolTip(tooltip)
-            btn.setAccessibleName(label)
-            btn.setAccessibleDescription(tooltip)
-            btn.setStyleSheet(card_style)
-            btn.setFixedSize(140, 100)
-            btn.clicked.connect(slot)
-            action_bar_layout.addWidget(btn)
-            
-        main_layout.addWidget(action_bar)
-        
-        # 3. Smart Omnibar
+        # 2. Omnibar Search
         omni_wrapper = QWidget()
         omni_wrapper.setObjectName("OmniWrapper")
-        omni_wrapper_layout = QVBoxLayout(omni_wrapper)
-        omni_wrapper_layout.setContentsMargins(0, 0, 0, 0)
-        omni_wrapper_layout.setSpacing(4)
-
-        omni_bar_row = QWidget()
-        omni_bar_row.setObjectName("OmniBarRow")
-        omni_bar_row.setMinimumHeight(44)
-        accent = get_brand_accent()
-        omni_bar_row.setStyleSheet(f"""
-            QWidget#OmniBarRow {{
-                background: transparent;
-                border-bottom: 1px solid {p['BRAND_BORDER']};
-            }}
-            QWidget#OmniBarRow:focus-within {{
-                border-bottom: 2px solid {accent};
+        omni_wrapper.setStyleSheet(f"""
+            QWidget#OmniWrapper {{
+                background: {p['BRAND_PANEL']};
+                border: 1px solid {p['BRAND_BORDER']};
+                border-radius: 12px;
             }}
         """)
-        omni_row_layout = QHBoxLayout(omni_bar_row)
-        omni_row_layout.setContentsMargins(8, 0, 8, 0)
-        omni_row_layout.setSpacing(12)
-
-        omni_search_icon = QLabel()
-        omni_search_icon.setPixmap(icon("search", size=18).pixmap(18, 18))
-
-        omni_input = QLineEdit()
-        omni_input.setPlaceholderText("Search course files or paste a web link...")
-        omni_input.setAccessibleName("Global Search Bar")
-        omni_input.setAccessibleDescription("Search across your vaults or paste a URL to open the web panel")
-        omni_input.setStyleSheet(f"""
+        omni_wrapper_layout = QVBoxLayout(omni_wrapper)
+        omni_wrapper_layout.setContentsMargins(8, 8, 8, 8)
+        omni_wrapper_layout.setSpacing(0)
+        
+        omni_bar_row = QWidget()
+        omni_bar_layout = QHBoxLayout(omni_bar_row)
+        omni_bar_layout.setContentsMargins(8, 0, 8, 0)
+        omni_bar_layout.setSpacing(12)
+        
+        search_ico = QLabel()
+        search_ico.setPixmap(icon("search", size=18).pixmap(18, 18))
+        
+        self.welcome_search = QLineEdit()
+        self.welcome_search.setPlaceholderText("Search vault files or enter URL to browse...")
+        self.welcome_search.setStyleSheet(f"""
             QLineEdit {{
                 background: transparent;
                 border: none;
                 color: {p['BRAND_PRIMARY']};
-                font-size: 14px;
-                padding: 10px 0;
+                font-size: 15px;
+                padding: 12px 0;
             }}
-            QLineEdit::placeholder {{ color: {p['BRAND_MUTED_FG']}; }}
         """)
-
-        omni_row_layout.addWidget(omni_search_icon)
-        omni_row_layout.addWidget(omni_input, 1)
-
-        omni_results = QListWidget()
-        omni_results.setObjectName("OmniResults")
-        omni_results.setStyleSheet(f"""
-            QListWidget#OmniResults {{
-                background: {p['BRAND_PANEL']};
-                border: 1px solid {p['BRAND_BORDER']};
-                border-radius: 6px;
-                color: {p['BRAND_PRIMARY']};
-                font-size: 13px;
-                outline: none;
-            }}
-            QListWidget#OmniResults::item:hover {{ background: {p['BRAND_PANEL_2']}; }}
-            QListWidget#OmniResults::item:selected {{ background: {get_brand_accent()}22; }}
-        """)
-        omni_results.setMaximumHeight(200)
-        omni_results.hide()
-
+        
+        omni_bar_layout.addWidget(search_ico)
+        omni_bar_layout.addWidget(self.welcome_search)
         omni_wrapper_layout.addWidget(omni_bar_row)
-        omni_wrapper_layout.addWidget(omni_results)
+        
+        # 3. Hidden Search Results Dropdown
+        self.omni_results = QListWidget()
+        self.omni_results.hide()
+        
+        # Convert accent hex to rgba for the selected state
+        accent_hex = p.get('BRAND_ACCENT', '#000000').lstrip('#')
+        try:
+            r, g, b = tuple(int(accent_hex[i:i+2], 16) for i in (0, 2, 4))
+            accent_rgba = f"rgba({r}, {g}, {b}, 0.15)"
+        except:
+            accent_rgba = p.get('BRAND_PANEL_2', '#333333')
 
-        def _is_url(text):
-            t = text.strip()
-            if t.startswith(("http://", "https://", "localhost:")):
-                return True
-            if t.startswith("www."):
-                return True
-            doc_exts = (".pdf", ".md", ".docx", ".doc", ".xlsx", ".xls", ".pptx", ".ppt", ".csv", ".tsv", ".txt", ".html", ".htm", ".json", ".xml", ".py")
-            if any(t.lower().endswith(ext) for ext in doc_exts):
-                return False
-            common_tlds = (".com", ".org", ".edu", ".net", ".io", ".gov", ".app", ".dev", ".ai", ".co", ".gh", ".uk", ".de", ".ca", ".me")
-            host = t.split("/", 1)[0].lower()
-            return any(host.endswith(tld) for tld in common_tlds)
-
-        from PySide6.QtCore import QTimer
-        omni_timer = QTimer(w)
-        omni_timer.setSingleShot(True)
-        omni_timer.setInterval(200)
-
-        def _do_omni_search():
-            text = omni_input.text().strip()
-            if not text or _is_url(text):
-                omni_results.hide()
-                return
-            from settings import load_settings as _ls
-            vaults = _ls().get("vault_paths", [])
-            matches = []
-            for vault in vaults:
-                if not os.path.isdir(vault):
-                    continue
-                for root, _, files in os.walk(vault):
-                    for f in files:
-                        if text.lower() in f.lower():
-                            matches.append(os.path.join(root, f))
-                        if len(matches) >= 10:
-                            break
-                    if len(matches) >= 10:
-                        break
-            omni_results.clear()
-            if matches:
-                for path in matches:
-                    item = QListWidgetItem(icon("file", size=14), os.path.basename(path))
-                    item.setData(Qt.UserRole, path)
-                    item.setToolTip(path)
-                    omni_results.addItem(item)
-                omni_results.show()
-            else:
-                omni_results.hide()
-
-        omni_timer.timeout.connect(_do_omni_search)
-
-        def _omni_changed(text):
-            if not text.strip():
-                omni_timer.stop()
-                omni_results.hide()
-                return
-            omni_timer.start(200)
-
-        def _omni_activated():
-            text = omni_input.text().strip()
-            if not text:
-                return
-            if _is_url(text):
-                url = text if text.startswith("http") else f"https://{text}"
-                self.open_web_tab_with_url(url)
-                omni_input.clear()
-            else:
-                if omni_results.count() > 0:
-                    item = omni_results.item(0)
-                    path = item.data(Qt.UserRole)
-                    if path:
-                        self._open_vault_file(path)
-                        omni_input.clear()
-                        omni_results.hide()
-                else:
-                    self.open_vault_search()
-
-        def _omni_item_clicked(item):
-            path = item.data(Qt.UserRole)
-            if path:
-                self._open_vault_file(path)
-                omni_input.clear()
-                omni_results.hide()
-
-        omni_input.textChanged.connect(_omni_changed)
-        omni_input.returnPressed.connect(_omni_activated)
-        omni_results.itemClicked.connect(_omni_item_clicked)
-
+        self.omni_results.setStyleSheet(f"""
+            QListWidget {{
+                background: transparent;
+                border: none;
+                border-top: 1px solid {p['BRAND_BORDER']};
+                outline: none;
+                margin-top: 8px;
+            }}
+            QListWidget::item {{
+                color: {p['BRAND_PRIMARY']};
+                padding: 12px;
+                border-radius: 6px;
+            }}
+            QListWidget::item:selected {{
+                background: {accent_rgba};
+                color: {p['BRAND_ACCENT']};
+            }}
+        """)
+        self.omni_results.setMaximumHeight(220)
+        omni_wrapper_layout.addWidget(self.omni_results)
+        
         main_layout.addWidget(omni_wrapper)
         
-        # 4. Bottom section (Recent Files)
-        bottom_row = QWidget()
-        bottom_layout = QHBoxLayout(bottom_row)
-        bottom_layout.setContentsMargins(0, 0, 0, 0)
+        # Search logic
+        def _do_search(text):
+            text = text.strip()
+            if not text:
+                self.omni_results.hide()
+                return
+            
+            if hasattr(self, 'vault_panel') and self.vault_panel.vault_selector.currentData():
+                vault_path = self.vault_panel.vault_selector.currentData()
+            else:
+                settings = load_settings()
+                vaults = settings.get("vault_paths", [])
+                vault_path = vaults[0] if vaults else None
+                
+            if not vault_path:
+                return
+                
+            results = []
+            text_lower = text.lower()
+            import os as _os
+            for root, _, files in _os.walk(vault_path):
+                if ".git" in root or "__pycache__" in root: continue
+                for f in files:
+                    if text_lower in f.lower():
+                        results.append(_os.path.join(root, f))
+                        if len(results) >= 8: break
+                if len(results) >= 8: break
+            
+            self.omni_results.clear()
+            if results:
+                for r in results:
+                    rel = _os.path.relpath(r, vault_path)
+                    it = QListWidgetItem(rel)
+                    it.setData(Qt.UserRole, r)
+                    self.omni_results.addItem(it)
+                self.omni_results.show()
+            else:
+                self.omni_results.hide()
+
+        def _open_omni_result():
+            if self.omni_results.isVisible() and self.omni_results.currentItem():
+                path = self.omni_results.currentItem().data(Qt.UserRole)
+                if path:
+                    self._open_vault_file(path)
+            else:
+                # Check if it's a URL
+                txt = self.welcome_search.text().strip()
+                if txt.startswith("http://") or txt.startswith("https://") or ("." in txt and " " not in txt):
+                    if not txt.startswith("http"):
+                        txt = "https://" + txt
+                    try:
+                        from web_panel import WebBrowserPanel
+                        browser = WebBrowserPanel(self)
+                        self._add_editor_tab(browser, txt)
+                        browser.load_url(txt)
+                    except ImportError:
+                        pass
+
+        self.welcome_search.textChanged.connect(_do_search)
+        self.welcome_search.returnPressed.connect(_open_omni_result)
+        self.omni_results.itemClicked.connect(lambda: _open_omni_result())
         
-        recent_lbl = QLabel("Recent files")
-        recent_lbl.setStyleSheet(f"color: {p['BRAND_PRIMARY']}; font-size: 13px; font-weight: 600;")
-        bottom_layout.addWidget(recent_lbl)
-        bottom_layout.addStretch()
+        # 4. Action Buttons (Horizontal layout now)
+        action_bar = QWidget()
+        action_bar_layout = QHBoxLayout(action_bar)
+        action_bar_layout.setContentsMargins(0, 0, 0, 0)
+        action_bar_layout.setSpacing(12)
         
-        main_layout.addWidget(bottom_row)
+        actions = [
+            ("Open File", "folder", self.open_file),
+            ("New Blank", "file", self.new_tab),
+            ("Settings", "settings", self.show_settings)
+        ]
         
-        recent_list = QListWidget()
-        recent_list.setStyleSheet(f"""
-            QListWidget {{ background: transparent; border: none; color: {p['BRAND_PRIMARY']}; outline: none; font-size: 13px; }}
-            QListWidget::item {{ padding: 6px 8px; border-radius: 6px; }}
-            QListWidget::item:hover {{ background: {p['BRAND_PANEL_2']}; }}
-        """)
-        recent_list.setSelectionMode(QListWidget.NoSelection)
-        recent_list.setCursor(Qt.PointingHandCursor)
-        recent_list.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        recent_list.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        recent_files = load_recent_files(validate=True)[:4]
-        if not recent_files:
-            recent_list.addItem(QListWidgetItem("No recent files"))
-            recent_list.setFixedHeight(36)
-        else:
-            for path in recent_files:
-                item = QListWidgetItem(icon("file", size=14), os.path.basename(path))
-                item.setData(Qt.UserRole, path)
-                item.setToolTip(path)
-                recent_list.addItem(item)
-            recent_list.setFixedHeight(len(recent_files) * 36)
-        recent_list.itemClicked.connect(lambda it: self._open_vault_file(it.data(Qt.UserRole)) if it.data(Qt.UserRole) else None)
+        for label, ico, slot in actions:
+            btn = QToolButton()
+            btn.setText(label)
+            btn.setIcon(icon(ico))
+            btn.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+            btn.setCursor(Qt.PointingHandCursor)
+            btn.clicked.connect(slot)
+            btn.setStyleSheet(f"""
+                QToolButton {{
+                    background: {p['BRAND_PANEL']};
+                    border: 1px solid {p['BRAND_BORDER']};
+                    border-radius: 8px;
+                    color: {p['BRAND_PRIMARY']};
+                    padding: 12px 24px;
+                    font-size: 14px;
+                    font-weight: 500;
+                }}
+                QToolButton:hover {{
+                    background: {p['BRAND_PANEL_2']};
+                    border-color: {p['BRAND_ACCENT']};
+                    color: {p['BRAND_ACCENT']};
+                }}
+            """)
+            action_bar_layout.addWidget(btn)
         
-        main_layout.addWidget(recent_list)
+        action_bar_layout.addStretch()
+        main_layout.addWidget(action_bar)
+        
+        # 5. Two Columns: Recent Files & Bookmarks
+        columns = QWidget()
+        cols_layout = QHBoxLayout(columns)
+        cols_layout.setSpacing(40)
+        cols_layout.setContentsMargins(0, 0, 0, 0)
+        cols_layout.setAlignment(Qt.AlignTop)
+        
+        def _create_section(title, icon_name, items, click_handler, empty_text):
+            col = QWidget()
+            layout = QVBoxLayout(col)
+            layout.setSpacing(12)
+            layout.setContentsMargins(0, 0, 0, 0)
+            
+            # Header
+            header = QWidget()
+            h_layout = QHBoxLayout(header)
+            h_layout.setContentsMargins(0, 0, 0, 0)
+            ico_lbl = QLabel()
+            ico_lbl.setPixmap(icon(icon_name, size=14).pixmap(14, 14))
+            title_lbl = QLabel(title.upper())
+            title_lbl.setStyleSheet(f"color: {p['BRAND_MUTED_FG']}; font-size: 11px; font-weight: bold; letter-spacing: 1px;")
+            h_layout.addWidget(ico_lbl)
+            h_layout.addWidget(title_lbl)
+            h_layout.addStretch()
+            layout.addWidget(header)
+            
+            # List
+            lst = QListWidget()
+            lst.setStyleSheet(f"""
+                QListWidget {{
+                    background: transparent; 
+                    border: none; 
+                    outline: none; 
+                }}
+                QListWidget::item {{
+                    color: {p['BRAND_PRIMARY']}; 
+                    padding: 8px 12px; 
+                    border-radius: 6px; 
+                    margin-bottom: 2px;
+                }}
+                QListWidget::item:hover {{
+                    background: {p['BRAND_PANEL_2']}; 
+                    color: {p['BRAND_ACCENT']};
+                }}
+            """)
+            if not items:
+                i = QListWidgetItem(empty_text)
+                i.setFlags(Qt.NoItemFlags)
+                i.setForeground(QColor(p["BRAND_MUTED_FG"]))
+                lst.addItem(i)
+            else:
+                for label, path, data in items:
+                    i = QListWidgetItem(f"{label} \n{path}")
+                    i.setData(Qt.UserRole, data)
+                    i.setToolTip(path)
+                    lst.addItem(i)
+                    
+            lst.setFixedHeight(max(40, len(items or [1]) * 46))
+            lst.itemClicked.connect(click_handler)
+            layout.addWidget(lst)
+            return col
+
+        # Load lists
+        import os as _os
+        recent_files = load_recent_files(validate=True)[:6]
+        recent_items = [(_os.path.basename(path), path, path) for path in recent_files]
+        
+        bms = load_settings().get("bookmarks", [])[:6]
+        bm_items = [(b.get("label", "Bookmark"), b["file_path"], b) for b in bms]
+        
+        def _handle_recent(it):
+            path = it.data(Qt.UserRole)
+            if path: self._open_vault_file(path)
+            
+        def _handle_bm(it):
+            b = it.data(Qt.UserRole)
+            if b:
+                self._open_vault_file(b["file_path"])
+                w = self.tabs.currentWidget()
+                if hasattr(w, "go_to_bookmark"): w.go_to_bookmark(b.get("page_number", 0), b.get("scroll_position_y", 0.0))
+
+        cols_layout.addWidget(_create_section("Recent Files", "clock", recent_items, _handle_recent, "No recent files"))
+        cols_layout.addWidget(_create_section("Bookmarks", "bookmark", bm_items, _handle_bm, "No bookmarks"))
+        
+        main_layout.addWidget(columns)
         main_layout.addStretch()
         
+        outer_layout.addWidget(content_w, 0, Qt.AlignHCenter)
         return w
-
     def _replace_welcome_if_present(self):
         if self.tabs.count() == 1:
             w = self.tabs.widget(0)
