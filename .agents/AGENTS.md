@@ -21,6 +21,11 @@ This repository is a Python + PySide6 desktop app for browsing and studying loca
 - If a change affects public module APIs, search for imports before editing.
 - Website-specific UI/CSS changes belong in the `eleviewer-site` repository unless the user explicitly asks for desktop app changes.
 
+## Git identity and commits
+- When creating commits, use the repository's configured Karefined Git identity (`git config user.name` and `git config user.email`); do not substitute another account.
+- Never store, request, expose, or commit passwords, access tokens, private keys, or other credentials. Authentication must come from the user's configured Git/GitHub credential helper.
+- Include the standard Copilot co-author trailer required by the workspace instructions unless the user explicitly asks not to.
+
 ## Implementation rules
 - Keep UI responsiveness in mind for preview-heavy paths. Debouncing, caching, and skipping redundant renders are preferred when the user is typing or revisiting the same content.
 - Preserve existing keyboard shortcuts and document navigation behavior unless the task explicitly changes them.
