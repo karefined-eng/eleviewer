@@ -31,6 +31,9 @@ This repository is a Python + PySide6 desktop app for browsing and studying loca
 - **No Developer Jargon in User Copy:** User-facing files (Welcome guide, marketing sites, README intros, release notes) MUST strictly avoid developer jargon (e.g., SQLite, QThread, bleach, chardet, pyttsx3). Translate these into plain English (e.g., "background search engine", "security sanitization"). Keep readability at a 6th-to-8th grade level (Flesch-Kincaid). Developer docs (`DEVELOPER_ONBOARDING.md`, code comments) should remain technical.
 - **Lead with Killer Features:** Do not bury the lede. Always highlight EleViewer's unique unified workspace features first: Split-Screen Web Panel, Vaults & Live Search, Session Restore, Persistent Bookmarks, and the Global Quick Note (Alt+E). Generic features (like "opens DOCX") should be listed last.
 - Avoid adding new packages unless the task truly requires them.
+- **Release Notes vs. Changelog:** Always maintain a dual-format structure for releases. 
+  - `CHANGELOG.md` must be written for developers using the strict **"Keep a Changelog"** standard, utilizing semantic headings (`Added`, `Changed`, `Deprecated`, `Removed`, `Fixed`, `Security`) in reverse chronological order.
+  - `release_notes.md` (and public announcements) must be written for users. It must strictly follow the "No Developer Jargon" and "Lead with Killer Features" rules, grouping changes logically by functional area (e.g., Workspace, Web Panel) and utilizing visuals where applicable.
 
 ## Release & Distribution
 - The production CI/CD pipeline is defined in `.github/workflows/build.yml`. It triggers on tags matching `v[0-9]+.[0-9]+.[0-9]+`.

@@ -83,6 +83,7 @@ jobs:
             --include-data-dir=icons=icons `
             --include-data-dir=getting_started=getting_started `
             --windows-console-mode=disable `
+            --nofollow-import-to=tkinter,unittest,pdb,pydoc `
             --output-filename=EleViewer.exe `
             main.py
 
