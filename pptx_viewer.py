@@ -141,14 +141,14 @@ class PptxViewer(QWidget):
         global _WEB_AVAILABLE
         if _WEB_AVAILABLE is None:
             try:
-                from web_panel import _SecureWebView as _SWV, WEB_AVAILABLE as _WA
+                from web_panel import WebViewWrapper as _SWV, WEB_AVAILABLE as _WA
                 _WEB_AVAILABLE = _WA
             except Exception:
                 _WEB_AVAILABLE = False
 
         if _WEB_AVAILABLE:
-            from web_panel import _SecureWebView
-            self.viewer = _SecureWebView()
+            from web_panel import WebViewWrapper
+            self.viewer = WebViewWrapper()
             self._use_webengine = True
         else:
             self.viewer = QTextBrowser()
@@ -373,7 +373,11 @@ class PptxViewer(QWidget):
                 fragments.append(f"<p>{self._render_text_block(value)}</p>")
                 continue
             img_bytes, img_ext = value
-            mime = "image/jpeg" if img_ext in ("jpg", "jpeg") else f"image/{img_ext}"
+            mime = {
+                "jpg": "image/jpeg", "jpeg": "image/jpeg",
+                "png": "image/png", "gif": "image/gif",
+                "bmp": "image/bmp", "svg": "image/svg+xml",
+            }.get(img_ext, "application/octet-stream")
             b64 = base64.b64encode(img_bytes).decode("ascii")
             fragments.append(
                 f'<figure class="slide-image"><img src="data:{mime};base64,{b64}" '
@@ -390,10 +394,15 @@ class PptxViewer(QWidget):
                 fragments.append(f"<p>{self._render_text_block(value)}</p>")
                 continue
             uri = image_uris[image_index]
-            fragments.append(
-                f'<figure class="slide-image"><img src="{uri}" '
-                'style="max-width:100%; height:auto;"/></figure>'
-            )
+            if uri:
+                fragments.append(
+                    f'<figure class="slide-image"><img src="{uri}" '
+                    'style="max-width:100%; height:auto;"/></figure>'
+                )
+            else:
+                fragments.append(
+                    '<p><i>(This PowerPoint image format is not supported on this system.)</i></p>'
+                )
             image_index += 1
         return "".join(fragments) or "<i>(No content on this slide)</i>"
 
@@ -457,7 +466,10 @@ class PptxViewer(QWidget):
                     uri = f"pptx-img://{s_idx}/{image_index}.{img_ext}"
                     img_uris[(s_idx, image_index)] = uri
                     qimg = QImage()
-                    qimg.loadFromData(img_bytes)
+                    if not qimg.loadFromData(img_bytes):
+                        image_uris[(s_idx, image_index)] = None
+                        image_index += 1
+                        continue
                     doc.addResource(QTextDocument.ImageResource, _QUrl(uri), qimg)
                     image_index += 1
 

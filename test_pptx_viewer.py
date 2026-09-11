@@ -37,3 +37,16 @@ def test_embedded_images_keep_slide_order(tmp_path, monkeypatch):
         assert rendered.index("pptx-img://0/0.png") < rendered.index("Text after image")
     finally:
         viewer.close()
+
+
+def test_invalid_qtext_image_gets_visible_placeholder():
+    app = QApplication.instance() or QApplication([])
+    viewer = pptx_viewer.PptxViewer()
+    try:
+        rendered = viewer._render_qtext_elements(
+            [("text", "Slide text"), ("image", (b"not-an-image", "emf"))],
+            [None],
+        )
+        assert "not supported on this system" in rendered
+    finally:
+        viewer.close()
