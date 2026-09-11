@@ -28,7 +28,7 @@ from settings import load_settings, save_settings, DEFAULT_SETTINGS
 from settings_dialog import SettingsDialog
 from theme import (
     main_window_stylesheet, ICON_SIZE_TOOLBAR, ICON_SIZE_COMPACT,
-    BRAND_PRIMARY, BRAND_PANEL_2, compact_toolbar_stylesheet
+    BRAND_PRIMARY, BRAND_PANEL_2, compact_toolbar_stylesheet, get_palette
 )
 from save_utils import atomic_write
 from icons import icon
