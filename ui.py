@@ -1,9 +1,9 @@
 from PySide6.QtWidgets import (
-    QMainWindow, QTabWidget, QFileDialog, QMessageBox,
+    QMainWindow, QTabWidget, QFileDialog, QMessageBox, QLineEdit, QListWidget, QListWidgetItem,
     QSplitter, QMenu, QToolBar, QToolButton, QVBoxLayout, QHBoxLayout, QGridLayout, QWidget,
     QDockWidget, QLabel, QSystemTrayIcon, QApplication, QScrollBar,
 )
-from PySide6.QtGui import QAction, QKeySequence, QShortcut, QIcon, QFontMetrics, QDrag
+from PySide6.QtGui import QAction, QKeySequence, QShortcut, QIcon, QFontMetrics, QDrag, QColor
 from PySide6.QtCore import Qt, QSize, QTimer, Slot, QUrl, Signal, QEvent, QMimeData
 import os
 import sys
@@ -28,7 +28,8 @@ from settings import load_settings, save_settings, DEFAULT_SETTINGS
 from settings_dialog import SettingsDialog
 from theme import (
     main_window_stylesheet, ICON_SIZE_TOOLBAR, ICON_SIZE_COMPACT,
-    BRAND_PRIMARY, BRAND_PANEL_2, compact_toolbar_stylesheet, get_active_palette
+    BRAND_PRIMARY, BRAND_PANEL_2, compact_toolbar_stylesheet, get_active_palette,
+    get_brand_accent
 )
 from save_utils import atomic_write
 from icons import icon
@@ -1148,7 +1149,8 @@ class MainWindow(QMainWindow):
         self.omni_results.hide()
         
         # Convert accent hex to rgba for the selected state
-        accent_hex = p.get('BRAND_ACCENT', '#000000').lstrip('#')
+        brand_accent = get_brand_accent()
+        accent_hex = brand_accent.lstrip('#')
         try:
             r, g, b = tuple(int(accent_hex[i:i+2], 16) for i in (0, 2, 4))
             accent_rgba = f"rgba({r}, {g}, {b}, 0.15)"
@@ -1170,7 +1172,7 @@ class MainWindow(QMainWindow):
             }}
             QListWidget::item:selected {{
                 background: {accent_rgba};
-                color: {p['BRAND_ACCENT']};
+                color: {brand_accent};
             }}
         """)
         self.omni_results.setMaximumHeight(220)
@@ -1249,7 +1251,7 @@ class MainWindow(QMainWindow):
         actions = [
             ("Open File", "folder", self.open_file),
             ("New Blank", "file", self.new_tab),
-            ("Settings", "settings", self.show_settings)
+            ("Settings", "settings", self.open_settings)
         ]
         
         for label, ico, slot in actions:
@@ -1271,8 +1273,8 @@ class MainWindow(QMainWindow):
                 }}
                 QToolButton:hover {{
                     background: {p['BRAND_PANEL_2']};
-                    border-color: {p['BRAND_ACCENT']};
-                    color: {p['BRAND_ACCENT']};
+                    border-color: {brand_accent};
+                    color: {brand_accent};
                 }}
             """)
             action_bar_layout.addWidget(btn)
@@ -1322,7 +1324,7 @@ class MainWindow(QMainWindow):
                 }}
                 QListWidget::item:hover {{
                     background: {p['BRAND_PANEL_2']}; 
-                    color: {p['BRAND_ACCENT']};
+                    color: {get_brand_accent()};
                 }}
             """)
             if not items:
