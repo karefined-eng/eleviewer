@@ -14,6 +14,7 @@ from settings import load_settings
 # SECURITY: canonicalize paths to prevent symlink traversal
 class VaultSearchWorker(QThread):
     result_found = Signal(str, str, str, str) # filename, display_dir, vault_name, full_path
+    error_found = Signal(str)
 
     def __init__(self, vaults_to_search, query):
         super().__init__()
@@ -31,19 +32,27 @@ class VaultSearchWorker(QThread):
                 break
             try:
                 vault_resolved = Path(vault).resolve()
-            except Exception:
+            except (OSError, RuntimeError) as error:
+                self.error_found.emit(f"Could not access vault: {vault} ({error})")
                 continue
 
             vault_str = str(vault_resolved)
             vault_name = vault_resolved.name
             # SECURITY: followlinks=False prevents traversing symlinks outside vault
-            for root, dirs, files in os.walk(vault_str, followlinks=False):
+            def on_walk_error(error):
+                self.error_found.emit(f"Could not read {error.filename}: {error.strerror}")
+
+            for root, dirs, files in os.walk(vault_str, onerror=on_walk_error, followlinks=False):
 
                 if self._is_cancelled or count >= 100:
                     break
                 abs_root = os.path.abspath(root)
                 # SECURITY: block paths that escape vault boundary
-                if not abs_root.startswith(vault_str):
+                try:
+                    inside_vault = os.path.commonpath((vault_str, abs_root)) == vault_str
+                except ValueError:
+                    inside_vault = False
+                if not inside_vault:
                     dirs.clear()
                     continue
 
@@ -57,7 +66,11 @@ class VaultSearchWorker(QThread):
                     if self.query in f.lower():
                         full_path = os.path.join(root, f)
                         abs_full_path = os.path.abspath(full_path)
-                        if not abs_full_path.startswith(vault_str):
+                        try:
+                            inside_vault = os.path.commonpath((vault_str, abs_full_path)) == vault_str
+                        except ValueError:
+                            inside_vault = False
+                        if not inside_vault:
                             continue
 
                         rel_path = os.path.relpath(root, vault_str)
@@ -186,6 +199,7 @@ class VaultSearchDialog(QDialog):
         self.spinner_label.setVisible(True)
         self.result_count_label.setText("Searching…")
         worker.result_found.connect(self._on_result_found)
+        worker.error_found.connect(self._on_search_error)
         # only handle finished for the worker we just started
         worker.finished.connect(lambda w=worker: self._on_search_finished(w))
         worker.start()
@@ -231,6 +245,9 @@ class VaultSearchDialog(QDialog):
             self.result_count_label.setText("100+ results (showing first 100) — refine to narrow")
         else:
             self.result_count_label.setText(f"{self._result_count} result{'s' if self._result_count != 1 else ''}")
+
+    def _on_search_error(self, message):
+        self.result_count_label.setText(f"Search warning: {message}")
                         
     def _on_item_activated(self, item):
         path = item.data(Qt.UserRole)
@@ -288,4 +305,3 @@ class VaultSearchDialog(QDialog):
             self.reject()
             return True
         return super().event(ev)
-
