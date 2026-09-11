@@ -9,6 +9,7 @@ def test_link_interception():
     app = QApplication.instance() or QApplication(sys.argv)
     print("[1/3] Initializing MainWindow with global URL handlers...")
     window = MainWindow()
+    window._new_session()
     
     test_url = "https://sakai.ug.edu.gh"
     print(f"[2/3] Simulating hyperlink click via QDesktopServices.openUrl({test_url})...")
@@ -42,10 +43,17 @@ def test_link_interception():
     print(f"      -> Simulating local link click: {file_url.toString()}...")
     
     initial_editor_tabs = window.tabs.count()
+    initial_is_welcome = (initial_editor_tabs == 1 and getattr(window.tabs.widget(0), "file_path", None) is None)
+    
     QDesktopServices.openUrl(file_url)
+    app.processEvents()
     new_editor_tabs = window.tabs.count()
     print(f"      -> Editor tab count changed from {initial_editor_tabs} to {new_editor_tabs}.")
-    assert new_editor_tabs == initial_editor_tabs + 1, "Local file link did not open exactly one editor tab!"
+    
+    if initial_is_welcome:
+        assert new_editor_tabs == initial_editor_tabs, "Local file link should replace the welcome tab!"
+    else:
+        assert new_editor_tabs == initial_editor_tabs + 1, "Local file link did not open exactly one editor tab!"
     current_editor = window.tabs.currentWidget()
     assert os.path.abspath(getattr(current_editor, "file_path", "")) == test_file_path
     

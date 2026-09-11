@@ -70,7 +70,7 @@ def get_web_view_class():
             def _handle_fullscreen(self, request):
                 request.accept()
                 if request.toggleOn():
-                    if getattr(self, '_fs_window', None):
+                    if getattr(self, '_is_fullscreen', False):
                         return
                     
                     panel = self.parent()
@@ -79,32 +79,28 @@ def get_web_view_class():
                     
                     if not panel:
                         self.setWindowFlag(Qt.Window, True)
-                        self.setWindowFlag(Qt.FramelessWindowHint, True)
                         self.showFullScreen()
+                        self._is_fullscreen = True
                         return
                         
                     self._fs_panel = panel
                     self._saved_tab_index = panel.tabs.indexOf(self)
                     self._saved_tab_text = panel.tabs.tabText(self._saved_tab_index)
+                    self._saved_tab_icon = panel.tabs.tabIcon(self._saved_tab_index)
                     
-                    from PySide6.QtWidgets import QWidget, QVBoxLayout
-                    self._fs_window = QWidget(panel.window())
-                    self._fs_window.setWindowFlags(Qt.Window | Qt.FramelessWindowHint)
-                    layout = QVBoxLayout(self._fs_window)
-                    layout.setContentsMargins(0, 0, 0, 0)
-                    layout.addWidget(self)
-                    self._fs_window.showFullScreen()
+                    self.setParent(None)
+                    self.showFullScreen()
+                    self._is_fullscreen = True
                 else:
-                    if getattr(self, '_fs_window', None):
-                        self._fs_window.hide()
-                        self._fs_panel.tabs.insertTab(self._saved_tab_index, self, self._saved_tab_text)
-                        self._fs_panel.tabs.setCurrentWidget(self)
-                        self._fs_window.deleteLater()
-                        del self._fs_window
+                    if getattr(self, '_is_fullscreen', False):
+                        self.showNormal()
+                        self._is_fullscreen = False
+                        if hasattr(self, '_fs_panel'):
+                            self._fs_panel.tabs.insertTab(self._saved_tab_index, self, self._saved_tab_icon, self._saved_tab_text)
+                            self._fs_panel.tabs.setCurrentWidget(self)
                     else:
                         self.setWindowFlag(Qt.Window, False)
-                        self.setWindowFlag(Qt.FramelessWindowHint, False)
-                        self.show()
+                        self.showNormal()
                 
             def _auto_deny_permissions(self, security_origin, feature):
                 self.page().setFeaturePermission(security_origin, feature, QWebEnginePage.PermissionPolicy.PermissionDeniedByUser)
@@ -326,8 +322,8 @@ from theme import compact_toolbar_stylesheet, ICON_SIZE_COMPACT
 class WebPanel(QWidget):
     tabs_changed = Signal()
 
-    _NAV_ICON_SZ = 16
-    _FIND_ICON_SZ = 16
+    _NAV_ICON_SZ = 14
+    _FIND_ICON_SZ = 14
     _SEC_ICON_SZ = 14
 
     def __init__(self, parent=None):
@@ -414,7 +410,7 @@ class WebPanel(QWidget):
         for btn in (self.btn_back, self.btn_forward, self.btn_refresh,
                     self.btn_bookmark, self.btn_add, self.btn_menu):
             btn.setStyleSheet(compact_toolbar_stylesheet())
-            btn.setFixedSize(28, 28)
+            btn.setFixedSize(24, 24)
             btn.setAutoRaise(True)
 
         nav.addWidget(self.btn_back)
