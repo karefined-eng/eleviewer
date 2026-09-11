@@ -31,7 +31,7 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser(description="Synchronize package versions")
-    parser.add_argument("version", nargs="?", default="1.3.3")
+    parser.add_argument("version", nargs="?", default="1.3.4")
     parser.add_argument("--root", default=".")
     args = parser.parse_args()
 
