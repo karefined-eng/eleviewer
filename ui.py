@@ -28,7 +28,7 @@ from settings import load_settings, save_settings, DEFAULT_SETTINGS
 from settings_dialog import SettingsDialog
 from theme import (
     main_window_stylesheet, ICON_SIZE_TOOLBAR, ICON_SIZE_COMPACT,
-    BRAND_PRIMARY, BRAND_PANEL_2, compact_toolbar_stylesheet, get_palette
+    BRAND_PRIMARY, BRAND_PANEL_2, compact_toolbar_stylesheet, get_active_palette
 )
 from save_utils import atomic_write
 from icons import icon
@@ -1079,7 +1079,7 @@ class MainWindow(QMainWindow):
         main_layout.setContentsMargins(40, 60, 40, 60)
         main_layout.setSpacing(32)
         
-        p = get_palette()
+        p = get_active_palette()
         
         # 1. Hero Section
         hero = QWidget()
