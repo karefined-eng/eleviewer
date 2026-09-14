@@ -191,28 +191,69 @@ class PptxViewer(QWidget):
             self.load_from_path(file_path)
 
     def _extract_shapes(self, shape):
-        """Return ordered slide elements as ``(kind, value)`` tuples."""
+        """Return ordered slide elements as ``(kind, value)`` tuples.
+
+        Handles plain shapes, tables, pictures, and recursively grouped shapes.
+        Rich text metadata (bold, font size, indent level) is preserved so the
+        renderer can apply proper heading / bullet hierarchy.
+        """
         results = []
+
+        # ── Grouped shapes: recurse into each child ───────────────────────────
+        if getattr(shape, "shape_type", None) == 6:  # MSO_SHAPE_TYPE.GROUP
+            try:
+                for child in shape.shapes:
+                    results.extend(self._extract_shapes(child))
+            except Exception as e:
+                print(f"[PPTX] Could not recurse group shape: {e}")
+            return results
+
+        # ── Text frames ────────────────────────────────────────────────────────
         if getattr(shape, "has_text_frame", False):
             for paragraph in shape.text_frame.paragraphs:
                 text = paragraph.text.strip()
-                if text:
-                    results.append(("text", text))
+                if not text:
+                    continue
+                # Detect font size from the first run with a set size
+                font_size_pt = None
+                is_bold = False
+                for run in paragraph.runs:
+                    try:
+                        if run.font.size:
+                            font_size_pt = run.font.size.pt
+                        if run.font.bold:
+                            is_bold = True
+                    except Exception:
+                        pass
+                level = getattr(paragraph, "level", 0) or 0
+                results.append(("text", {
+                    "text": text,
+                    "level": level,
+                    "font_size_pt": font_size_pt,
+                    "bold": is_bold,
+                }))
 
+        # ── Tables ─────────────────────────────────────────────────────────────
         if getattr(shape, "has_table", False):
             for row in shape.table.rows:
                 for cell in row.cells:
                     for paragraph in cell.text_frame.paragraphs:
                         text = paragraph.text.strip()
                         if text:
-                            results.append(("text", text))
+                            results.append(("text", {"text": text, "level": 0,
+                                                      "font_size_pt": None, "bold": False}))
 
+        # ── Pictures ───────────────────────────────────────────────────────────
         if getattr(shape, "shape_type", None) == 13:  # MSO_SHAPE_TYPE.PICTURE
             try:
                 img_bytes = shape.image.blob
                 img_ext = shape.image.ext.lower()
-                if img_bytes and img_ext:
+                # Skip WMF/EMF — Qt cannot render them natively
+                if img_bytes and img_ext and img_ext not in ("wmf", "emf"):
                     results.append(("image", (img_bytes, img_ext)))
+                elif img_ext in ("wmf", "emf"):
+                    results.append(("text", {"text": "[Embedded diagram — not supported on this system]",
+                                             "level": 0, "font_size_pt": None, "bold": False}))
             except Exception as e:
                 print(f"[PPTX] Failed to extract image: {e}")
 
@@ -228,21 +269,32 @@ class PptxViewer(QWidget):
                 for idx, slide in enumerate(prs.slides, start=1):
                     title = f"Slide {idx}"
                     elements = []
-                    first_text_seen = False
+                    title_found = False
                     for shape in slide.shapes:
                         for kind, val in self._extract_shapes(shape):
-                            if kind == "text" and not first_text_seen and getattr(shape, "is_placeholder", False) and getattr(shape, "placeholder_format", None) is not None:
-                                title = val
+                            # Title detection: prefer official title placeholder (idx==0)
+                            if not title_found and kind == "text":
+                                try:
+                                    pf = getattr(shape, "placeholder_format", None)
+                                    if pf is not None and pf.idx == 0:
+                                        title = val["text"] if isinstance(val, dict) else val
+                                        title_found = True
+                                except Exception:
+                                    pass
                             elements.append((kind, val))
-                            if kind == "text":
-                                first_text_seen = True
                     notes = ""
                     if slide.has_notes_slide and slide.notes_slide.notes_text_frame:
                         notes = slide.notes_slide.notes_text_frame.text.strip()
 
+                    # Build plain-text content for TTS/search
+                    content_parts = []
+                    for kind, val in elements:
+                        if kind == "text":
+                            content_parts.append(val["text"] if isinstance(val, dict) else val)
+
                     self.slides.append({
                         "title": title,
-                        "content": "\n\n".join(val for kind, val in elements if kind == "text"),
+                        "content": "\n\n".join(content_parts),
                         "elements": elements,
                         "notes": notes,
                     })
@@ -362,7 +414,38 @@ class PptxViewer(QWidget):
         elements = slide_data.get("elements")
         if elements:
             return elements
-        return [("text", text) for text in (slide_data.get("content") or "").split("\n\n") if text]
+        # Legacy: plain string content only
+        return [("text", {"text": t, "level": 0, "font_size_pt": None, "bold": False})
+                for t in (slide_data.get("content") or "").split("\n\n") if t]
+
+    @staticmethod
+    def _rich_text_to_html(val):
+        """Convert a text element value (str or rich dict) to an HTML fragment."""
+        if isinstance(val, str):
+            return f"<p>{html.escape(val).replace(chr(10), '<br>')}</p>"
+
+        text = html.escape(val["text"]).replace("\n", "<br>")
+        level = val.get("level", 0) or 0
+        font_size_pt = val.get("font_size_pt")
+        bold = val.get("bold", False)
+
+        # Heading: large font or level-0 bold text
+        if font_size_pt and font_size_pt >= 24:
+            tag = "h2" if font_size_pt >= 32 else "h3"
+            return f'<{tag} class="slide-heading">{text}</{tag}>'
+
+        # Indented bullet list item
+        if level > 0:
+            indent_em = level * 1.5
+            return (f'<p class="slide-bullet" '
+                    f'style="margin-left:{indent_em:.1f}em; list-style-position:inside;">'
+                    f'&#8226; {text}</p>')
+
+        # Bold body text
+        if bold:
+            return f'<p><strong>{text}</strong></p>'
+
+        return f"<p>{text}</p>"
 
     def _render_web_elements(self, elements):
         """Render ordered text and image elements for WebEngine."""
@@ -370,7 +453,7 @@ class PptxViewer(QWidget):
         fragments = []
         for kind, value in elements:
             if kind == "text":
-                fragments.append(f"<p>{self._render_text_block(value)}</p>")
+                fragments.append(self._rich_text_to_html(value))
                 continue
             img_bytes, img_ext = value
             mime = {
@@ -385,15 +468,22 @@ class PptxViewer(QWidget):
             )
         return "".join(fragments) or "<i>(No content on this slide)</i>"
 
-    def _render_qtext_elements(self, elements, image_uris):
-        """Render ordered text and registered image resources for QTextBrowser."""
+    def _render_qtext_elements(self, elements, image_list):
+        """Render ordered text and registered image resources for QTextBrowser.
+
+        ``image_list`` is now a plain ordered list of URI strings (or None) so
+        that insertion order matches extraction order exactly.
+        """
         fragments = []
         image_index = 0
         for kind, value in elements:
             if kind == "text":
-                fragments.append(f"<p>{self._render_text_block(value)}</p>")
+                fragments.append(self._rich_text_to_html(value))
                 continue
-            uri = image_uris[image_index]
+            if image_index < len(image_list):
+                uri = image_list[image_index]
+            else:
+                uri = None
             if uri:
                 fragments.append(
                     f'<figure class="slide-image"><img src="{uri}" '
@@ -401,7 +491,7 @@ class PptxViewer(QWidget):
                 )
             else:
                 fragments.append(
-                    '<p><i>(This PowerPoint image format is not supported on this system.)</i></p>'
+                    '<p><i>(Image format not supported on this system.)</i></p>'
                 )
             image_index += 1
         return "".join(fragments) or "<i>(No content on this slide)</i>"
@@ -413,7 +503,26 @@ class PptxViewer(QWidget):
 
         if self._use_webengine:
             # WebEngine: inline base64 — no size limit, full CSS support
-            html_output = f'<!DOCTYPE html><html><head><meta charset="utf-8">\n<style>\n  body {{ margin: 0; padding: 0; background: {p["BRAND_BACKGROUND"]}; font-family: \'Segoe UI\', sans-serif; }}\n  .slide-card {{ max-width: 800px; margin: 30px auto; padding: 40px; background: {p["BRAND_PANEL"]}; border: 1px solid {p["BRAND_BORDER"]}; border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,0.35); }}\n  .slide-label {{ color: {accent}; font-size: 0.8em; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }}\n  .slide-title {{ color: {p["BRAND_PRIMARY"]}; font-size: 1.5em; margin: 0 0 20px 0; border-bottom: 1px solid {p["BRAND_BORDER"]}; padding-bottom: 10px; }}\n  .slide-body {{ font-size: 1.1em; line-height: 1.7; color: {p["BRAND_PRIMARY"]}; }}\n  .slide-body img {{ max-width: 100%; border-radius: 4px; margin: 10px 0; }}\n  .notes-box {{ margin-top: 30px; padding: 12px; background: {p["BRAND_PANEL_2"]}; border-left: 3px solid {accent}; border-radius: 4px; }}\n  .notes-label {{ color: {p["BRAND_MUTED_FG"]}; font-size: 0.8em; font-weight: bold; margin-bottom: 4px; }}\n  .notes-body {{ font-size: 0.9em; color: {p["BRAND_MUTED_FG"]}; }}\n  .bottom-pad {{ height: 40px; }}\n</style></head><body>'
+            css = f"""
+  body {{ margin: 0; padding: 0; background: {p['BRAND_BACKGROUND']}; font-family: 'Segoe UI', sans-serif; }}
+  .slide-card {{ max-width: 800px; margin: 30px auto; padding: 40px;
+    background: {p['BRAND_PANEL']}; border: 1px solid {p['BRAND_BORDER']};
+    border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,0.35); }}
+  .slide-label {{ color: {accent}; font-size: 0.8em; font-weight: bold;
+    text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }}
+  .slide-title {{ color: {p['BRAND_PRIMARY']}; font-size: 1.5em; margin: 0 0 20px 0;
+    border-bottom: 1px solid {p['BRAND_BORDER']}; padding-bottom: 10px; }}
+  .slide-body {{ font-size: 1.1em; line-height: 1.7; color: {p['BRAND_PRIMARY']}; }}
+  .slide-body img {{ max-width: 100%; border-radius: 4px; margin: 10px 0; }}
+  .slide-heading {{ color: {p['BRAND_PRIMARY']}; margin: 12px 0 6px 0; }}
+  .slide-bullet {{ color: {p['BRAND_PRIMARY']}; margin: 2px 0; line-height: 1.5; }}
+  .notes-box {{ margin-top: 30px; padding: 12px; background: {p['BRAND_PANEL_2']};
+    border-left: 3px solid {accent}; border-radius: 4px; }}
+  .notes-label {{ color: {p['BRAND_MUTED_FG']}; font-size: 0.8em; font-weight: bold; margin-bottom: 4px; }}
+  .notes-body {{ font-size: 0.9em; color: {p['BRAND_MUTED_FG']}; }}
+  .bottom-pad {{ height: 40px; }}
+"""
+            html_output = f'<!DOCTYPE html><html><head><meta charset="utf-8"><style>{css}</style></head><body>'
 
             for index, slide_data in enumerate(self.slides):
                 content_html = self._render_web_elements(self._slide_elements(slide_data))
@@ -456,7 +565,8 @@ class PptxViewer(QWidget):
                 f".notes-body {{ font-size: small; color: {p['BRAND_MUTED_FG']}; }}"
             )
 
-            img_uris = {}  # (slide_index, img_index) -> URI string
+            # Build per-slide ordered image URI lists (list, not dict, to preserve order)
+            slide_image_uri_lists = [[] for _ in self.slides]
             for s_idx, slide_data in enumerate(self.slides):
                 image_index = 0
                 for kind, value in self._slide_elements(slide_data):
@@ -464,23 +574,18 @@ class PptxViewer(QWidget):
                         continue
                     img_bytes, img_ext = value
                     uri = f"pptx-img://{s_idx}/{image_index}.{img_ext}"
-                    img_uris[(s_idx, image_index)] = uri
                     qimg = QImage()
-                    if not qimg.loadFromData(img_bytes):
-                        img_uris[(s_idx, image_index)] = None
-                        image_index += 1
-                        continue
-                    doc.addResource(QTextDocument.ImageResource, _QUrl(uri), qimg)
+                    if qimg.loadFromData(img_bytes):
+                        doc.addResource(QTextDocument.ImageResource, _QUrl(uri), qimg)
+                        slide_image_uri_lists[s_idx].append(uri)
+                    else:
+                        slide_image_uri_lists[s_idx].append(None)
                     image_index += 1
 
             html_output = "<body>"
             for index, slide_data in enumerate(self.slides):
-                slide_image_uris = [
-                    uri for (slide_index, _), uri in sorted(img_uris.items())
-                    if slide_index == index
-                ]
                 content_html = self._render_qtext_elements(
-                    self._slide_elements(slide_data), slide_image_uris
+                    self._slide_elements(slide_data), slide_image_uri_lists[index]
                 )
 
                 title_text = self._render_text_block(slide_data["title"])
