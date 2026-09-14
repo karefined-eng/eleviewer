@@ -320,7 +320,109 @@ from settings import load_settings, save_settings, DEFAULT_WEB_TABS
 from theme import compact_toolbar_stylesheet, ICON_SIZE_COMPACT
 
 
+
+from PySide6.QtWidgets import QStackedWidget, QTabBar
+from PySide6.QtCore import QObject
+
+class BrowserTabWidget(QObject):
+    tabCloseRequested = Signal(int)
+    currentChanged = Signal(int)
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.tab_bar = QTabBar(parent)
+        self.tab_bar.setTabsClosable(True)
+        self.tab_bar.setDocumentMode(True)
+        self.tab_bar.setDrawBase(False)
+        self.tab_bar.setExpanding(False)
+        self.tab_bar.setUsesScrollButtons(True)
+        self.tab_bar.tabCloseRequested.connect(self.tabCloseRequested)
+        self.tab_bar.currentChanged.connect(self._on_tab_changed)
+        
+        self.stack = QStackedWidget(parent)
+
+    def _on_tab_changed(self, idx):
+        if idx >= 0:
+            self.stack.setCurrentIndex(idx)
+        self.currentChanged.emit(idx)
+        
+    def setTabsClosable(self, closable):
+        self.tab_bar.setTabsClosable(closable)
+        
+    def setDocumentMode(self, mode):
+        self.tab_bar.setDocumentMode(mode)
+        
+    def setStyleSheet(self, style):
+        self.tab_bar.setStyleSheet(style)
+        
+    def count(self):
+        return self.tab_bar.count()
+        
+    def widget(self, i):
+        return self.stack.widget(i)
+        
+    def removeTab(self, i):
+        w = self.stack.widget(i)
+        if w:
+            self.stack.removeWidget(w)
+        self.tab_bar.removeTab(i)
+        
+    def currentIndex(self):
+        return self.tab_bar.currentIndex()
+        
+    def setCurrentIndex(self, i):
+        self.tab_bar.setCurrentIndex(i)
+        self.stack.setCurrentIndex(i)
+        
+    def addTab(self, widget, arg1, arg2=None):
+        idx = self.stack.addWidget(widget)
+        if arg2 is not None:
+            self.tab_bar.addTab(arg1, arg2)
+        else:
+            self.tab_bar.addTab(arg1)
+        return idx
+        
+    def insertTab(self, idx, widget, arg1, arg2=None):
+        self.stack.insertWidget(idx, widget)
+        if arg2 is not None:
+            self.tab_bar.insertTab(idx, arg1, arg2)
+        else:
+            self.tab_bar.insertTab(idx, arg1)
+        return idx
+
+    def currentWidget(self):
+        return self.stack.currentWidget()
+        
+    def setCurrentWidget(self, widget):
+        idx = self.stack.indexOf(widget)
+        if idx >= 0:
+            self.setCurrentIndex(idx)
+            
+    def indexOf(self, widget):
+        return self.stack.indexOf(widget)
+        
+    def setTabToolTip(self, i, t):
+        self.tab_bar.setTabToolTip(i, t)
+        
+    def setTabText(self, i, t):
+        self.tab_bar.setTabText(i, t)
+        
+    def setTabIcon(self, i, ico):
+        self.tab_bar.setTabIcon(i, ico)
+        
+    def tabText(self, i):
+        return self.tab_bar.tabText(i)
+        
+    def tabIcon(self, i):
+        return self.tab_bar.tabIcon(i)
+        
+    def blockSignals(self, b):
+        self.tab_bar.blockSignals(b)
+        self.stack.blockSignals(b)
+        return super().blockSignals(b)
+
 class WebPanel(QWidget):
+
     tabs_changed = Signal()
 
     _NAV_ICON_SZ = 14
@@ -425,10 +527,44 @@ class WebPanel(QWidget):
         nav.addWidget(self.btn_menu)
 
         # ── Tab widget ────────────────────────────────────────────────────
-        self.tabs = QTabWidget()
+        self.tabs = BrowserTabWidget(self)
         self.tabs.setTabsClosable(True)
         self.tabs.setDocumentMode(True)
-        self.tabs.setStyleSheet("QTabWidget::pane { border: none; }")
+        
+        # Style the tab bar explicitly to look like a modern browser
+        palette = get_active_palette()
+        accent = get_brand_accent()
+        self.tabs.setStyleSheet(f"""
+            QTabBar {{
+                background: {palette['BRAND_BACKGROUND']};
+                border: none;
+            }}
+            QTabBar::tab {{
+                background: {palette['BRAND_PANEL']};
+                color: {palette['BRAND_PRIMARY']};
+                padding: 6px 14px;
+                border: 1px solid {palette['BRAND_BORDER']};
+                border-bottom: none;
+                border-top-left-radius: 4px;
+                border-top-right-radius: 4px;
+                margin-top: 4px;
+                margin-right: 2px;
+                min-width: 120px;
+                max-width: 240px;
+            }}
+            QTabBar::tab:selected {{
+                background: {palette['BRAND_BACKGROUND']};
+                color: {accent};
+                border-top: 2px solid {accent};
+            }}
+            QTabBar::tab:hover:!selected {{
+                background: {palette['BRAND_PANEL_2']};
+            }}
+            QTabBar::close-button {{
+                image: none; /* fallback */
+            }}
+        """)
+        
         self.tabs.tabCloseRequested.connect(self._close_tab)
         self.tabs.currentChanged.connect(self._on_tab_changed)
 
@@ -460,10 +596,11 @@ class WebPanel(QWidget):
         from theme import BRAND_MUTED, BRAND_BACKGROUND
         self.bookmarks_bar_widget.setStyleSheet(f"QWidget {{ border-bottom: 1px solid {BRAND_MUTED}; background: {BRAND_BACKGROUND}; }}")
 
+        layout.addWidget(self.tabs.tab_bar)
         layout.addLayout(nav)
         layout.addWidget(self.bookmarks_bar_widget)
         layout.addWidget(self._progress_bar)
-        layout.addWidget(self.tabs)
+        layout.addWidget(self.tabs.stack, 1)
         layout.addWidget(self._find_bar)
         layout.addWidget(self._download_bar)
         
