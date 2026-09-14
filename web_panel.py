@@ -2,6 +2,7 @@
 
 from PySide6.QtCore import Signal, QUrl, QTimer
 from paths import APP_DATA_DIR
+from theme import get_active_palette, get_brand_accent
 
 WEB_AVAILABLE = True
 _web_profile = None
@@ -389,7 +390,8 @@ class WebPanel(QWidget):
         # Zoom % indicator (hidden when at 100%)
         self._zoom_label = QLabel()
         self._zoom_label.setStyleSheet(
-            "font-size: 11px; color: #9b9b96; padding: 0 4px; min-width: 32px;"
+            f"font-size: 11px; color: {get_active_palette()['BRAND_MUTED_FG']}; "
+            "padding: 0 4px; min-width: 32px;"
         )
         self._zoom_label.setAlignment(Qt.AlignCenter)
         self._zoom_label.hide()
@@ -439,7 +441,7 @@ class WebPanel(QWidget):
         self._progress_bar.hide()
         self._progress_bar.setStyleSheet(
             "QProgressBar { background: transparent; border: none; margin: 0; }"
-            "QProgressBar::chunk { background: #4a9eff; border-radius: 1px; }"
+            f"QProgressBar::chunk {{ background: {get_brand_accent()}; border-radius: 1px; }}"
         )
 
         # ── In-page find bar (hidden by default, opened by Ctrl+F) ────────
@@ -687,7 +689,7 @@ class WebPanel(QWidget):
 
         self._find_result_lbl = QLabel()
         self._find_result_lbl.setStyleSheet(
-            "color: #9b9b96; font-size: 11px; min-width: 60px;"
+            f"color: {get_active_palette()['BRAND_MUTED_FG']}; font-size: 11px; min-width: 60px;"
         )
 
         sz = self._FIND_ICON_SZ
@@ -722,10 +724,11 @@ class WebPanel(QWidget):
         h.addStretch()
         h.addWidget(btn_close_find)
 
+        palette = get_active_palette()
         bar.setStyleSheet(
             "#webFindBar {"
-            "  background: #1c1c1c;"
-            "  border-top: 1px solid #2c2c2c;"
+            f"  background: {palette['BRAND_PANEL']};"
+            f"  border-top: 1px solid {palette['BRAND_BORDER']};"
             "}"
         )
 
@@ -787,7 +790,7 @@ class WebPanel(QWidget):
             else:
                 self._find_result_lbl.setText(f"{idx}/{n}" if n else "")
                 self._find_result_lbl.setStyleSheet(
-                    "color: #9b9b96; font-size: 11px; min-width: 60px;"
+                    f"color: {get_active_palette()['BRAND_MUTED_FG']}; font-size: 11px; min-width: 60px;"
                 )
         except Exception:
             self._find_result_lbl.setText("")
@@ -880,7 +883,8 @@ class WebPanel(QWidget):
         self._dl_open_btn = QToolButton()
         self._dl_open_btn.setText("Open folder")
         self._dl_open_btn.setStyleSheet(
-            "font-size: 11px; padding: 2px 8px; border: 1px solid #2c2c2c; border-radius: 4px;"
+            f"font-size: 11px; padding: 2px 8px; border: 1px solid "
+            f"{get_active_palette()['BRAND_BORDER']}; border-radius: 4px;"
         )
         self._dl_open_btn.hide()
         self._dl_open_btn.clicked.connect(self._open_download_folder)
@@ -897,10 +901,11 @@ class WebPanel(QWidget):
         h.addStretch()
         h.addWidget(btn_close_dl)
 
+        palette = get_active_palette()
         bar.setStyleSheet(
             "#webDownloadBar {"
-            "  background: #1c1c1c;"
-            "  border-top: 1px solid #2c2c2c;"
+            f"  background: {palette['BRAND_PANEL']};"
+            f"  border-top: 1px solid {palette['BRAND_BORDER']};"
             "}"
         )
         return bar

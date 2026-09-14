@@ -1180,8 +1180,12 @@ class MainWindow(QMainWindow):
         
         main_layout.addWidget(omni_wrapper)
         
+        self._welcome_search_timer = QTimer(w)
+        self._welcome_search_timer.setSingleShot(True)
+        self._welcome_search_timer.setInterval(180)
+
         # Search logic
-        def _do_search(text):
+        def _run_search(text):
             text = text.strip()
             if not text:
                 self.omni_results.hide()
@@ -1230,14 +1234,14 @@ class MainWindow(QMainWindow):
                 if txt.startswith("http://") or txt.startswith("https://") or ("." in txt and " " not in txt):
                     if not txt.startswith("http"):
                         txt = "https://" + txt
-                    try:
-                        from web_panel import WebBrowserPanel
-                        browser = WebBrowserPanel(self)
-                        self._add_editor_tab(browser, txt)
-                        browser.load_url(txt)
-                    except ImportError:
-                        pass
+                    self.open_web_tab_with_url(txt)
 
+        def _do_search(_text):
+            self._welcome_search_timer.start()
+
+        self._welcome_search_timer.timeout.connect(
+            lambda: _run_search(self.welcome_search.text())
+        )
         self.welcome_search.textChanged.connect(_do_search)
         self.welcome_search.returnPressed.connect(_open_omni_result)
         self.omni_results.itemClicked.connect(lambda: _open_omni_result())
@@ -2565,4 +2569,3 @@ class MainWindow(QMainWindow):
             current.tts.stop()
         if hasattr(self, "tts_bar") and self.tts_bar:
             self.tts_bar.set_active_reading(False)
-
