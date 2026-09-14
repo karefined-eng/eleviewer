@@ -29,8 +29,9 @@ def test_embedded_images_keep_slide_order(tmp_path, monkeypatch):
     try:
         elements = viewer.slides[0]["elements"]
         assert [kind for kind, _ in elements] == ["text", "image", "text"]
-        assert elements[0][1] == "Text before image"
-        assert elements[2][1] == "Text after image"
+        # Values for text elements are now rich dicts with a "text" key
+        assert elements[0][1]["text"] == "Text before image"
+        assert elements[2][1]["text"] == "Text after image"
 
         rendered = viewer._render_qtext_elements(elements, ["pptx-img://0/0.png"])
         assert rendered.index("Text before image") < rendered.index("pptx-img://0/0.png")
