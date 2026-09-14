@@ -7,11 +7,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [1.3.4] - 2026-09-14
 
 ### Changed
+- Modernized the Web Panel layout to position tabs at the top of the window, following standard browser design.
+- Updated Web Panel security indicators to use standard modern icons (e.g., padlock for HTTPS).
 - Reduced web navigation icon sizes and button fixed sizes in the Web Panel.
 - Refactored `_handle_fullscreen` in the Web Panel to use direct parent reparenting instead of the fragile `_fs_window` wrapper.
 - Refactored UI components to use dynamic theme palettes instead of hardcoded colors.
 
 ### Fixed
+- Fixed an issue causing text clipping at the bottom of lists in Vault Search, Bookmarks, and Downloads dialogs.
 - Fixed runtime `NameError` related to unimported Qt elements (`QLineEdit`, `QListWidget`, `QColor`, etc.).
 - Fixed `KeyError` during `BRAND_ACCENT` initialization in `theme.py` by transitioning to a unified `get_brand_accent()` getter.
 - Fixed `test_link_interception.py` test failing because the newly created session window was replacing the Welcome Tab instead of adding a new one.
