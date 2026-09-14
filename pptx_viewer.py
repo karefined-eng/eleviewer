@@ -467,7 +467,7 @@ class PptxViewer(QWidget):
                     img_uris[(s_idx, image_index)] = uri
                     qimg = QImage()
                     if not qimg.loadFromData(img_bytes):
-                        image_uris[(s_idx, image_index)] = None
+                        img_uris[(s_idx, image_index)] = None
                         image_index += 1
                         continue
                     doc.addResource(QTextDocument.ImageResource, _QUrl(uri), qimg)
