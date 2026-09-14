@@ -1265,16 +1265,17 @@ class WebPanel(QWidget):
             self.btn_forward.setEnabled(False)
 
     def _update_security_indicator(self, url):
-        """Color-code the leading globe icon to reflect connection security."""
+        """Color-code the leading icon to reflect connection security."""
         scheme = url.scheme().lower() if hasattr(url, "scheme") else ""
+        muted_fg = get_active_palette()['BRAND_MUTED_FG']
         if scheme == "https":
-            ico = icon("globe", size=self._SEC_ICON_SZ, color="#4ade80")
+            ico = icon("lock", size=self._SEC_ICON_SZ, color=muted_fg)
             tip = "Secure connection (HTTPS)"
         elif scheme == "http":
-            ico = icon("globe", size=self._SEC_ICON_SZ, color="#f59e0b")
+            ico = icon("alert-triangle", size=self._SEC_ICON_SZ, color="#f59e0b")
             tip = "Not secure (HTTP)"
         elif scheme == "file":
-            ico = icon("folder-open", size=self._SEC_ICON_SZ)
+            ico = icon("file", size=self._SEC_ICON_SZ, color=muted_fg)
             tip = "Local file"
         else:
             self._security_action.setVisible(False)
