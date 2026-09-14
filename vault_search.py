@@ -223,11 +223,13 @@ class VaultSearchDialog(QDialog):
         # text block
         text_block = QWidget()
         text_layout = QVBoxLayout(text_block)
-        text_layout.setContentsMargins(6, 0, 0, 0)
+        text_layout.setContentsMargins(6, 2, 4, 2)
+        text_layout.setSpacing(2)
         title = QLabel(f)
         # make filename stand out
-        title.setStyleSheet(f"color: {self._palette['BRAND_PRIMARY']}; font-weight: 600; font-size: 13px;")
-        subtitle = QLabel(f"{display_dir} — [{vault_name}]")
+        title.setStyleSheet(f"color: {self._palette['BRAND_PRIMARY']}; font-weight: 600; font-size: 13px; padding-bottom: 1px;")
+        subtitle_text = f"{display_dir} — [{vault_name}]" if display_dir else f"[{vault_name}]"
+        subtitle = QLabel(subtitle_text)
         subtitle.setStyleSheet(f"color: {self._palette['BRAND_MUTED_FG']}; font-size: 11px;")
         text_layout.addWidget(title)
         text_layout.addWidget(subtitle)
