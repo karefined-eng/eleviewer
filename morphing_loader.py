@@ -2,7 +2,7 @@ import math
 from PySide6.QtWidgets import QWidget
 from PySide6.QtCore import Qt, QVariantAnimation, QRectF
 from PySide6.QtGui import QPainter, QColor
-from theme import BRAND_PRIMARY, get_brand_accent, BRAND_PANEL
+from theme import get_active_palette, get_brand_accent
 
 class MorphingLogo(QWidget):
     def __init__(self, parent=None, size=64, duration=5000):
@@ -30,10 +30,11 @@ class MorphingLogo(QWidget):
     def paintEvent(self, event):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing)
+        palette = get_active_palette()
         
         # Draw background rounded rect
-        painter.setBrush(QColor(BRAND_PANEL))
-        painter.setPen(QColor("#2c2c2c"))
+        painter.setBrush(QColor(palette["BRAND_PANEL"]))
+        painter.setPen(QColor(palette["BRAND_BORDER"]))
         painter.drawRoundedRect(
             1, 1, self.width()-2, self.height()-2,
             self.width() * 0.2, self.height() * 0.2
@@ -151,7 +152,7 @@ class MorphingLogo(QWidget):
             painter.translate(x_off, y_off)
             painter.rotate(rot)
             
-            base_color = QColor(get_brand_accent() if is_middle else BRAND_PRIMARY)
+            base_color = QColor(get_brand_accent() if is_middle else palette["BRAND_PRIMARY"])
             base_color.setAlpha(int(alpha))
             painter.setBrush(base_color)
             painter.setPen(Qt.NoPen)
@@ -195,10 +196,11 @@ class GlowingLogo(QWidget):
         
         painter = QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing)
+        palette = get_active_palette()
         
         # Draw background rounded rect
-        painter.setBrush(QColor(BRAND_PANEL))
-        painter.setPen(QColor("#2c2c2c"))
+        painter.setBrush(QColor(palette["BRAND_PANEL"]))
+        painter.setPen(QColor(palette["BRAND_BORDER"]))
         painter.drawRoundedRect(
             1, 1, self.width()-2, self.height()-2,
             self.width() * 0.2, self.height() * 0.2
@@ -227,7 +229,7 @@ class GlowingLogo(QWidget):
         # Draw the base logo
         painter.setPen(Qt.NoPen)
         # We need to draw them with their respective colors
-        painter.setBrush(QColor(BRAND_PRIMARY))
+        painter.setBrush(QColor(palette["BRAND_PRIMARY"]))
         painter.drawRoundedRect(QRectF(-top_w/2, -spacing - h/2, top_w, h), h/2, h/2)
         painter.drawRoundedRect(QRectF(-top_w/2, spacing - h/2, top_w, h), h/2, h/2)
         
@@ -255,4 +257,3 @@ class GlowingLogo(QWidget):
         painter.setBrush(grad)
         painter.drawRect(-self.width(), -self.height(), self.width()*2, self.height()*2)
         painter.rotate(-25)
-

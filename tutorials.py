@@ -52,7 +52,8 @@ class TutorialOverlay(QWidget):
         header_row.addStretch()
         
         self.close_btn = QPushButton("✕")
-        self.close_btn.setFixedSize(20, 20)
+        self.close_btn.setAccessibleName("Close tutorial")
+        self.close_btn.setFixedSize(28, 28)
         self.close_btn.setCursor(Qt.PointingHandCursor)
         self.close_btn.setToolTip("Close tour (Esc)")
         self.close_btn.setStyleSheet(f"""
@@ -87,6 +88,7 @@ class TutorialOverlay(QWidget):
         btn_layout.setContentsMargins(0, 4, 0, 0)
         
         self.skip_btn = QPushButton("Skip Tour")
+        self.skip_btn.setAccessibleName("Skip tutorial")
         self.skip_btn.setCursor(Qt.PointingHandCursor)
         self.skip_btn.setStyleSheet(f"""
             QPushButton {{
@@ -102,6 +104,7 @@ class TutorialOverlay(QWidget):
         self.skip_btn.clicked.connect(self.close)
         
         self.next_btn = QPushButton("Next →")
+        self.next_btn.setAccessibleName("Next tutorial step")
         self.next_btn.setCursor(Qt.PointingHandCursor)
         self.next_btn.setStyleSheet(f"""
             QPushButton {{
@@ -252,14 +255,6 @@ class TutorialOverlay(QWidget):
         else:
             self.next_btn.setText("Next →")
             
-        target_widget = step.get("widget")
-        if target_widget and target_widget.isVisible():
-            # Get geometry of target widget relative to main window
-            pos = target_widget.mapTo(self.main_window, QPoint(0, 0))
-            self.target_rect = QRect(pos.x() - 4, pos.y() - 4, target_widget.width() + 8, target_widget.height() + 8)
-        else:
-            self.target_rect = QRect()
-            
         self._position_card()
             
         # Trigger any step actions
@@ -269,6 +264,17 @@ class TutorialOverlay(QWidget):
                 action()
             except Exception:
                 pass
+
+        target_widget = step.get("widget")
+        if target_widget and target_widget.isVisible():
+            pos = target_widget.mapTo(self.main_window, QPoint(0, 0))
+            self.target_rect = QRect(
+                pos.x() - 4, pos.y() - 4,
+                target_widget.width() + 8, target_widget.height() + 8,
+            )
+        else:
+            self.target_rect = QRect()
+        self._position_card()
             
         self.update()
         

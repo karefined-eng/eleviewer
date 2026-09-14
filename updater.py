@@ -8,7 +8,7 @@ import hashlib
 from urllib.parse import urlparse
 from PySide6.QtCore import QThread, Signal, Qt, QUrl
 from PySide6.QtWidgets import (
-    QDialog, QVBoxLayout, QHBoxLayout, QLabel, 
+    QDialog, QVBoxLayout, QHBoxLayout, QLabel,
     QTextEdit, QPushButton, QProgressBar, QMessageBox
 )
 
@@ -56,7 +56,7 @@ class CheckUpdateThread(QThread):
                     data = json.loads(resp.read().decode('utf-8'))
                     tag_name = data.get("tag_name", "v0.0.0")
                     body = data.get("body", "No release notes provided.")
-                    
+
                     latest_ver = parse_version(tag_name)
                     curr_ver = parse_version(self.current_version)
 
@@ -68,13 +68,13 @@ class CheckUpdateThread(QThread):
                                 break
                         if not download_url:
                             download_url = data.get("html_url", f"https://github.com/{REPO_OWNER}/{REPO_NAME}/releases")
-                        
+
                         hash_url = ""
                         for asset in data.get("assets", []):
                             if asset.get("name") == "EleViewer_SHA256.txt":
                                 hash_url = asset.get("browser_download_url", "")
                                 break
-                        
+
                         expected_hash = ""
                         if hash_url:
                             try:
@@ -88,7 +88,7 @@ class CheckUpdateThread(QThread):
                                                 break
                             except Exception:
                                 pass
-                        
+
                         if not expected_hash:
                             self.error_occurred.emit("Security verification failed: No SHA-256 hash found for this release.")
                             return
@@ -138,17 +138,17 @@ class DownloadThread(QThread):
                         if total_size > 0:
                             percent = int((downloaded / total_size) * 100)
                             self.progress.emit(percent)
-                            
+
                 h = hashlib.sha256()
                 with open(dest_path, "rb") as f:
                     for chunk in iter(lambda: f.read(65536), b""):
                         h.update(chunk)
                 computed_hash = h.hexdigest()
-                
+
                 if computed_hash.lower() != self.expected_hash.lower():
                     os.remove(dest_path)
                     raise ValueError(f"Security Error: Downloaded file hash ({computed_hash}) does not match expected hash ({self.expected_hash}).")
-            
+
             self.finished.emit(dest_path)
         except Exception as e:
             self.failed.emit(str(e))
@@ -156,6 +156,9 @@ class DownloadThread(QThread):
 class UpdateDialog(QDialog):
     def __init__(self, tag_name, release_notes, download_url, expected_hash, parent=None):
         super().__init__(parent)
+        from theme import get_active_accent, get_active_palette
+        palette = get_active_palette()
+        accent = get_active_accent()
         self.download_url = download_url
         self.expected_hash = expected_hash
         self.setWindowTitle(f"Update Available - {tag_name}")
@@ -178,16 +181,16 @@ class UpdateDialog(QDialog):
         from morphing_loader import MorphingLogo
         self.loader_anim = MorphingLogo(size=48)
         self.loader_anim.setVisible(False)
-        
+
         status_layout = QHBoxLayout()
         status_layout.addWidget(self.loader_anim)
-        
+
         self.status_label = QLabel("")
-        self.status_label.setStyleSheet("color: #666;")
+        self.status_label.setStyleSheet(f"color: {palette['BRAND_MUTED_FG']};")
         self.status_label.setVisible(False)
         status_layout.addWidget(self.status_label)
         status_layout.addStretch()
-        
+
         layout.addLayout(status_layout)
 
         self.progress_bar = QProgressBar()
@@ -196,7 +199,10 @@ class UpdateDialog(QDialog):
 
         btn_layout = QHBoxLayout()
         self.update_btn = QPushButton("Update Now")
-        self.update_btn.setStyleSheet("background-color: #2563eb; color: white; font-weight: bold; padding: 8px 16px; border-radius: 6px;")
+        self.update_btn.setStyleSheet(
+            f"background-color: {accent['accent']}; color: {accent['accent_fg']}; "
+            "font-weight: bold; padding: 8px 16px; border-radius: 6px;"
+        )
         self.update_btn.clicked.connect(self._start_download)
 
         self.cancel_btn = QPushButton("Remind Me Later")
