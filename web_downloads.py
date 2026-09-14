@@ -75,7 +75,7 @@ class DownloadItemWidget(QWidget):
         text_layout.setSpacing(2)
         
         name_lbl = QLabel(f"<b>{data.get('name', 'Unknown')}</b>")
-        name_lbl.setStyleSheet("font-size: 13px;")
+        name_lbl.setStyleSheet("font-size: 13px; padding-bottom: 2px;")
         
         url_lbl = QLabel(data.get("url", ""))
         url_lbl.setStyleSheet("color: #9b9b96; font-size: 11px;")

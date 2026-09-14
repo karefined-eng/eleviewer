@@ -48,6 +48,7 @@ class BookmarkItemWidget(QWidget):
         self.lbl_text = QLabel(f"<b>{label}</b><br><span style='color:#aaa'>{display_name}{suffix}</span>")
         self.lbl_text.setTextFormat(Qt.RichText)
         self.lbl_text.setWordWrap(True)
+        self.lbl_text.setStyleSheet("padding-bottom: 2px;")
         
         self.btn_edit = QToolButton()
         self.btn_edit.setIcon(icon("pencil", size=14))
