@@ -1,5 +1,11 @@
 # EleViewer
 
+![GitHub Release](https://img.shields.io/github/v/release/karefined-eng/eleviewer?style=flat-square&color=blue)
+![Platform](https://img.shields.io/badge/Platform-Windows%2010%20|%2011-lightgrey?style=flat-square)
+![GitHub Downloads](https://img.shields.io/github/downloads/karefined-eng/eleviewer/total?style=flat-square&color=success)
+![GitHub License](https://img.shields.io/github/license/karefined-eng/eleviewer?style=flat-square)
+![GitHub Repo stars](https://img.shields.io/github/stars/karefined-eng/eleviewer?style=flat-square&color=gold)
+
 **The all-in-one, distraction-free study workspace for Windows.**
 
 EleViewer helps you keep your readings, assignments, slides, and notes together in one place. It is a completely free, offline-first app that runs instantly on Windows 10 and 11 without needing an administrator password or a Microsoft Office subscription.
