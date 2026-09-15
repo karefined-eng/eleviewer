@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.3.5] - 2026-09-15
+
+### Added
+- Integrated visual drag handles into all `QSplitter` components, with intuitive hover states to improve panel resizing discoverability.
+
+### Fixed
+- Resolved a `NameError` crash when opening the "What's New" dialog.
+
 ## [1.3.4] - 2026-09-14
 
 ### Changed
