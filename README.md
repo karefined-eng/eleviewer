@@ -47,6 +47,12 @@ EleViewer is a "portable" app. This means you don't have to install it. Just dow
 
 [Download the latest version for Windows](https://github.com/karefined-eng/eleviewer/releases/latest)
 
+You can also install EleViewer through WinGet:
+
+```powershell
+winget install --id karefined-eng.EleViewer
+```
+
 ## Privacy First
 
 Your files are yours. EleViewer is 100% offline. We do not upload your essays to the cloud, we do not require you to make an account, and we do not track what you do. 
@@ -54,6 +60,8 @@ Your files are yours. EleViewer is 100% offline. We do not upload your essays to
 ## Study and comparison guides
 
 Read the [offline study workspace guide](docs/offline-study-workspace.md) for practical workflows using EleViewer for readings, notes, research, and exam preparation. The [feature comparison](docs/compare.md) explains where EleViewer fits alongside dedicated PDF readers, Microsoft Office, and browser-based workspaces.
+
+For questions, workflow ideas, and community feedback, visit [EleViewer Discussions](https://github.com/karefined-eng/eleviewer/discussions). A branded [social-preview asset](assets/social-preview.svg) is also available for articles, release announcements, and community posts.
 
 ## For Developers
 
