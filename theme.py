@@ -109,6 +109,8 @@ def main_window_stylesheet():
     is_dark = get_active_theme_name() == "dark"
     from icons import ICONS_DIR
     close_icon = ICONS_DIR / ("x-bright.svg" if is_dark else "x-dark.svg")
+    grip_h = ICONS_DIR / "splitter-grip-h.svg"
+    grip_v = ICONS_DIR / "splitter-grip-v.svg"
     # Subtle gradient for the toolbar: two very close shades for depth
     tb_top = "#1e1e1e" if is_dark else "#fafafa"
     tb_bot = "#191919" if is_dark else "#f0f0f0"
@@ -312,6 +314,29 @@ def main_window_stylesheet():
             border-radius: 6px;
             font-family: 'Segoe UI', sans-serif;
             font-size: 12px;
+        }}
+
+        /* ── Splitters ───────────────────────────────────────── */
+        QSplitter::handle {{
+            background: transparent;
+        }}
+        QSplitter::handle:horizontal {{
+            width: 6px;
+            image: url("{grip_h.as_posix()}");
+            border-left: 1px solid {p['BRAND_BORDER']};
+            border-right: 1px solid transparent;
+        }}
+        QSplitter::handle:vertical {{
+            height: 6px;
+            image: url("{grip_v.as_posix()}");
+            border-top: 1px solid {p['BRAND_BORDER']};
+            border-bottom: 1px solid transparent;
+        }}
+        QSplitter::handle:hover, QSplitter::handle:pressed {{
+            background: {accent['accent']};
+            image: none;
+            border-left: 1px solid {accent['accent']};
+            border-top: 1px solid {accent['accent']};
         }}
 
         /* ── Scrollbars (macOS-style thin bars) ──────────────── */
