@@ -2,7 +2,7 @@ from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QTextBrowser, QFrame
 )
 from PySide6.QtCore import Qt
-from theme import get_active_palette, get_brand_accent
+from theme import get_active_palette, get_brand_accent, get_active_accent
 from version import APP_VERSION
 
 
