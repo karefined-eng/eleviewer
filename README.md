@@ -51,6 +51,10 @@ EleViewer is a "portable" app. This means you don't have to install it. Just dow
 
 Your files are yours. EleViewer is 100% offline. We do not upload your essays to the cloud, we do not require you to make an account, and we do not track what you do. 
 
+## Study and comparison guides
+
+Read the [offline study workspace guide](docs/offline-study-workspace.md) for practical workflows using EleViewer for readings, notes, research, and exam preparation. The [feature comparison](docs/compare.md) explains where EleViewer fits alongside dedicated PDF readers, Microsoft Office, and browser-based workspaces.
+
 ## For Developers
 
 Want to help build EleViewer or see how it works under the hood? Check out our [Developer Onboarding Guide](DEVELOPER_ONBOARDING.md) for architecture details, our contribution rules, and instructions on how to build the app from the source code.

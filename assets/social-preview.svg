@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640" role="img" aria-labelledby="title desc">
+  <title id="title">EleViewer — Offline Windows Study Workspace</title>
+  <desc id="desc">A lightweight Windows document viewer and editor for PDF, Word, PowerPoint, spreadsheets, Markdown, and web research.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#101827"/><stop offset="1" stop-color="#1e3a5f"/></linearGradient>
+    <linearGradient id="card" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff" stop-opacity=".98"/><stop offset="1" stop-color="#dbeafe" stop-opacity=".96"/></linearGradient>
+  </defs>
+  <rect width="1280" height="640" fill="url(#bg)"/>
+  <circle cx="1120" cy="40" r="260" fill="#38bdf8" opacity=".12"/>
+  <circle cx="80" cy="620" r="220" fill="#22c55e" opacity=".10"/>
+  <rect x="700" y="100" width="470" height="360" rx="24" fill="url(#card)"/>
+  <rect x="730" y="135" width="410" height="32" rx="8" fill="#bfdbfe"/>
+  <rect x="730" y="195" width="180" height="220" rx="12" fill="#eff6ff"/>
+  <rect x="930" y="195" width="210" height="100" rx="12" fill="#dbeafe"/>
+  <rect x="930" y="315" width="210" height="100" rx="12" fill="#dcfce7"/>
+  <path d="M755 235h130M755 265h105M755 295h120M755 325h90" stroke="#2563eb" stroke-width="12" stroke-linecap="round" opacity=".55"/>
+  <text x="92" y="190" fill="#7dd3fc" font-family="Arial, sans-serif" font-size="28" font-weight="700" letter-spacing="3">ELEVIEWER</text>
+  <text x="92" y="280" fill="#ffffff" font-family="Arial, sans-serif" font-size="64" font-weight="700">Offline study,</text>
+  <text x="92" y="355" fill="#ffffff" font-family="Arial, sans-serif" font-size="64" font-weight="700">without the clutter.</text>
+  <text x="96" y="425" fill="#cbd5e1" font-family="Arial, sans-serif" font-size="25">PDF • DOCX • PPTX • XLSX • Markdown • Web</text>
+  <text x="96" y="490" fill="#86efac" font-family="Arial, sans-serif" font-size="24" font-weight="700">Free • Portable • Offline-first • Windows 10/11</text>
+</svg>
