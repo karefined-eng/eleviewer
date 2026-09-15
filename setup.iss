@@ -5,7 +5,7 @@
 ; CI/CD passes version via: iscc /DAppVersion=X.Y.Z setup.iss
 ; Falls back to 1.3.4 for local manual builds.
 #ifndef AppVersion
-  #define AppVersion "1.3.4"
+  #define AppVersion "1.3.5"
 #endif
 
 [Setup]

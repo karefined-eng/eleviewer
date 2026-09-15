@@ -1,25 +1,17 @@
-# EleViewer v1.3.4: UI Polish and Reliability Fixes
+# EleViewer v1.3.5: Interactive Workspace Resizing & Hotfix
 
-Welcome to EleViewer v1.3.4! This is a maintenance release that focuses on polishing the web panel and fixing under-the-hood issues to ensure a smooth, crash-free experience.
+Welcome to EleViewer v1.3.5! This is a fast-follow update that introduces a highly requested intuitive UI improvement, alongside a critical bug fix.
 
-## ✨ Highlight: Split-Screen Web Panel Polish & Dynamic Themes
-*A cleaner, sleeker browsing and reading experience.*
+## ✨ Highlight: Interactive Draggable Splitters
+*Easily resize your reading workspace.*
 
-- **Modern Browser Layout:** The Web Panel has been completely redesigned. Tabs are now positioned at the very top of the window (just like Chrome or Edge), giving you a familiar, modern browsing experience.
-- **Sleeker Navigation:** We've reduced the size of navigation icons and buttons in the Web Panel to give you more screen real estate for reading and research.
-- **Improved Security Indicators:** Swapped the outdated green globe for sleek, standard lock and warning icons to instantly convey web connection security.
-- **Improved Fullscreen Video:** We completely rebuilt the way fullscreen mode works in the Web Panel, ensuring videos and articles expand perfectly without any window glitches.
-- **Dynamic Theme Palettes:** UI components have been completely refactored to use dynamic, adaptive theme palettes, ensuring beautiful consistency whether you're using Dark Mode or Light Mode.
+- **Intuitive Workspace Resizing:** Adjusting the size of your Web Panel or File Explorer is now incredibly satisfying. All window splitters (the vertical and horizontal dividers between your panels) now feature a sleek, visual grip pill.
+- **Smart Hover Effects:** When your mouse hovers anywhere near a divider, the entire invisible grab area lights up in a vibrant accent color. It’s immediately clear that you can click and drag to resize your workspace exactly how you want it!
 
 ---
 
 ## 🛠️ General Improvements & Fixes
-- **Visual Polish:** Fixed subtle layout issues that caused text to be clipped at the bottom of the Vault Search, Bookmarks, and Downloads dialogs.
-- **Startup Reliability:** Fixed an issue that could cause a crash or display errors when the app first launched.
-- **Theme Consistency:** Resolved an issue where the accent color would sometimes fail to load, ensuring your EleViewer interface always looks stunning.
-- **Vault Search Stability:** Hardened the file-path handling for background vault searches to guarantee reliable quick-access file switching.
-- **Media & Document Fidelity:** Significantly improved TTS text-to-speech engine stability and enhanced PowerPoint image rendering accuracy.
-- **Enhanced Reliability:** Improved our internal testing mechanisms to guarantee links and files always open exactly as expected without errors.
+- **What's New Crash:** Fixed a critical bug where opening the "What's New" dialog would sometimes cause EleViewer to unexpectedly close.
 
 ---
 *Love this update? Have a suggestion? Let us know on our [GitHub Issues page](https://github.com/karefined-eng/eleviewer/issues).*
