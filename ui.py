@@ -1101,34 +1101,41 @@ class MainWindow(QMainWindow):
         )
         
         content_w = QWidget()
-        content_w.setMaximumWidth(800)
+        content_w.setMaximumWidth(760)
         main_layout = QVBoxLayout(content_w)
-        main_layout.setContentsMargins(40, 60, 40, 60)
-        main_layout.setSpacing(32)
-        
+        main_layout.setContentsMargins(32, 32, 32, 32)
+        main_layout.setSpacing(18)
+
         p = get_active_palette()
         brand_accent = get_brand_accent()
-        
-        # 1. Hero Section
+
+        # 1. Hero Section: dampen the visual footprint and let the workspace goal stand out.
         hero = QWidget()
+        hero.setStyleSheet(f"""
+            QWidget {{
+                background: {p['BRAND_PANEL']};
+                border: 1px solid {p['BRAND_BORDER']};
+                border-radius: 16px;
+            }}
+        """)
         hero_layout = QVBoxLayout(hero)
-        hero_layout.setContentsMargins(0, 0, 0, 0)
-        hero_layout.setSpacing(8)
-        
+        hero_layout.setContentsMargins(20, 18, 20, 18)
+        hero_layout.setSpacing(6)
+
         title = QLabel("EleViewer")
         title.setStyleSheet(f"""
-            font-size: 42px; 
-            font-weight: 800; 
+            font-size: 38px;
+            font-weight: 800;
             color: {p['BRAND_PRIMARY']};
             letter-spacing: -1px;
         """)
-        
-        subtitle = QLabel("Your local, zero-telemetry document workstation.")
+
+        subtitle = QLabel("Your local study workspace for reading, research, and quick notes.")
         subtitle.setStyleSheet(f"""
-            font-size: 16px; 
+            font-size: 15px;
             color: {p['BRAND_MUTED_FG']};
         """)
-        
+
         hero_layout.addWidget(title, 0, Qt.AlignLeft)
         hero_layout.addWidget(subtitle, 0, Qt.AlignLeft)
         main_layout.addWidget(hero)
@@ -1144,11 +1151,11 @@ class MainWindow(QMainWindow):
                 }}
             """)
             setup_layout = QVBoxLayout(setup_prompt)
-            setup_layout.setContentsMargins(20, 18, 20, 18)
-            setup_layout.setSpacing(10)
+            setup_layout.setContentsMargins(20, 16, 20, 16)
+            setup_layout.setSpacing(8)
 
             setup_title = QLabel("Start with your course folder")
-            setup_title.setStyleSheet(f"color: {p['BRAND_PRIMARY']}; font-size: 18px; font-weight: 700;")
+            setup_title.setStyleSheet(f"color: {p['BRAND_PRIMARY']}; font-size: 16px; font-weight: 700;")
             setup_desc = QLabel(
                 "Add the folder that holds your notes, readings, and slides so EleViewer can search it, keep your recent work together, and help you get started faster."
             )
@@ -1168,7 +1175,7 @@ class MainWindow(QMainWindow):
                     font-size: 13px;
                     font-weight: 700;
                 }}
-                QToolButton:hover {{ background: {p['BRAND_PRIMARY']}; }}
+                QToolButton:hover {{ background: {p['BRAND_PRIMARY']}; color: {p['BRAND_PRIMARY_FG']}; }}
             """)
             setup_button.clicked.connect(self.add_vault)
 
@@ -1176,8 +1183,8 @@ class MainWindow(QMainWindow):
             setup_layout.addWidget(setup_desc)
             setup_layout.addWidget(setup_button, 0, Qt.AlignLeft)
             main_layout.addWidget(setup_prompt)
-        
-        # 2. Quick-start card: plain-language first steps before the search box
+
+        # 2. Quick-start card: keep the first steps visible without competing with the search bar.
         start_here = QWidget()
         start_here.setStyleSheet(f"""
             QWidget {{
@@ -1187,13 +1194,12 @@ class MainWindow(QMainWindow):
             }}
         """)
         start_here_layout = QVBoxLayout(start_here)
-        start_here_layout.setContentsMargins(18, 16, 18, 16)
-        start_here_layout.setSpacing(12)
+        start_here_layout.setContentsMargins(18, 14, 18, 14)
+        start_here_layout.setSpacing(8)
 
-        brand_accent = get_brand_accent()
         start_label = QLabel("Start here")
         start_label.setObjectName("welcomeQuickStartTitle")
-        start_label.setStyleSheet(f"color: {brand_accent}; font-size: 12px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;")
+        start_label.setStyleSheet(f"color: {brand_accent}; font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;")
         start_here_layout.addWidget(start_label)
 
         quick_actions = [
