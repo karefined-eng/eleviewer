@@ -9,6 +9,8 @@ This is the documentation-directory entry point for agent guidance. The establis
 - `onboarding.py` contains first-run onboarding hooks.
 - `getting_started/` contains user-facing tutorials and guides.
 - Root-level `test_*.py` files contain the Python test suite.
+- `releases/` contains operational package-manager release instructions.
+- `handoff/` contains durable summaries of substantial work phases.
 
 ## Search and validation
 
@@ -19,3 +21,5 @@ This is the documentation-directory entry point for agent guidance. The establis
 ## Known environment notes
 
 See the `Tool Quirks` section in [`.agents/AGENTS.md`](../.agents/AGENTS.md) for the worktree-path/branch-name distinction and missing historical-origin context.
+
+For GitHub Releases, WinGet, Scoop, and Chocolatey, use the [Windows package-manager release runbook](releases/windows-package-manager-runbook.md). Microsoft Store distribution is out of scope in that guide.
