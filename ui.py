@@ -497,6 +497,7 @@ class MainWindow(QMainWindow):
         self.vault_panel.setMaximumWidth(420)
         self.vault_panel.file_opened.connect(self._open_vault_file)
         self.vault_panel.btn_add.clicked.connect(self.add_vault)
+        self.vault_panel.vaults_changed.connect(self._refresh_welcome_search_guidance)
         self.main_splitter.addWidget(self.vault_panel)
 
         self.editor_tabs_splitter = QSplitter(Qt.Horizontal)
@@ -1068,6 +1069,22 @@ class MainWindow(QMainWindow):
         self.update_tab_title(editor)
         self.update_status_bar()
 
+    def _refresh_welcome_search_guidance(self):
+        if not hasattr(self, "welcome_search_guidance"):
+            return
+
+        vault_paths = [
+            path for path in load_settings().get("vault_paths", [])
+            if path and os.path.isdir(path)
+        ]
+        has_vaults = bool(vault_paths)
+        self.welcome_search_guidance.setText(
+            "Search file names in your active course folder, or enter a web address."
+            if has_vaults
+            else "Link a course folder to search its file names, or enter a web address."
+        )
+        self.welcome_add_vault_button.setVisible(not has_vaults)
+
     def _create_welcome_widget(self):
         w = QWidget()
         w.is_welcome_tab = True
@@ -1121,30 +1138,50 @@ class MainWindow(QMainWindow):
 
         brand_accent = get_brand_accent()
         start_label = QLabel("Start here")
+        start_label.setObjectName("welcomeQuickStartTitle")
         start_label.setStyleSheet(f"color: {brand_accent}; font-size: 12px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;")
         start_here_layout.addWidget(start_label)
 
         quick_actions = [
-            ("Open a file", "Ctrl+O", "Start with the notes, PDF, or slide deck you need."),
-            ("New blank note", "Ctrl+N", "Capture a quick thought without leaving the app."),
-            ("Open the web panel", "Ctrl+T", "Keep research beside your work."),
-            ("Quick note from anywhere", "Alt+E", "Open an instant scratchpad without leaving Windows."),
+            ("Open a file", "Ctrl+O", "Start with the notes, PDF, or slide deck you need.", self.open_file),
+            ("New blank note", "Ctrl+N", "Capture a quick thought without leaving the app.", self.new_tab),
+            ("Open the web panel", "Ctrl+T", "Keep research beside your work.", self.open_web_tab),
+            ("Quick note from anywhere", "Alt+E", "Open an instant scratchpad without leaving Windows.", self.bring_to_front_and_new_note),
         ]
 
-        for action_name, shortcut, description in quick_actions:
+        for action_name, shortcut, description, callback in quick_actions:
             row = QWidget()
             row_layout = QHBoxLayout(row)
             row_layout.setContentsMargins(0, 0, 0, 0)
             row_layout.setSpacing(12)
 
+            action = QToolButton()
+            action.setObjectName("welcomeQuickAction")
+            action.setText(action_name)
+            action.setToolButtonStyle(Qt.ToolButtonTextOnly)
+            action.setCursor(Qt.PointingHandCursor)
+            action.setToolTip(description)
+            action.setStyleSheet(f"""
+                QToolButton {{
+                    color: {brand_accent};
+                    font-size: 13px;
+                    font-weight: 600;
+                    text-align: left;
+                    padding: 4px 0;
+                }}
+                QToolButton:hover {{ color: {p['BRAND_PRIMARY']}; }}
+            """)
+            action.clicked.connect(callback)
+
             key_badge = QLabel(shortcut)
             key_badge.setStyleSheet(f"background: {p['BRAND_PANEL_2']}; color: {p['BRAND_PRIMARY']}; border: 1px solid {p['BRAND_BORDER']}; border-radius: 6px; padding: 6px 10px; font-size: 11px; font-weight: 700;")
             key_badge.setAlignment(Qt.AlignCenter)
 
-            detail = QLabel(f"<b>{action_name}</b><br><span style='color:{p['BRAND_MUTED_FG']};'>{description}</span>")
+            detail = QLabel(description)
             detail.setWordWrap(True)
             detail.setStyleSheet(f"color: {p['BRAND_PRIMARY']}; font-size: 13px;")
 
+            row_layout.addWidget(action)
             row_layout.addWidget(key_badge)
             row_layout.addWidget(detail, 1)
             start_here_layout.addWidget(row)
@@ -1174,7 +1211,7 @@ class MainWindow(QMainWindow):
         search_ico.setPixmap(icon("search", size=18).pixmap(18, 18))
         
         self.welcome_search = QLineEdit()
-        self.welcome_search.setPlaceholderText("Search vault files or enter URL to browse...")
+        self.welcome_search.setPlaceholderText("Search course files or enter a web address...")
         self.welcome_search.setStyleSheet(f"""
             QLineEdit {{
                 background: transparent;
@@ -1188,10 +1225,43 @@ class MainWindow(QMainWindow):
         omni_bar_layout.addWidget(search_ico)
         omni_bar_layout.addWidget(self.welcome_search)
         omni_wrapper_layout.addWidget(omni_bar_row)
+
+        search_guidance_row = QWidget()
+        search_guidance_layout = QHBoxLayout(search_guidance_row)
+        search_guidance_layout.setContentsMargins(8, 0, 8, 8)
+        search_guidance_layout.setSpacing(12)
+
+        self.welcome_search_guidance = QLabel()
+        self.welcome_search_guidance.setWordWrap(True)
+        self.welcome_search_guidance.setStyleSheet(
+            f"color: {p['BRAND_MUTED_FG']}; font-size: 12px;"
+        )
+        search_guidance_layout.addWidget(self.welcome_search_guidance, 1)
+
+        self.welcome_add_vault_button = QToolButton()
+        self.welcome_add_vault_button.setText("Add course folder")
+        self.welcome_add_vault_button.setCursor(Qt.PointingHandCursor)
+        self.welcome_add_vault_button.setStyleSheet(f"""
+            QToolButton {{
+                color: {brand_accent};
+                background: transparent;
+                border: none;
+                padding: 4px 0;
+                font-size: 12px;
+                font-weight: 600;
+            }}
+            QToolButton:hover {{ text-decoration: underline; }}
+        """)
+        self.welcome_add_vault_button.clicked.connect(self.add_vault)
+        search_guidance_layout.addWidget(self.welcome_add_vault_button)
+        omni_wrapper_layout.addWidget(search_guidance_row)
+
+        self._refresh_welcome_search_guidance()
         
         # 3. Hidden Search Results Dropdown
         self.omni_results = QListWidget()
         self.omni_results.hide()
+        self.omni_results.setWordWrap(True)
         
         # Convert accent hex to rgba for the selected state
         brand_accent = get_brand_accent()
@@ -1235,15 +1305,29 @@ class MainWindow(QMainWindow):
             if not text:
                 self.omni_results.hide()
                 return
+
+            if text.startswith("http://") or text.startswith("https://") or ("." in text and " " not in text):
+                self.omni_results.hide()
+                return
+
+            self.omni_results.clear()
             
             if hasattr(self, 'vault_panel') and self.vault_panel.vault_selector.currentData():
-                vault_path = self.vault_panel.vault_selector.currentData()
+                selected_path = self.vault_panel.vault_selector.currentData()
+                vault_path = selected_path if os.path.isdir(selected_path) else None
             else:
                 settings = load_settings()
-                vaults = settings.get("vault_paths", [])
+                vaults = [
+                    path for path in settings.get("vault_paths", [])
+                    if path and os.path.isdir(path)
+                ]
                 vault_path = vaults[0] if vaults else None
                 
             if not vault_path:
+                item = QListWidgetItem("Use Add course folder to search its files.")
+                item.setFlags(Qt.NoItemFlags)
+                self.omni_results.addItem(item)
+                self.omni_results.show()
                 return
                 
             results = []
@@ -1257,7 +1341,6 @@ class MainWindow(QMainWindow):
                         if len(results) >= 8: break
                 if len(results) >= 8: break
             
-            self.omni_results.clear()
             if results:
                 for r in results:
                     rel = _os.path.relpath(r, vault_path)
@@ -1266,13 +1349,19 @@ class MainWindow(QMainWindow):
                     self.omni_results.addItem(it)
                 self.omni_results.show()
             else:
-                self.omni_results.hide()
+                item = QListWidgetItem(
+                    f'No file names match "{text}" in this course folder. Try a shorter search.'
+                )
+                item.setFlags(Qt.NoItemFlags)
+                self.omni_results.addItem(item)
+                self.omni_results.show()
 
         def _open_omni_result():
             if self.omni_results.isVisible() and self.omni_results.currentItem():
                 path = self.omni_results.currentItem().data(Qt.UserRole)
                 if path:
                     self._open_vault_file(path)
+                return
             else:
                 # Check if it's a URL
                 txt = self.welcome_search.text().strip()
@@ -1291,106 +1380,7 @@ class MainWindow(QMainWindow):
         self.welcome_search.returnPressed.connect(_open_omni_result)
         self.omni_results.itemClicked.connect(lambda: _open_omni_result())
         
-        # 4. Action Buttons (Horizontal layout now)
-        action_bar = QWidget()
-        action_bar_layout = QHBoxLayout(action_bar)
-        action_bar_layout.setContentsMargins(0, 0, 0, 0)
-        action_bar_layout.setSpacing(12)
-        
-        actions = [
-            ("Open File", "folder", self.open_file),
-            ("New Blank", "file", self.new_tab),
-            ("Settings", "settings", self.open_settings)
-        ]
-        
-        for label, ico, slot in actions:
-            btn = QToolButton()
-            btn.setText(label)
-            btn.setIcon(icon(ico))
-            btn.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
-            btn.setCursor(Qt.PointingHandCursor)
-            btn.clicked.connect(slot)
-            btn.setStyleSheet(f"""
-                QToolButton {{
-                    background: {p['BRAND_PANEL']};
-                    border: 1px solid {p['BRAND_BORDER']};
-                    border-radius: 8px;
-                    color: {p['BRAND_PRIMARY']};
-                    padding: 12px 24px;
-                    font-size: 14px;
-                    font-weight: 500;
-                }}
-                QToolButton:hover {{
-                    background: {p['BRAND_PANEL_2']};
-                    border-color: {brand_accent};
-                    color: {brand_accent};
-                }}
-            """)
-            action_bar_layout.addWidget(btn)
-        
-        action_bar_layout.addStretch()
-        main_layout.addWidget(action_bar)
-
-        # 5. First steps
-        start_here = QWidget()
-        start_here.setObjectName("StartHere")
-        start_here.setStyleSheet(f"""
-            QWidget#StartHere {{
-                background: {p['BRAND_PANEL']};
-                border: 1px solid {p['BRAND_BORDER']};
-                border-radius: 12px;
-            }}
-        """)
-        start_here_layout = QVBoxLayout(start_here)
-        start_here_layout.setContentsMargins(20, 16, 20, 16)
-        start_here_layout.setSpacing(8)
-
-        start_here_title = QLabel("Start here")
-        start_here_title.setStyleSheet(
-            f"color: {p['BRAND_PRIMARY']}; font-size: 16px; font-weight: 700; border: none;"
-        )
-        start_here_layout.addWidget(start_here_title)
-
-        first_steps = [
-            ("Open a file (Ctrl+O)", "Choose a reading, slide deck, or other file.", self.open_file),
-            ("New blank note (Ctrl+N)", "Start writing a note from scratch.", self.new_tab),
-            ("Open the web panel (Ctrl+T)", "Browse beside your files and notes.", self.open_web_tab),
-            ("Quick note from anywhere (Alt+E)", "Capture an idea without leaving your current app.", self.bring_to_front_and_new_note),
-        ]
-        for label, description, callback in first_steps:
-            row = QWidget()
-            row.setStyleSheet("border: none;")
-            row_layout = QHBoxLayout(row)
-            row_layout.setContentsMargins(0, 2, 0, 2)
-            row_layout.setSpacing(16)
-
-            action = QToolButton()
-            action.setText(label)
-            action.setToolButtonStyle(Qt.ToolButtonTextOnly)
-            action.setCursor(Qt.PointingHandCursor)
-            action.setStyleSheet(f"""
-                QToolButton {{
-                    color: {brand_accent};
-                    font-size: 13px;
-                    font-weight: 600;
-                    text-align: left;
-                    padding: 4px 0;
-                }}
-                QToolButton:hover {{ color: {p['BRAND_PRIMARY']}; }}
-            """)
-            action.clicked.connect(callback)
-
-            detail = QLabel(description)
-            detail.setStyleSheet(
-                f"color: {p['BRAND_MUTED_FG']}; font-size: 12px; border: none;"
-            )
-            row_layout.addWidget(action)
-            row_layout.addWidget(detail, 1)
-            start_here_layout.addWidget(row)
-
-        main_layout.addWidget(start_here)
-        
-        # 6. Two Columns: Recent Files & Bookmarks
+        # 4. Two Columns: Recent Files & Bookmarks
         columns = QWidget()
         cols_layout = QHBoxLayout(columns)
         cols_layout.setSpacing(40)
