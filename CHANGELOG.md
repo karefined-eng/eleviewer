@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.3.6] - 2026-10-07
+
+### Changed
+- Synced the app version, installer metadata, and WinGet manifests for the 1.3.6 release.
+- Updated the local release fallback version used by the packaging tooling.
+
+### Fixed
+- Corrected the packaging version references so installers and manifests stay aligned with the app release number.
+
 ## [1.3.5] - 2026-09-15
 
 ### Added
