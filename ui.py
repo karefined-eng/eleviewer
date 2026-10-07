@@ -1106,6 +1106,51 @@ class MainWindow(QMainWindow):
         hero_layout.addWidget(subtitle, 0, Qt.AlignLeft)
         main_layout.addWidget(hero)
         
+        # 2. Quick-start card: plain-language first steps before the search box
+        start_here = QWidget()
+        start_here.setStyleSheet(f"""
+            QWidget {{
+                background: {p['BRAND_PANEL']};
+                border: 1px solid {p['BRAND_BORDER']};
+                border-radius: 12px;
+            }}
+        """)
+        start_here_layout = QVBoxLayout(start_here)
+        start_here_layout.setContentsMargins(18, 16, 18, 16)
+        start_here_layout.setSpacing(12)
+
+        brand_accent = get_brand_accent()
+        start_label = QLabel("Start here")
+        start_label.setStyleSheet(f"color: {brand_accent}; font-size: 12px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;")
+        start_here_layout.addWidget(start_label)
+
+        quick_actions = [
+            ("Open a file", "Ctrl+O", "Start with the notes, PDF, or slide deck you need."),
+            ("New blank note", "Ctrl+N", "Capture a quick thought without leaving the app."),
+            ("Open the web panel", "Ctrl+T", "Keep research beside your work."),
+            ("Quick note from anywhere", "Alt+E", "Open an instant scratchpad without leaving Windows."),
+        ]
+
+        for action_name, shortcut, description in quick_actions:
+            row = QWidget()
+            row_layout = QHBoxLayout(row)
+            row_layout.setContentsMargins(0, 0, 0, 0)
+            row_layout.setSpacing(12)
+
+            key_badge = QLabel(shortcut)
+            key_badge.setStyleSheet(f"background: {p['BRAND_PANEL_2']}; color: {p['BRAND_PRIMARY']}; border: 1px solid {p['BRAND_BORDER']}; border-radius: 6px; padding: 6px 10px; font-size: 11px; font-weight: 700;")
+            key_badge.setAlignment(Qt.AlignCenter)
+
+            detail = QLabel(f"<b>{action_name}</b><br><span style='color:{p['BRAND_MUTED_FG']};'>{description}</span>")
+            detail.setWordWrap(True)
+            detail.setStyleSheet(f"color: {p['BRAND_PRIMARY']}; font-size: 13px;")
+
+            row_layout.addWidget(key_badge)
+            row_layout.addWidget(detail, 1)
+            start_here_layout.addWidget(row)
+
+        main_layout.addWidget(start_here)
+
         # 2. Omnibar Search
         omni_wrapper = QWidget()
         omni_wrapper.setObjectName("OmniWrapper")
