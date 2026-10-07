@@ -2,9 +2,11 @@ import sys
 import os
 import pytest
 from pathlib import Path
-from PySide6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication, QLabel, QToolButton
+from PySide6.QtTest import QTest
 from ui import MainWindow, WEB_AVAILABLE
 from file_handler import create_viewer_widget
+import ui
 
 def get_app():
     return QApplication.instance() or QApplication([])
@@ -21,6 +23,48 @@ def main_window(tmp_path):
 def test_mainwindow_instantiation(main_window):
     assert main_window is not None
     assert main_window.tabs is not None
+
+def test_welcome_search_guides_vault_setup_and_no_results(main_window, tmp_path, monkeypatch):
+    settings = {"vault_paths": []}
+    monkeypatch.setattr(ui, "load_settings", lambda: settings)
+    main_window.vault_panel.vault_selector.setCurrentIndex(-1)
+    welcome = main_window._create_welcome_widget()
+
+    quick_actions = welcome.findChildren(QToolButton, "welcomeQuickAction")
+    assert [action.text() for action in quick_actions] == [
+        "Open a file",
+        "New blank note",
+        "Open the web panel",
+        "Quick note from anywhere",
+    ]
+    assert len(welcome.findChildren(QLabel, "welcomeQuickStartTitle")) == 1
+
+    assert not main_window.welcome_add_vault_button.isHidden()
+    assert "Link a course folder" in main_window.welcome_search_guidance.text()
+
+    main_window.welcome_search.setText("biology")
+    QTest.qWait(220)
+    assert main_window.omni_results.count() == 1
+    assert "Add course folder" in main_window.omni_results.item(0).text()
+
+    monkeypatch.setattr(ui.QFileDialog, "getExistingDirectory", lambda *args: str(tmp_path))
+
+    def add_test_vault(path):
+        settings["vault_paths"] = [path]
+        main_window.vault_panel.vaults_changed.emit()
+
+    monkeypatch.setattr(main_window.vault_panel, "add_vault", add_test_vault)
+    main_window.welcome_add_vault_button.click()
+
+    assert main_window.welcome_add_vault_button.isHidden()
+    assert "active course folder" in main_window.welcome_search_guidance.text()
+
+    main_window.welcome_search.setText("biology notes")
+    QTest.qWait(220)
+    assert main_window.omni_results.count() == 1
+    assert "No file names match" in main_window.omni_results.item(0).text()
+
+    welcome.deleteLater()
 
 def test_mainwindow_tab_operations(main_window, tmp_path):
     # Test creating new tab
@@ -177,5 +221,3 @@ def test_all_file_viewers_creation(tmp_path):
     for viewer in (v_txt, v_md, v_csv, v_html, v_pdf, v_docx, v_xlsx, v_pptx):
         viewer.close()
     app.processEvents()
-
-
