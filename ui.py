@@ -1,7 +1,7 @@
 from PySide6.QtWidgets import (
     QMainWindow, QTabWidget, QFileDialog, QMessageBox, QLineEdit, QListWidget, QListWidgetItem,
     QSplitter, QMenu, QToolBar, QToolButton, QVBoxLayout, QHBoxLayout, QGridLayout, QWidget,
-    QDockWidget, QLabel, QSystemTrayIcon, QApplication, QScrollBar,
+    QDockWidget, QLabel, QSystemTrayIcon, QApplication, QScrollBar, QScrollArea, QFrame,
 )
 from PySide6.QtGui import QAction, QKeySequence, QShortcut, QIcon, QFontMetrics, QDrag, QColor
 from PySide6.QtCore import Qt, QSize, QTimer, Slot, QUrl, Signal, QEvent, QMimeData
@@ -1090,6 +1090,12 @@ class MainWindow(QMainWindow):
         w.is_welcome_tab = True
         outer_layout = QGridLayout(w)
         outer_layout.setContentsMargins(0, 0, 0, 0)
+        scroll_area = QScrollArea()
+        scroll_area.setObjectName("welcomeScrollArea")
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setFrameShape(QFrame.NoFrame)
+        scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        scroll_area.setAlignment(Qt.AlignHCenter | Qt.AlignTop)
         
         content_w = QWidget()
         content_w.setMaximumWidth(800)
@@ -1467,7 +1473,8 @@ class MainWindow(QMainWindow):
         main_layout.addWidget(columns)
         main_layout.addStretch()
         
-        outer_layout.addWidget(content_w, 0, Qt.AlignHCenter)
+        scroll_area.setWidget(content_w)
+        outer_layout.addWidget(scroll_area, 0, 0)
         return w
     def _replace_welcome_if_present(self):
         if self.tabs.count() == 1:

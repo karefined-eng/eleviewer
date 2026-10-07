@@ -2,7 +2,7 @@ import sys
 import os
 import pytest
 from pathlib import Path
-from PySide6.QtWidgets import QApplication, QLabel, QToolButton
+from PySide6.QtWidgets import QApplication, QLabel, QToolButton, QScrollArea
 from PySide6.QtTest import QTest
 from ui import MainWindow, WEB_AVAILABLE
 from file_handler import create_viewer_widget
@@ -38,6 +38,15 @@ def test_welcome_search_guides_vault_setup_and_no_results(main_window, tmp_path,
         "Quick note from anywhere",
     ]
     assert len(welcome.findChildren(QLabel, "welcomeQuickStartTitle")) == 1
+    scroll_area = welcome.findChild(QScrollArea, "welcomeScrollArea")
+    assert scroll_area is not None
+    assert scroll_area.horizontalScrollBarPolicy() == ui.Qt.ScrollBarAlwaysOff
+
+    welcome.resize(800, 600)
+    welcome.show()
+    get_app().processEvents()
+    assert welcome.height() == 600
+    assert scroll_area.verticalScrollBar().maximum() > 0
 
     assert not main_window.welcome_add_vault_button.isHidden()
     assert "Link a course folder" in main_window.welcome_search_guidance.text()
@@ -65,6 +74,7 @@ def test_welcome_search_guides_vault_setup_and_no_results(main_window, tmp_path,
     assert "No file names match" in main_window.omni_results.item(0).text()
 
     welcome.deleteLater()
+    get_app().processEvents()
 
 def test_mainwindow_tab_operations(main_window, tmp_path):
     # Test creating new tab

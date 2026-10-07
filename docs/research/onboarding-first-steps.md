@@ -11,10 +11,11 @@ The welcome screen should help a first-time user take a useful next action witho
 - **Lower choice friction:** Each action appears once, with a visible shortcut and plain-language outcome, so students can scan or launch the next step without comparing duplicate lists.
 - **Preserve user control:** Startup no longer opens a separate guide automatically; users can choose an action or consult the guide at their own pace.
 - **Make empty states actionable:** Welcome search explains that it checks file names in the active course folder. When no folder is linked, the screen offers a direct way to add one; when a search has no matches, it says so and suggests a shorter search.
+- **Keep all actions reachable:** The welcome content scrolls vertically in shorter desktop windows instead of forcing the window to grow beyond its available height.
 
 ## Implementation boundary
 
-The quick-start rows call existing application actions and retain their existing shortcuts. Search guidance uses the existing folder-linking flow and does not add new task flows or dependencies. Settings remain available from the existing toolbar and menus rather than appearing as an extra welcome-screen action.
+The quick-start rows call existing application actions and retain their existing shortcuts. Search guidance uses the existing folder-linking flow and does not add new task flows or dependencies. The welcome screen uses a native Qt scroll area to keep lower sections reachable at compact window heights. Settings remain available from the existing toolbar and menus rather than appearing as an extra welcome-screen action.
 
 ## Validation
 
