@@ -3,7 +3,6 @@ import os
 import pytest
 from pathlib import Path
 from PySide6.QtWidgets import QApplication, QLabel, QToolButton, QScrollArea
-from PySide6.QtTest import QTest
 from ui import MainWindow, WEB_AVAILABLE
 from file_handler import create_viewer_widget
 import ui
@@ -51,8 +50,12 @@ def test_welcome_search_guides_vault_setup_and_no_results(main_window, tmp_path,
     assert not main_window.welcome_add_vault_button.isHidden()
     assert "Link a course folder" in main_window.welcome_search_guidance.text()
 
-    main_window.welcome_search.setText("biology")
-    QTest.qWait(220)
+    def search_welcome(text):
+        main_window.welcome_search.setText(text)
+        main_window._welcome_search_timer.stop()
+        main_window._welcome_search_timer.timeout.emit()
+
+    search_welcome("biology")
     assert main_window.omni_results.count() == 1
     assert "Add course folder" in main_window.omni_results.item(0).text()
 
@@ -68,8 +71,7 @@ def test_welcome_search_guides_vault_setup_and_no_results(main_window, tmp_path,
     assert main_window.welcome_add_vault_button.isHidden()
     assert "active course folder" in main_window.welcome_search_guidance.text()
 
-    main_window.welcome_search.setText("biology notes")
-    QTest.qWait(220)
+    search_welcome("biology notes")
     assert main_window.omni_results.count() == 1
     assert "No file names match" in main_window.omni_results.item(0).text()
 
