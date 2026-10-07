@@ -62,6 +62,7 @@ EleViewer relies heavily on standard PySide6 widgets and custom components to ke
 - The release pipeline is a Windows-only GitHub Actions flow that builds EleViewer with Nuitka, packages it with Inno Setup, and publishes an installer to GitHub Releases.
 - The Winget manifest targets the release installer artifact rather than a stale `latest/download/EleViewer.exe` path.
 - The installer script and release helper are intentionally aligned with the same artifact naming so the packaged output is easier to verify.
+- See the [desktop stack prototype brief](docs/desktop-stack-prototype.md) for the Tauri/Rust and Wails/Go evaluation plan. Prototype branches should start from `main`.
 
 ---
 
