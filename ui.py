@@ -1285,8 +1285,67 @@ class MainWindow(QMainWindow):
         
         action_bar_layout.addStretch()
         main_layout.addWidget(action_bar)
+
+        # 5. First steps
+        start_here = QWidget()
+        start_here.setObjectName("StartHere")
+        start_here.setStyleSheet(f"""
+            QWidget#StartHere {{
+                background: {p['BRAND_PANEL']};
+                border: 1px solid {p['BRAND_BORDER']};
+                border-radius: 12px;
+            }}
+        """)
+        start_here_layout = QVBoxLayout(start_here)
+        start_here_layout.setContentsMargins(20, 16, 20, 16)
+        start_here_layout.setSpacing(8)
+
+        start_here_title = QLabel("Start here")
+        start_here_title.setStyleSheet(
+            f"color: {p['BRAND_PRIMARY']}; font-size: 16px; font-weight: 700; border: none;"
+        )
+        start_here_layout.addWidget(start_here_title)
+
+        first_steps = [
+            ("Open a file (Ctrl+O)", "Choose a reading, slide deck, or other file.", self.open_file),
+            ("New blank note (Ctrl+N)", "Start writing a note from scratch.", self.new_tab),
+            ("Open the web panel (Ctrl+T)", "Browse beside your files and notes.", self.open_web_tab),
+            ("Quick note from anywhere (Alt+E)", "Capture an idea without leaving your current app.", self.bring_to_front_and_new_note),
+        ]
+        for label, description, callback in first_steps:
+            row = QWidget()
+            row.setStyleSheet("border: none;")
+            row_layout = QHBoxLayout(row)
+            row_layout.setContentsMargins(0, 2, 0, 2)
+            row_layout.setSpacing(16)
+
+            action = QToolButton()
+            action.setText(label)
+            action.setToolButtonStyle(Qt.ToolButtonTextOnly)
+            action.setCursor(Qt.PointingHandCursor)
+            action.setStyleSheet(f"""
+                QToolButton {{
+                    color: {brand_accent};
+                    font-size: 13px;
+                    font-weight: 600;
+                    text-align: left;
+                    padding: 4px 0;
+                }}
+                QToolButton:hover {{ color: {p['BRAND_PRIMARY']}; }}
+            """)
+            action.clicked.connect(callback)
+
+            detail = QLabel(description)
+            detail.setStyleSheet(
+                f"color: {p['BRAND_MUTED_FG']}; font-size: 12px; border: none;"
+            )
+            row_layout.addWidget(action)
+            row_layout.addWidget(detail, 1)
+            start_here_layout.addWidget(row)
+
+        main_layout.addWidget(start_here)
         
-        # 5. Two Columns: Recent Files & Bookmarks
+        # 6. Two Columns: Recent Files & Bookmarks
         columns = QWidget()
         cols_layout = QHBoxLayout(columns)
         cols_layout.setSpacing(40)
