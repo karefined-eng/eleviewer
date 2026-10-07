@@ -48,3 +48,7 @@ This repository is a Python + PySide6 desktop app for browsing and studying loca
 ## Validation
 - Run the full root-level test suite with `python -m pytest`.
 - If the change touches a viewer, do a quick manual smoke check by launching the app with `python main.py`.
+
+## Tool Quirks
+- The worktree directory name may not change when the session branch is renamed. Searching under `C:\Users\asamoah\copilot-worktrees\eleviewer\elevonprospera-eng-commit-onboarding-update` failed with `Search paths do not exist` even though that was the branch name. Use the actual workspace path (`C:\Users\asamoah\copilot-worktrees\eleviewer\elevonprospera-eng-fantastic-garbanzo`) or omit the path to search from the current repository root.
+- This repository does not currently have `docs/AGENTS.md` or `docs/origin.md`; attempts to read them returned `Path ... does not exist`. Use this guide for existing operational instructions, and treat `docs/origin.md` as undocumented project history rather than inferring one.
