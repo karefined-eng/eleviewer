@@ -34,10 +34,10 @@ Microsoft Store distribution is intentionally out of scope.
 
 As of 2026-10-07:
 
-- The latest GitHub release inspected for this runbook is `v1.3.5`:
-  <https://github.com/karefined-eng/eleviewer/releases/tag/v1.3.5>
+- The latest GitHub release inspected for this runbook is `v1.3.6`:
+  <https://github.com/karefined-eng/eleviewer/releases/tag/v1.3.6>
 - Its files include:
-  - `EleViewer_Setup_v1.3.5.exe`
+  - `EleViewer_Setup_v1.3.6.exe`
   - `EleViewer-Portable.zip`
   - `EleViewer_SHA256.txt`
   - `winget-installer.yaml`
@@ -45,12 +45,10 @@ As of 2026-10-07:
   It is **not** a checksum for the portable ZIP. Compute the checksum for each
   package input from the exact artifact being published.
 - WinGet package ID: `karefined-eng.EleViewer`.
-- The WinGet submission for 1.3.5 is already open:
-  [microsoft/winget-pkgs#435167](https://github.com/microsoft/winget-pkgs/pull/435167).
-  The checks inspected for this runbook passed, and the PR was awaiting required
-  moderator review/approval. Re-check its live state before acting. Never open a
-  duplicate PR for the same version; respond to the existing PR's requested
-  changes and let its moderator review proceed.
+- The WinGet submission for 1.3.6 is the current release being tracked through
+  the automated package workflow. Re-check its live state before acting. Never
+  open a duplicate PR for the same version; respond to the existing PR's
+  requested changes and let its moderator review proceed.
 - `.github/workflows/build.yml` triggers on a pushed `vX.Y.Z` tag. It builds
   the application, installer and portable ZIP; creates a GitHub Release;
   generates a WinGet installer manifest; and calls `winget-releaser`.

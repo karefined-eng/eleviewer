@@ -1,17 +1,14 @@
-# EleViewer v1.3.5: Interactive Workspace Resizing & Hotfix
+# EleViewer v1.3.6: Release Alignment & Packaging Update
 
-Welcome to EleViewer v1.3.5! This is a fast-follow update that introduces a highly requested intuitive UI improvement, alongside a critical bug fix.
+Welcome to EleViewer v1.3.6. This release keeps the app, installer, and Windows package metadata aligned so the latest version installs cleanly and shows the correct version everywhere.
 
-## ✨ Highlight: Interactive Draggable Splitters
-*Easily resize your reading workspace.*
+## ✨ What’s improved
+- **Version alignment:** The app, installer, and package-manager manifests now all point to the same release number.
+- **Release tooling reliability:** The local fallback version used in packaging has been updated to keep release builds consistent.
 
-- **Intuitive Workspace Resizing:** Adjusting the size of your Web Panel or File Explorer is now incredibly satisfying. All window splitters (the vertical and horizontal dividers between your panels) now feature a sleek, visual grip pill.
-- **Smart Hover Effects:** When your mouse hovers anywhere near a divider, the entire invisible grab area lights up in a vibrant accent color. It’s immediately clear that you can click and drag to resize your workspace exactly how you want it!
-
----
-
-## 🛠️ General Improvements & Fixes
-- **What's New Crash:** Fixed a critical bug where opening the "What's New" dialog would sometimes cause EleViewer to unexpectedly close.
+## 🛠️ Release details
+- This is a release-readiness update focused on packaging and version management rather than a major feature change.
+- The installer, changelog, and Windows Package Manager metadata are now synchronized for the 1.3.6 release.
 
 ---
 *Love this update? Have a suggestion? Let us know on our [GitHub Issues page](https://github.com/karefined-eng/eleviewer/issues).*
