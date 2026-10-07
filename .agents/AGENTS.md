@@ -15,6 +15,8 @@ This repository is a Python + PySide6 desktop app for browsing and studying loca
 - There is no Rust-based viewer implementation in the current repository; do not add Rust or PyO3 work unless the user explicitly asks for it.
 
 ## Before editing
+- Read this guide before acting. It is the canonical agent guide for this repository; do not create competing copies at the root or under `docs/`.
+- Before major architecture changes, UI redesigns, or feature-scope decisions, read `docs/origin.md` if it exists. If the project vision is not documented there, use the README and developer onboarding guide and avoid making unapproved product-direction changes.
 - Read `README.md` and `DEVELOPER_ONBOARDING.md` before making architecture or implementation changes.
 - Read the relevant module and nearby callers before changing behavior.
 - Check whether the change should be covered by an existing test in the repository root (for example [test_markdown_renderer.py](../test_markdown_renderer.py)). Use `pytest -s <test_file>.py` to validate changes.
@@ -24,7 +26,14 @@ This repository is a Python + PySide6 desktop app for browsing and studying loca
 ## Git identity and commits
 - When creating commits, use the repository's configured Karefined Git identity (`git config user.name` and `git config user.email`); do not substitute another account.
 - Never store, request, expose, or commit passwords, access tokens, private keys, or other credentials. Authentication must come from the user's configured Git/GitHub credential helper.
-- Include the standard Copilot co-author trailer required by the workspace instructions unless the user explicitly asks not to.
+- Never commit or push unless the user explicitly requests it. Never add a `Co-authored-by` trailer in this repository.
+
+## Documentation, product intent, and handoffs
+- Keep this guide as the repository's operational manual for architecture, contribution rules, validation, and known environment traps.
+- Before a substantial feature or phase is complete, add a concise permanent walkthrough under `docs/handoff/` covering the implementation, important decisions, and validation. Do not create handoff notes for trivial edits.
+- For UI or core-workflow design, record relevant user needs and evidence-based UX reasoning under `docs/research/`; avoid generic aesthetic rationales.
+- When evaluating a major product or technical direction, offer candid tradeoffs and practical alternatives. Do not present an unmeasured hypothesis as a proven benefit or silently expand the approved scope.
+- For scraping or data-collection requests, assess the target, data sensitivity, and applicable access rules first. Explain privacy and terms-of-service risks when relevant; do not help collect private data or bypass access restrictions. Offer a safer, authorized alternative when needed.
 
 ## Implementation rules
 - Keep UI responsiveness in mind for preview-heavy paths. Debouncing, caching, and skipping redundant renders are preferred when the user is typing or revisiting the same content.
@@ -48,3 +57,10 @@ This repository is a Python + PySide6 desktop app for browsing and studying loca
 ## Validation
 - Run the full root-level test suite with `python -m pytest`.
 - If the change touches a viewer, do a quick manual smoke check by launching the app with `python main.py`.
+
+## Tool Quirks and Environment Traps
+- The worktree directory name may not change when the session branch is renamed. Searching under `C:\Users\asamoah\copilot-worktrees\eleviewer\elevonprospera-eng-commit-onboarding-update` failed with `Search paths do not exist` even though that was the branch name. Use the actual workspace path (`C:\Users\asamoah\copilot-worktrees\eleviewer\elevonprospera-eng-fantastic-garbanzo`) or omit the path to search from the current repository root.
+- `docs/AGENTS.md` points to this file for operational guidance. `docs/origin.md` records only documented product purpose, not an inferred historical origin story.
+- **Pytest unavailable / dependency installation blocked:** `python -m pytest` failed with `No module named pytest`. Installing project requirements and pytest failed because the environment could not resolve `files.pythonhosted.org` (`getaddrinfo failed`). Do not treat the suite as passing; report the blocker and use available syntax/static checks until dependencies can be installed.
+- **Windows PowerShell command chaining:** This environment's PowerShell does not support `&&` or `||`. Chain commands with `;` and check `$LASTEXITCODE` or `$?` explicitly before dependent steps.
+- **Mixed staged and unstaged documentation edits:** Interactive `git add -p` piped through PowerShell can stage unexpected hunks or leave prompts ambiguous. Inspect the index and working-tree diffs separately; use a narrowly scoped patch or index-only update, then verify `git diff --cached` before committing.
