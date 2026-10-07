@@ -1079,9 +1079,9 @@ class MainWindow(QMainWindow):
         ]
         has_vaults = bool(vault_paths)
         self.welcome_search_guidance.setText(
-            "Search file names in your active course folder, or enter a web address."
+            "Search file names in your active course folder, or open a website in the web panel."
             if has_vaults
-            else "Link a course folder to search its file names, or enter a web address."
+            else "Link a course folder to search its file names, or open a website in the web panel."
         )
         self.welcome_add_vault_button.setVisible(not has_vaults)
 
@@ -1096,6 +1096,9 @@ class MainWindow(QMainWindow):
         scroll_area.setFrameShape(QFrame.NoFrame)
         scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         scroll_area.setAlignment(Qt.AlignHCenter | Qt.AlignTop)
+        scroll_area.viewport().setStyleSheet(
+            f"background-color: {get_active_palette()['BRAND_BACKGROUND']};"
+        )
         
         content_w = QWidget()
         content_w.setMaximumWidth(800)
@@ -1104,6 +1107,7 @@ class MainWindow(QMainWindow):
         main_layout.setSpacing(32)
         
         p = get_active_palette()
+        brand_accent = get_brand_accent()
         
         # 1. Hero Section
         hero = QWidget()
@@ -1128,6 +1132,50 @@ class MainWindow(QMainWindow):
         hero_layout.addWidget(title, 0, Qt.AlignLeft)
         hero_layout.addWidget(subtitle, 0, Qt.AlignLeft)
         main_layout.addWidget(hero)
+
+        if not load_settings().get("vault_paths"):
+            setup_prompt = QWidget()
+            setup_prompt.setObjectName("welcomeSetupPrompt")
+            setup_prompt.setStyleSheet(f"""
+                QWidget#welcomeSetupPrompt {{
+                    background: {p['BRAND_PANEL']};
+                    border: 1px solid {p['BRAND_BORDER']};
+                    border-radius: 14px;
+                }}
+            """)
+            setup_layout = QVBoxLayout(setup_prompt)
+            setup_layout.setContentsMargins(20, 18, 20, 18)
+            setup_layout.setSpacing(10)
+
+            setup_title = QLabel("Start with your course folder")
+            setup_title.setStyleSheet(f"color: {p['BRAND_PRIMARY']}; font-size: 18px; font-weight: 700;")
+            setup_desc = QLabel(
+                "Add the folder that holds your notes, readings, and slides so EleViewer can search it, keep your recent work together, and help you get started faster."
+            )
+            setup_desc.setWordWrap(True)
+            setup_desc.setStyleSheet(f"color: {p['BRAND_MUTED_FG']}; font-size: 13px; line-height: 1.4;")
+
+            setup_button = QToolButton()
+            setup_button.setText("Add your first course folder")
+            setup_button.setCursor(Qt.PointingHandCursor)
+            setup_button.setStyleSheet(f"""
+                QToolButton {{
+                    background: {brand_accent};
+                    color: #ffffff;
+                    border: none;
+                    border-radius: 8px;
+                    padding: 10px 16px;
+                    font-size: 13px;
+                    font-weight: 700;
+                }}
+                QToolButton:hover {{ background: {p['BRAND_PRIMARY']}; }}
+            """)
+            setup_button.clicked.connect(self.add_vault)
+
+            setup_layout.addWidget(setup_title)
+            setup_layout.addWidget(setup_desc)
+            setup_layout.addWidget(setup_button, 0, Qt.AlignLeft)
+            main_layout.addWidget(setup_prompt)
         
         # 2. Quick-start card: plain-language first steps before the search box
         start_here = QWidget()
@@ -1217,7 +1265,7 @@ class MainWindow(QMainWindow):
         search_ico.setPixmap(icon("search", size=18).pixmap(18, 18))
         
         self.welcome_search = QLineEdit()
-        self.welcome_search.setPlaceholderText("Search course files or enter a web address...")
+        self.welcome_search.setPlaceholderText("Search course files or open a website...")
         self.welcome_search.setStyleSheet(f"""
             QLineEdit {{
                 background: transparent;
@@ -1227,9 +1275,14 @@ class MainWindow(QMainWindow):
                 padding: 12px 0;
             }}
         """)
-        
+
+        mode_label = QLabel("Search files")
+        mode_label.setObjectName("welcomeSearchModeLabel")
+        mode_label.setStyleSheet(f"color: {brand_accent}; font-size: 11px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase;")
+        mode_label.setAlignment(Qt.AlignRight)
         omni_bar_layout.addWidget(search_ico)
-        omni_bar_layout.addWidget(self.welcome_search)
+        omni_bar_layout.addWidget(self.welcome_search, 1)
+        omni_bar_layout.addWidget(mode_label)
         omni_wrapper_layout.addWidget(omni_bar_row)
 
         search_guidance_row = QWidget()
@@ -1261,6 +1314,8 @@ class MainWindow(QMainWindow):
         self.welcome_add_vault_button.clicked.connect(self.add_vault)
         search_guidance_layout.addWidget(self.welcome_add_vault_button)
         omni_wrapper_layout.addWidget(search_guidance_row)
+
+        self.welcome_search_mode_label = mode_label
 
         self._refresh_welcome_search_guidance()
         
@@ -1330,7 +1385,7 @@ class MainWindow(QMainWindow):
                 vault_path = vaults[0] if vaults else None
                 
             if not vault_path:
-                item = QListWidgetItem("Use Add course folder to search its files.")
+                item = QListWidgetItem("Add course folder to search your notes, readings, and slides.")
                 item.setFlags(Qt.NoItemFlags)
                 self.omni_results.addItem(item)
                 self.omni_results.show()
@@ -1467,8 +1522,8 @@ class MainWindow(QMainWindow):
                 w = self.tabs.currentWidget()
                 if hasattr(w, "go_to_bookmark"): w.go_to_bookmark(b.get("page_number", 0), b.get("scroll_position_y", 0.0))
 
-        cols_layout.addWidget(_create_section("Recent Files", "clock", recent_items, _handle_recent, "No recent files"))
-        cols_layout.addWidget(_create_section("Bookmarks", "bookmark", bm_items, _handle_bm, "No bookmarks"))
+        cols_layout.addWidget(_create_section("Recent Files", "clock", recent_items, _handle_recent, "No recent files yet — open a file to start your study workspace."))
+        cols_layout.addWidget(_create_section("Bookmarks", "bookmark", bm_items, _handle_bm, "No bookmarks yet — save one while reading or researching."))
         
         main_layout.addWidget(columns)
         main_layout.addStretch()
