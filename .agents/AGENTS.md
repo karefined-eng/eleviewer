@@ -3,6 +3,15 @@
 ## Purpose
 This repository is a Python + PySide6 desktop app for browsing and studying local documents. Keep changes small, local, and consistent with the current implementation.
 
+## Short-form operating rules
+- Read `docs/origin.md` before major product or UI changes; do not drift from documented intent.
+- Treat `docs/AGENTS.md` and `.agents/AGENTS.md` as the repo's living operating manual; read them before acting.
+- Keep durable work notes in `docs/handoff/` and UX rationale in `docs/research/`.
+- Do not leave a tool trap or environment quirk unexplained; log it under `Tool Quirks` / `Environment Traps` before ending the session.
+- Be proactive: challenge weak assumptions, explain tradeoffs, and keep decisions anchored in user value and product psychology.
+- Prefer legal/safe, authorized workflows; do not help with unauthorized scraping or private-data collection.
+- If a release, distribution, or package-manager step fails, separate product issues from external upstream blockers and document the exact cause.
+
 ## Working assumptions
 - The app entry point is [main.py](../main.py).
 - The main UI shell is [ui.py](../ui.py).
