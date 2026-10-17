@@ -186,6 +186,15 @@ class TtsReaderBar(QFrame):
         self.status_label.setText(msg)
         self.set_active_reading(is_reading)
 
+    def set_error(self, message: str):
+        """Show a plain, visible failure message instead of silently stopping."""
+        p = get_active_palette()
+        self.status_label.setText(
+            f"<span style='color:#ef4444; font-weight:bold;'>Reading aloud failed:</span> "
+            f"<span style='color:{p['BRAND_MUTED_FG']};'>{message}</span>"
+        )
+        self.set_active_reading(False)
+
     def get_selected_voice_id(self):
         return self.voice_combo.currentData()
 

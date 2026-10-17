@@ -201,6 +201,10 @@ class DraggableToolBar(QToolBar):
 
 class MainWindow(QMainWindow):
 
+    # Raised (queued from the TTS worker thread) whenever reading aloud fails,
+    # so the failure is shown in the UI instead of passing silently.
+    tts_error_raised = Signal(str)
+
     FILE_FILTER = (
         "All Supported (*.md *.txt *.docx *.xlsx *.pptx *.pdf *.csv *.html *.htm);;"
         "PowerPoint (*.pptx);;Word (*.docx);;Excel (*.xlsx);;PDF (*.pdf);;"
@@ -214,7 +218,8 @@ class MainWindow(QMainWindow):
         self.vault_panel = None
         self._web_dock = None
         self.bookmarks_panel = None
-        self.tts_engine = TtsEngine()
+        self.tts_engine = TtsEngine(on_error=self._on_tts_error)
+        self.tts_error_raised.connect(self._show_tts_error)
         self._quitting = False
 
         self.setWindowTitle(f"EleViewer — Untitled")
@@ -498,6 +503,7 @@ class MainWindow(QMainWindow):
         self.vault_panel.file_opened.connect(self._open_vault_file)
         self.vault_panel.btn_add.clicked.connect(self.add_vault)
         self.vault_panel.vaults_changed.connect(self._refresh_welcome_search_guidance)
+        self.vault_panel.files_changed.connect(self._on_vault_files_changed)
         self.main_splitter.addWidget(self.vault_panel)
 
         self.editor_tabs_splitter = QSplitter(Qt.Horizontal)
@@ -835,6 +841,41 @@ class MainWindow(QMainWindow):
             self._add_editor_tab(editor, os.path.basename(path))
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Failed to open file: {str(e)}")
+
+    def _on_vault_files_changed(self, changes):
+        """Remap or close open tabs after files were renamed/moved/deleted in the vault."""
+        if not changes:
+            return
+        for tab_widget in (self.tabs, getattr(self, "tabs_right", None)):
+            if tab_widget is None:
+                continue
+            for index in range(tab_widget.count() - 1, -1, -1):
+                editor = tab_widget.widget(index)
+                old_path = getattr(editor, "file_path", None)
+                if not old_path:
+                    continue
+                new_path = None
+                was_changed = False
+                for old, new in changes.items():
+                    # Exact match, or the file lived inside a renamed/deleted folder.
+                    if old_path == old:
+                        new_path, was_changed = new, True
+                        break
+                    prefix = old.rstrip("\\/") + os.sep
+                    if old_path.startswith(prefix):
+                        new_path = (new + old_path[len(old):]) if new else None
+                        was_changed = True
+                        break
+                if not was_changed:
+                    continue
+                if new_path:
+                    editor.file_path = new_path
+                    self.update_tab_title(editor)
+                else:
+                    if tab_widget is self.tabs:
+                        self.close_tab(index)
+                    else:
+                        self._close_tab_in_widget(tab_widget, index)
 
     def _wire_editor(self, editor):
         if hasattr(editor, "set_status_callback"):
@@ -2499,7 +2540,13 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "Missing Module", "QtWebEngine not installed.")
             return
 
-        web_panel = WebPanel()
+        try:
+            web_panel = WebPanel()
+        except ImportError as error:
+            # The web engine's files are locked by another program or missing
+            # (issue #100). Degrade to a friendly notice instead of a fatal crash.
+            QMessageBox.warning(self, "Web Panel Unavailable", str(error))
+            return
         self._web_dock = QDockWidget("Web Browser", self)
         self._web_dock.setWidget(web_panel)
         self._web_dock.setMinimumWidth(480)
@@ -2731,3 +2778,13 @@ class MainWindow(QMainWindow):
             current.tts.stop()
         if hasattr(self, "tts_bar") and self.tts_bar:
             self.tts_bar.set_active_reading(False)
+
+    def _on_tts_error(self, message):
+        # Called from the TTS worker thread — only emit; the connection above
+        # queues _show_tts_error into the GUI thread.
+        self.tts_error_raised.emit(message)
+
+    def _show_tts_error(self, message):
+        if getattr(self, "tts_bar", None) and self.tts_bar.isVisible():
+            self.tts_bar.set_error(message)
+        self.show_status_message(message, 5000)

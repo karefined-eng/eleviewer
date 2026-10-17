@@ -84,6 +84,7 @@ jobs:
             --include-data-dir=getting_started=getting_started `
             --windows-console-mode=disable `
             --nofollow-import-to=tkinter,unittest,pdb,pydoc `
+            --include-module=pyttsx3.drivers.sapi5 `
             --output-filename=EleViewer.exe `
             main.py
 

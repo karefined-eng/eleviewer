@@ -1,5 +1,8 @@
 """Tabbed web panel with persisted URLs using QtWebEngine."""
 
+import importlib
+import time
+
 from PySide6.QtCore import Signal, QUrl, QTimer
 from paths import APP_DATA_DIR
 from theme import get_active_palette, get_brand_accent
@@ -8,10 +11,49 @@ WEB_AVAILABLE = True
 _web_profile = None
 _WebViewWrapperClass = None
 
+_WEB_LOCKED_MESSAGE = (
+    "The web browser panel could not start because another program is "
+    "temporarily using one of its files. This can happen right after an "
+    "update, or while security software is checking new files.\n\n"
+    "Please wait a few seconds, then open the web panel again."
+)
+_WEB_MISSING_MESSAGE = "The web browser panel is not available in this copy of the app."
+
+
+def _import_webengine(name, retries=3, delay=0.7):
+    """Import a QtWebEngine module, retrying brief 'file in use' locks.
+
+    Security software, a sync tool, or the previous app instance shutting
+    down can briefly lock the web engine's files, making the import fail
+    with 'being used by another process'. The lock usually clears within
+    a second or two, so a short retry keeps a temporary condition from
+    crashing the whole app.
+    """
+    global WEB_AVAILABLE
+    last_error = None
+    for attempt in range(max(1, retries)):
+        try:
+            return importlib.import_module(name)
+        except ImportError as error:
+            last_error = error
+            if attempt < retries - 1:
+                time.sleep(delay * (attempt + 1))
+    text = str(last_error)
+    if "LoadLibraryEx" in text or "being used by another process" in text:
+        # Transient lock: keep the panel enabled so the user can simply
+        # try again once the other program has finished with the file.
+        raise ImportError(_WEB_LOCKED_MESSAGE) from last_error
+    WEB_AVAILABLE = False
+    raise ImportError(_WEB_MISSING_MESSAGE) from last_error
+
+
 def get_persistent_profile():
     global _web_profile
     if _web_profile is None:
-        from PySide6.QtWebEngineCore import QWebEngineProfile, QWebEngineSettings, QWebEngineUrlRequestInterceptor
+        QtWebEngineCore = _import_webengine("PySide6.QtWebEngineCore")
+        QWebEngineProfile = QtWebEngineCore.QWebEngineProfile
+        QWebEngineSettings = QtWebEngineCore.QWebEngineSettings
+        QWebEngineUrlRequestInterceptor = QtWebEngineCore.QWebEngineUrlRequestInterceptor
         
         class AdBlockInterceptor(QWebEngineUrlRequestInterceptor):
             AD_KEYWORDS = (
@@ -56,8 +98,9 @@ def get_persistent_profile():
 def get_web_view_class():
     global _WebViewWrapperClass
     if _WebViewWrapperClass is None:
-        from PySide6.QtWebEngineWidgets import QWebEngineView
-        from PySide6.QtWebEngineCore import QWebEnginePage
+        QtWebEngineWidgets = _import_webengine("PySide6.QtWebEngineWidgets")
+        QWebEngineView = QtWebEngineWidgets.QWebEngineView
+        QWebEnginePage = _import_webengine("PySide6.QtWebEngineCore").QWebEnginePage
 
         class _WebViewWrapperImpl(QWebEngineView):
             def __init__(self, parent=None):
