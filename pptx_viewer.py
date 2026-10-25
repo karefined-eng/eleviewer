@@ -23,8 +23,10 @@ from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QToolButton, QLabel,
     QTextBrowser, QLineEdit, QSplitter, QListWidget, QListWidgetItem, QFrame
 )
-from PySide6.QtCore import Qt, Signal, QSize, QUrl
-from PySide6.QtGui import QIntValidator, QKeyEvent, QShortcut, QKeySequence
+from PySide6.QtCore import Qt, Signal, QSize, QUrl, QObject, Slot
+from PySide6.QtGui import (
+    QIntValidator, QKeyEvent, QShortcut, QKeySequence, QTextCursor
+)
 
 # Lazy WebEngine availability flag — set inside __init__ to avoid Chromium cold-start tax
 _WEB_AVAILABLE: bool | None = None  # None = not yet checked
@@ -34,6 +36,27 @@ from theme import (
     compact_toolbar_stylesheet, ICON_SIZE_COMPACT,
     get_active_palette, get_brand_accent,
 )
+
+
+class _SlideScrollBridge(QObject):
+    """JS→Python bridge: the rendered page reports which slide card is in view."""
+
+    def __init__(self, viewer):
+        super().__init__(viewer)
+        self._viewer = viewer
+
+    @Slot(int)
+    def reportActiveSlide(self, index):
+        v = self._viewer
+        if v._is_jumping or not (0 <= index < v.total_slides):
+            return
+        if index == v.current_slide:
+            return
+        v.current_slide = index
+        v.slide_input.setText(str(index + 1))
+        v.slide_list.blockSignals(True)
+        v.slide_list.setCurrentRow(index)
+        v.slide_list.blockSignals(False)
 
 
 class PptxViewer(QWidget):
@@ -150,6 +173,7 @@ class PptxViewer(QWidget):
             from web_panel import WebViewWrapper
             self.viewer = WebViewWrapper()
             self._use_webengine = True
+            self._setup_web_scroll_sync()
         else:
             self.viewer = QTextBrowser()
             self.viewer.setStyleSheet(f"""
@@ -189,6 +213,24 @@ class PptxViewer(QWidget):
 
         if file_path:
             self.load_from_path(file_path)
+
+    def _setup_web_scroll_sync(self):
+        """Bridge scroll position from the rendered page back to the sidebar.
+
+        The document is one continuous scroll, so without this bridge
+        current_slide (counter, list, bookmarks, TTS) stays stuck on the last
+        jump target whenever the user scrolls manually. If QtWebChannel is
+        unavailable the page simply never reports back — same as before.
+        """
+        try:
+            from PySide6.QtWebChannel import QWebChannel
+        except Exception as e:
+            print(f"[PPTX Viewer] scroll sync unavailable (no QtWebChannel): {e}")
+            return
+        self._web_channel = QWebChannel(self)
+        self._scroll_bridge = _SlideScrollBridge(self)
+        self._web_channel.registerObject("pptxBridge", self._scroll_bridge)
+        self.viewer.page().setWebChannel(self._web_channel)
 
     def _extract_shapes(self, shape):
         """Return ordered slide elements as ``(kind, value)`` tuples.
@@ -271,16 +313,19 @@ class PptxViewer(QWidget):
                     elements = []
                     title_found = False
                     for shape in slide.shapes:
+                        try:
+                            pf = getattr(shape, "placeholder_format", None)
+                            is_title_shape = pf is not None and pf.idx == 0
+                        except Exception:
+                            is_title_shape = False
                         for kind, val in self._extract_shapes(shape):
-                            # Title detection: prefer official title placeholder (idx==0)
-                            if not title_found and kind == "text":
-                                try:
-                                    pf = getattr(shape, "placeholder_format", None)
-                                    if pf is not None and pf.idx == 0:
-                                        title = val["text"] if isinstance(val, dict) else val
-                                        title_found = True
-                                except Exception:
-                                    pass
+                            # Title detection: official title placeholder (idx==0).
+                            # The first title paragraph becomes the heading and
+                            # is not repeated in the body.
+                            if not title_found and kind == "text" and is_title_shape:
+                                title = val["text"] if isinstance(val, dict) else val
+                                title_found = True
+                                continue
                             elements.append((kind, val))
                     notes = ""
                     if slide.has_notes_slide and slide.notes_slide.notes_text_frame:
@@ -354,11 +399,14 @@ class PptxViewer(QWidget):
                     title = f"Slide {idx}"
                     if texts:
                         title = texts[0]
-                    elements = [("text", text) for text in texts]
+                    # First text run becomes the title; keep it out of the
+                    # body and TTS content so it is not read twice.
+                    body_texts = texts[1:] if texts else []
+                    elements = [("text", text) for text in body_texts]
                     elements.extend(("image", image) for image in images)
                     self.slides.append({
                         "title": title,
-                        "content": "\n\n".join(texts),
+                        "content": "\n\n".join(body_texts),
                         "elements": elements,
                         "images": images,
                         "notes": "",
@@ -395,12 +443,11 @@ class PptxViewer(QWidget):
             return
         if self._use_webengine:
             # QWebEngineView.findText wraps automatically
-            from PySide6.QtWebEngineWidgets import QWebEngineView
             self.viewer.findText(query)
         else:
-            # QTextBrowser.find — loop back on no match
+            # QTextBrowser.find — wrap to the top of the document on no match
             if not self.viewer.find(query):
-                self.viewer.moveCursor(self.viewer.textCursor().Start)
+                self.viewer.moveCursor(QTextCursor.MoveOperation.Start)
                 self.viewer.find(query)
 
     def _render_text_block(self, text, empty_message=""):
@@ -522,7 +569,34 @@ class PptxViewer(QWidget):
   .notes-body {{ font-size: 0.9em; color: {p['BRAND_MUTED_FG']}; }}
   .bottom-pad {{ height: 40px; }}
 """
-            html_output = f'<!DOCTYPE html><html><head><meta charset="utf-8"><style>{css}</style></head><body>'
+            sync_js = """
+<script src="qrc:///qtwebchannel/qwebchannel.js"></script>
+<script>
+(function () {
+  if (typeof qt === 'undefined' || typeof QWebChannel === 'undefined') return;
+  new QWebChannel(qt.webChannelTransport, function (channel) {
+    var bridge = channel.objects.pptxBridge;
+    var pending = null;
+    function reportActive() {
+      var cards = document.querySelectorAll('.slide-card');
+      if (!cards.length) return;
+      var probe = window.scrollY + window.innerHeight * 0.35;
+      var active = 0;
+      for (var i = 0; i < cards.length; i++) {
+        if (cards[i].offsetTop <= probe) active = i; else break;
+      }
+      bridge.reportActiveSlide(active);
+    }
+    window.addEventListener('scroll', function () {
+      if (pending) return;
+      pending = window.setTimeout(function () { pending = null; reportActive(); }, 120);
+    }, { passive: true });
+  });
+})();
+</script>
+"""
+            html_output = (f'<!DOCTYPE html><html><head><meta charset="utf-8">'
+                           f'<style>{css}</style></head><body>' + sync_js)
 
             for index, slide_data in enumerate(self.slides):
                 content_html = self._render_web_elements(self._slide_elements(slide_data))
@@ -645,8 +719,10 @@ class PptxViewer(QWidget):
         self.slide_list.blockSignals(False)
 
         if self._use_webengine:
-            # Use JS scrollIntoView for smooth, accurate slide navigation
-            js = f"var el = document.getElementById('slide_{index}'); if (el) el.scrollIntoView({{behavior: 'smooth', block: 'start'}});"
+            # Instant jump (not smooth): the scroll-sync bridge reports back
+            # from every scroll event, and an animated scroll would make the
+            # counter flicker through intermediate slides mid-animation.
+            js = f"var el = document.getElementById('slide_{index}'); if (el) el.scrollIntoView({{block: 'start'}});"
             self.viewer.page().runJavaScript(js)
         else:
             self.viewer.scrollToAnchor(f"slide_{index}")
