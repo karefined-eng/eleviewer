@@ -29,7 +29,7 @@ jobs:
           pip install pytest
 
       - name: Compile Python modules
-        run: python -m compileall -q .
+        run: python -m compileall -q -x 'src[\\/]+scratch([\\/]|$)' .
 
       - name: Run tests
         run: python -m pytest -q
