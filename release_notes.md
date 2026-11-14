@@ -1,14 +1,13 @@
-# EleViewer v1.3.6: Release Alignment & Packaging Update
+# EleViewer v1.3.7: Safer Web Panel and Read Aloud
 
-Welcome to EleViewer v1.3.6. This release keeps the app, installer, and Windows package metadata aligned so the latest version installs cleanly and shows the correct version everywhere.
+EleViewer v1.3.7 is a focused patch release that makes two core study tools more reliable.
 
-## ✨ What’s improved
-- **Version alignment:** The app, installer, and package-manager manifests now all point to the same release number.
-- **Release tooling reliability:** The local fallback version used in packaging has been updated to keep release builds consistent.
+## What’s fixed
 
-## 🛠️ Release details
-- This is a release-readiness update focused on packaging and version management rather than a major feature change.
-- The installer, changelog, and Windows Package Manager metadata are now synchronized for the 1.3.6 release.
+- **Web Panel:** A temporary Windows file lock or startup problem no longer crashes EleViewer. The app now keeps running and explains when the browser panel needs to be tried again.
+- **Read Aloud:** Reading can fall back to Windows’ built-in voice when the usual offline speech engine cannot start.
+
+This update keeps your files local and does not change the app’s offline-first workflow.
 
 ---
-*Love this update? Have a suggestion? Let us know on our [GitHub Issues page](https://github.com/karefined-eng/eleviewer/issues).*
+*Have a suggestion? Share it on our [GitHub Issues page](https://github.com/karefined-eng/eleviewer/issues).*

@@ -2546,7 +2546,7 @@ class MainWindow(QMainWindow):
 
         try:
             web_panel = WebPanel()
-        except ImportError as error:
+        except (ImportError, OSError, RuntimeError) as error:
             # The web engine's files are locked by another program or missing
             # (issue #100). Degrade to a friendly notice instead of a fatal crash.
             QMessageBox.warning(self, "Web Panel Unavailable", str(error))

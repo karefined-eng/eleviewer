@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.3.7] - 2026-11-14
+
+### Fixed
+- Prevented the Web Panel from crashing the app when QtWebEngine files are temporarily locked or fail during startup.
+- Added Windows Speech fallback handling when the offline read-aloud engine cannot initialize or restart.
+- Added regression coverage for both read-aloud fallback paths.
+
 ## [1.3.6] - 2026-10-07
 
 ### Changed

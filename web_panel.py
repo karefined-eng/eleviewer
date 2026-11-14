@@ -34,7 +34,7 @@ def _import_webengine(name, retries=3, delay=0.7):
     for attempt in range(max(1, retries)):
         try:
             return importlib.import_module(name)
-        except ImportError as error:
+        except (ImportError, OSError) as error:
             last_error = error
             if attempt < retries - 1:
                 time.sleep(delay * (attempt + 1))

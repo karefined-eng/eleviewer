@@ -199,7 +199,8 @@ class TtsEngine:
                 try:
                     self._initialize_local_engine()
                 except Exception as reset_error:
-                    self._report_error(f"Offline reading aloud could not start: {reset_error}")
+                    if not self._speak_native_windows(text):
+                        self._report_error(f"Offline reading aloud could not start: {reset_error}")
                     return
                 engine = self._pyttsx3_engine
 
@@ -218,7 +219,8 @@ class TtsEngine:
                 try:
                     self._initialize_local_engine()
                 except Exception as reset_error:
-                    self._report_error(f"Offline reading aloud could not restart: {reset_error}")
+                    if not self._speak_native_windows(text):
+                        self._report_error(f"Offline reading aloud could not restart: {reset_error}")
                     return
 
     def _speak_native_windows(self, text):
