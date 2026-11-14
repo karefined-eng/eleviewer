@@ -70,6 +70,9 @@ This repository is a Python + PySide6 desktop app for browsing and studying loca
 ## Tool Quirks and Environment Traps
 
 - Windows PowerShell `Select-String` does not support a `-Recurse` parameter. Use `rg` or pipe `Get-ChildItem -Recurse` results into `Select-String` instead.
+- Windows PowerShell `Select-String` also does not support `-First`; pipe its output to `Select-Object -First N`.
+- `gh run view --log` returns exit code 1 with “logs will be available when it is complete” while a workflow is still running; use the run JSON status until completion.
+- Generated release files under `dist/` are not tracked in the tag source tree; retrieve `winget-installer.yaml` and checksums from the GitHub Release assets instead of the repository contents API.
 
 - Git ignore patterns do not treat an inline `#` as a comment when it appears after a pattern. Keep explanatory comments on their own line; otherwise a pattern such as `EleViewer_Setup_*.exe  # ...` will not ignore matching installers.
 - The worktree directory name may not change when the session branch is renamed. Searching under `C:\Users\asamoah\copilot-worktrees\eleviewer\elevonprospera-eng-commit-onboarding-update` failed with `Search paths do not exist` even though that was the branch name. Use the actual workspace path (`C:\Users\asamoah\copilot-worktrees\eleviewer\elevonprospera-eng-fantastic-garbanzo`) or omit the path to search from the current repository root.
