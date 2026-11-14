@@ -41,11 +41,14 @@ EleViewer opens all your school files locally:
 * **Excel (.xlsx, .csv)**: View spreadsheets cleanly.
 * **Markdown**: Take beautiful, auto-formatting notes.
 
-## No Installation Required
+## Choose your Windows download
 
-EleViewer is a "portable" app. This means you don't have to install it. Just download the `.exe` file and double-click it. You can even run it straight off a USB flash drive on school computers that block you from installing software.
+The [latest EleViewer release](https://github.com/karefined-eng/eleviewer/releases/latest) offers two Windows downloads:
 
-[Download the latest version for Windows](https://github.com/karefined-eng/eleviewer/releases/latest)
+- **Setup installer** (`EleViewer_Setup_v<VERSION>.exe`): runs a setup wizard to install EleViewer. The installer is configured to run without administrator rights and can add shortcuts and file associations.
+- **Portable archive** (`EleViewer-Portable.zip`): extract the ZIP file and launch `EleViewer.exe` from the extracted folder. This option does not use the setup wizard.
+
+These are separate downloads: the portable version is a ZIP archive, not a standalone `.exe`.
 
 You can also install EleViewer through WinGet:
 
@@ -53,9 +56,13 @@ You can also install EleViewer through WinGet:
 winget install --id karefined-eng.EleViewer
 ```
 
-## Privacy First
+## Privacy and internet use
 
-Your files are yours. EleViewer is 100% offline. We do not upload your essays to the cloud, we do not require you to make an account, and we do not track what you do. 
+EleViewer is **offline-first for local document work**. Your local document files are not uploaded as part of ordinary document use, and you do not need an account.
+
+- **Local document work:** files opened from your device are handled locally during ordinary use.
+- **Internet-required features:** the built-in web panel and network downloads or updates need an internet connection.
+- **Optional reports:** feedback or crash reports are sent only when you choose to submit them. 
 
 ## Study and comparison guides
 
