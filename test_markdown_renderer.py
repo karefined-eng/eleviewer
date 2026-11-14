@@ -2,6 +2,7 @@ import unittest
 from PySide6.QtWidgets import QApplication
 from markdown_renderer import MarkdownViewer
 from markdown_utils import preprocess_markdown, convert_latex_expr
+import markdown_renderer
 
 
 class TestMarkdownPreprocessing(unittest.TestCase):
@@ -51,6 +52,17 @@ class TestMarkdownPreprocessing(unittest.TestCase):
 
         self.assertEqual(len(calls), 1)
         self.assertIn("<html>", viewer.viewer.toHtml())
+
+    def test_preview_fails_closed_without_bleach(self):
+        viewer = MarkdownViewer.__new__(MarkdownViewer)
+        viewer.is_html = False
+        original_available = markdown_renderer.BLEACH_AVAILABLE
+        markdown_renderer.BLEACH_AVAILABLE = False
+        try:
+            with self.assertRaises(RuntimeError):
+                viewer._render_markdown("# Unsafe preview")
+        finally:
+            markdown_renderer.BLEACH_AVAILABLE = original_available
 
 
 if __name__ == "__main__":

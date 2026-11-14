@@ -26,7 +26,7 @@ python -m py_compile markdown_renderer.py updater.py web_downloads.py
 
 ## Follow-up plan
 
-1. Generate a platform-specific dependency lockfile with package hashes from a clean build environment.
-2. Run `pip-audit` against the lockfile in CI and fail builds on known high-severity advisories.
-3. Add regression coverage for sanitizer-unavailable behavior and updater metadata validation.
-4. Review local HTML/WebEngine isolation separately, especially cookie persistence and JavaScript behavior.
+1. **Done:** Added `requirements.lock.txt` with deterministic direct runtime pins and configured CI to install and audit it.
+2. **Done:** Added regression coverage for sanitizer-unavailable behavior and updater metadata validation.
+3. **Pending:** Generate platform-specific package hashes from a clean release environment; local hash resolution stalled.
+4. **Pending:** Review local HTML/WebEngine isolation separately, especially cookie persistence and JavaScript behavior.

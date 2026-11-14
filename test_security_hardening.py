@@ -122,3 +122,35 @@ def test_updater_rejects_untrusted_hash_asset(monkeypatch):
     thread.run()
 
     assert errors == ["Security verification failed: No SHA-256 hash found for this release."]
+
+
+def test_updater_rejects_malformed_hash_from_trusted_asset(monkeypatch):
+    class MockResponse:
+        status = 200
+
+        def __init__(self, content):
+            self.content = content
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc_val, exc_tb):
+            pass
+
+        def read(self):
+            return self.content
+
+    responses = [
+        MockResponse(
+            b'{"tag_name":"v9.9.9","assets":[{"name":"EleViewer.exe","browser_download_url":"https://github.com/karefined-eng/eleviewer/releases/download/v9.9.9/EleViewer.exe"},{"name":"EleViewer_SHA256.txt","browser_download_url":"https://github.com/karefined-eng/eleviewer/releases/download/v9.9.9/EleViewer_SHA256.txt"}],"html_url":"https://github.com/karefined-eng/eleviewer/releases/tag/v9.9.9"}'
+        ),
+        MockResponse(b"SHA-256: not-a-digest"),
+    ]
+    monkeypatch.setattr(updater.urllib.request, "urlopen", lambda *args, **kwargs: responses.pop(0))
+
+    errors = []
+    thread = updater.CheckUpdateThread(current_version="1.0.0")
+    thread.error_occurred.connect(errors.append)
+    thread.run()
+
+    assert errors == ["Security verification failed: No SHA-256 hash found for this release."]
