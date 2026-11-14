@@ -69,7 +69,9 @@ This repository is a Python + PySide6 desktop app for browsing and studying loca
 
 ## Tool Quirks and Environment Traps
 
-- Git ignore patterns do not treat an inline `#` as a comment when it appears after a pattern. Keep explanatory comments on their own line; otherwise a pattern such as `EleViewer_Setup_*.exe  # ...` will not ignore matching installers. and Environment Traps
+- Windows PowerShell `Select-String` does not support a `-Recurse` parameter. Use `rg` or pipe `Get-ChildItem -Recurse` results into `Select-String` instead.
+
+- Git ignore patterns do not treat an inline `#` as a comment when it appears after a pattern. Keep explanatory comments on their own line; otherwise a pattern such as `EleViewer_Setup_*.exe  # ...` will not ignore matching installers.
 - The worktree directory name may not change when the session branch is renamed. Searching under `C:\Users\asamoah\copilot-worktrees\eleviewer\elevonprospera-eng-commit-onboarding-update` failed with `Search paths do not exist` even though that was the branch name. Use the actual workspace path (`C:\Users\asamoah\copilot-worktrees\eleviewer\elevonprospera-eng-fantastic-garbanzo`) or omit the path to search from the current repository root.
 - `docs/AGENTS.md` points to this file for operational guidance. `docs/origin.md` records only documented product purpose, not an inferred historical origin story.
 - **Pytest unavailable / dependency installation blocked:** `python -m pytest` failed with `No module named pytest`. Installing project requirements and pytest failed because the environment could not resolve `files.pythonhosted.org` (`getaddrinfo failed`). Do not treat the suite as passing; report the blocker and use available syntax/static checks until dependencies can be installed.
