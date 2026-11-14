@@ -128,7 +128,6 @@ the contents of any secret. WinGet submission is intentionally skipped until
 the package ID exists upstream; once enabled, an absent or invalid
 `WINGET_TOKEN` can still leave the GitHub Release published without a WinGet
 submission.
-repository settings.
 
 ## WinGet
 
