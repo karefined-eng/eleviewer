@@ -162,7 +162,11 @@ jobs:
           generate_release_notes: true
           overwrite_files: true
 
+      # WinGet submission is opt-in until the package ID exists in winget-pkgs.
+      # Set the repository variable WINGET_PACKAGE_PUBLISHED=true after the
+      # initial package submission has been accepted.
       - name: Submit to Winget
+        if: ${{ vars.WINGET_PACKAGE_PUBLISHED == 'true' }}
         uses: vedantmgoyal2009/winget-releaser@v2
         with:
           identifier: karefined-eng.EleViewer

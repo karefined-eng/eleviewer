@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [1.3.7] - 2026-11-14
 
+### Added
+- Added a persistent local vault filename index for faster repeated searches.
+- Added asynchronous loading for DOCX, PPTX, and XLSX documents.
+
+### Changed
+- Added an application-level workspace service boundary and pull-request/main
+  CI validation.
+
 ### Fixed
 - Prevented the Web Panel from crashing the app when QtWebEngine files are temporarily locked or fail during startup.
 - Added Windows Speech fallback handling when the offline read-aloud engine cannot initialize or restart.
