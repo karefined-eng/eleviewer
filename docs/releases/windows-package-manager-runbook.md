@@ -46,10 +46,11 @@ As of 2026-11-14:
   package input from the exact artifact being published.
 - WinGet package ID: `karefined-eng.EleViewer`.
 - The generated WinGet manifest for 1.3.7 is included in the GitHub Release, but
-  the package ID has not yet been accepted into `microsoft/winget-pkgs`.
-  The automated submission step is therefore opt-in and runs only when the
-  repository variable `WINGET_PACKAGE_PUBLISHED` is set to `true`.
-  Do not enable it until the initial package submission has been accepted.
+  the initial package submission is pending in
+  <https://github.com/microsoft/winget-pkgs/pull/435167>. The automated
+  submission step is therefore opt-in and runs only when the repository
+  variable `WINGET_PACKAGE_PUBLISHED` is set to `true`. Do not enable it until
+  the initial package submission has been accepted.
 - `.github/workflows/build.yml` triggers on a pushed `vX.Y.Z` tag. It builds
   the application, installer and portable ZIP; creates a GitHub Release;
   generates a WinGet installer manifest; and calls `winget-releaser` when the
@@ -91,11 +92,10 @@ or tag just to retry a package submission.
    generated WinGet installer YAML. Download each asset and independently
    calculate SHA-256. Confirm the expected architecture and that the installer
    and ZIP can be installed/launched as applicable.
-6. **Complete WinGet follow-up.** If the package ID is already present in
-   `microsoft/winget-pkgs`, enable the repository variable and inspect the PR
-   created or updated by `winget-releaser`; otherwise submit the initial
-   manifest manually through the documented WinGet process before enabling the
-   automation. Do not publish duplicate submissions.
+6. **Complete WinGet follow-up.** Monitor the existing initial-submission PR
+   <https://github.com/microsoft/winget-pkgs/pull/435167>. After it merges,
+   enable the repository variable so future releases can use
+   `winget-releaser`. Do not publish duplicate submissions.
 7. **Publish Scoop and Chocolatey updates.** Follow their sections below only
    after the release artifacts are public and independently verified. If a
    platform's first-time package submission has not been approved or its account

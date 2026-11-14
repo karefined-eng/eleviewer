@@ -35,7 +35,7 @@ silence reports, plus the high-impact workspace improvements:
 - Installer SHA-256:
   `b18c5bb148b454ff3b1c0b79f40f24695f9bbc8b47e32b1cc08beb853086ad95`
 - The v1.3.7 release workflow completed successfully. WinGet submission was
-  intentionally skipped because the package ID has not yet been accepted into
-  `microsoft/winget-pkgs`.
+  intentionally skipped because the package ID is awaiting acceptance in the
+  initial upstream PR: <https://github.com/microsoft/winget-pkgs/pull/435167>.
 - The website is deployed with v1.3.7 metadata and redirects downloads to the
   v1.3.7 installer.
