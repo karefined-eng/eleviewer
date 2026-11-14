@@ -48,6 +48,7 @@ PROJECT_LOG.md # Personal agent context ledger
 data/          # User data (recent files, session, settings)
 dist/          # Built executables
 build/         # Build artifacts
+EleViewer_Setup_*.exe  # Release installers belong in GitHub Releases, not the repository
 .sixth/        # Build cache
 
 # OS
