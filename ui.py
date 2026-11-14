@@ -38,6 +38,7 @@ from branding_logo import create_eleviewer_icon, create_eleviewer_pixmap
 from file_handler import get_file_extension
 from tts_reader_bar import TtsReaderBar
 from tts_engine import TtsEngine
+from workspace_services import WorkspaceServices
 
 
 # ── File-type icon helper ───────────────────────────────────────────
@@ -214,6 +215,7 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.autosaver = None
+        self.services = WorkspaceServices()
         self.closed_tabs = []
         self.vault_panel = None
         self._web_dock = None
@@ -834,7 +836,7 @@ class MainWindow(QMainWindow):
         if self.switch_to_tab_if_open(path):
             return
         try:
-            editor = create_viewer_widget(path)
+            editor = self.services.create_viewer(path)
             self._wire_editor(editor)
             save_recent_file(path)
             self.update_menus()
@@ -926,7 +928,7 @@ class MainWindow(QMainWindow):
             return
         if not self.switch_to_tab_if_open(path):
             try:
-                editor = create_viewer_widget(path)
+                editor = self.services.create_viewer(path)
                 self._wire_editor(editor)
                 save_recent_file(path)
                 self._add_editor_tab(editor, os.path.basename(path))
@@ -1761,11 +1763,13 @@ class MainWindow(QMainWindow):
                 "zoom": zoom,
                 "pdf_page": pdf_page,
             })
-        save_session(tabs_info, bookmarks_panel_visible=self.bookmarks_panel.isVisible())
+        self.services.save_session(
+            tabs_info, bookmarks_panel_visible=self.bookmarks_panel.isVisible()
+        )
 
     # IMPROVEMENT: persist scroll position and PDF zoom across sessions
     def restore_session(self):
-        session = load_session()
+        session = self.services.load_session()
         tabs = session.get("tabs", [])
         active_index = 0
         for tab_info in tabs:
@@ -1783,7 +1787,7 @@ class MainWindow(QMainWindow):
 
             try:
                 if file_path and os.path.exists(file_path):
-                    editor = create_viewer_widget(file_path)
+                    editor = self.services.create_viewer(file_path)
                     self._wire_editor(editor)
                 elif content:
                     from editor import EditorTab
@@ -2221,7 +2225,7 @@ class MainWindow(QMainWindow):
         file_path = tab_data["file_path"]
         if file_path and os.path.exists(file_path):
             try:
-                editor = create_viewer_widget(file_path)
+                editor = self.services.create_viewer(file_path)
             except Exception as e:
                 QMessageBox.critical(self, "Error", f"Failed to open file: {str(e)}")
                 return
@@ -2265,7 +2269,7 @@ class MainWindow(QMainWindow):
             self.tabs.removeTab(0)
             if w:
                 w.deleteLater()
-        clear_session()
+        self.services.clear_session()
         self.tabs.addTab(self._create_welcome_widget(), "Welcome")
         self.show_status_message("Started new fresh session", 3000)
 
@@ -2321,7 +2325,7 @@ class MainWindow(QMainWindow):
         if self.switch_to_tab_if_open(path):
             return
         try:
-            editor = create_viewer_widget(path)
+            editor = self.services.create_viewer(path)
             self._wire_editor(editor)
             save_recent_file(path)
             self.update_menus()
@@ -2333,7 +2337,7 @@ class MainWindow(QMainWindow):
         if self.switch_to_tab_if_open(path):
             return
         try:
-            editor = create_viewer_widget(path)
+            editor = self.services.create_viewer(path)
             self._wire_editor(editor)
             save_recent_file(path)
             self._add_editor_tab(editor, os.path.basename(path))

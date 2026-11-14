@@ -36,6 +36,7 @@ from theme import (
     compact_toolbar_stylesheet, ICON_SIZE_COMPACT,
     get_active_palette, get_brand_accent,
 )
+from async_loader import AsyncLoadWorker
 
 
 class _SlideScrollBridge(QObject):
@@ -73,6 +74,7 @@ class PptxViewer(QWidget):
         self.slides = []  # list of dicts: {"title": str, "content": str, "notes": str}
         self.current_slide = 0
         self.total_slides = 0
+        self._load_worker = None
 
         self.setFocusPolicy(Qt.StrongFocus)
 
@@ -303,8 +305,37 @@ class PptxViewer(QWidget):
 
     def load_from_path(self, file_path):
         self.file_path = file_path
-        self.slides = []
+        self.slides = self._parse_slides(file_path)
+        self._apply_slides()
 
+    def load_from_path_async(self, file_path):
+        self.file_path = file_path
+        self.slides = []
+        self.slide_list.clear()
+        self.lbl_total.setText(" / …")
+        self._load_worker = AsyncLoadWorker(
+            lambda: self._parse_slides(file_path), self
+        )
+        self._load_worker.result_ready.connect(self._on_slides_ready)
+        self._load_worker.error_occurred.connect(self._on_async_load_error)
+        self._load_worker.finished.connect(self._load_worker.deleteLater)
+        self._load_worker.start()
+
+    def _on_slides_ready(self, slides):
+        self.slides = slides
+        self._apply_slides()
+
+    def _on_async_load_error(self, message):
+        self.lbl_total.setText(" / error")
+        self.slide_list.addItem(f"Could not load presentation: {message}")
+
+    def cleanup(self):
+        if self._load_worker and self._load_worker.isRunning():
+            self._load_worker.cancel()
+            self._load_worker.wait(3000)
+
+    def _parse_slides(self, file_path):
+        slides = []
         if PPTX_AVAILABLE:
             try:
                 prs = pptx.Presentation(file_path)
@@ -337,7 +368,7 @@ class PptxViewer(QWidget):
                         if kind == "text":
                             content_parts.append(val["text"] if isinstance(val, dict) else val)
 
-                    self.slides.append({
+                    slides.append({
                         "title": title,
                         "content": "\n\n".join(content_parts),
                         "elements": elements,
@@ -345,10 +376,12 @@ class PptxViewer(QWidget):
                     })
             except Exception as e:
                 print(f"[PPTX Viewer] python-pptx load failed: {e}")
-                self._fallback_zip_parse(file_path)
+                self._fallback_zip_parse(file_path, slides)
         else:
-            self._fallback_zip_parse(file_path)
+            self._fallback_zip_parse(file_path, slides)
+        return slides
 
+    def _apply_slides(self):
         self.total_slides = len(self.slides)
         self.lbl_total.setText(f" / {self.total_slides}")
 
@@ -362,9 +395,10 @@ class PptxViewer(QWidget):
             self._render_continuous_html()
             self.go_to_slide(0)
 
-    def _fallback_zip_parse(self, file_path):
+    def _fallback_zip_parse(self, file_path, target=None):
         """Fallback parser extracting slide text XML from pptx zip container."""
         import base64
+        target = self.slides if target is None else target
         try:
             with zipfile.ZipFile(file_path, "r") as z:
                 slide_files = [name for name in z.namelist() if name.startswith("ppt/slides/slide") and name.endswith(".xml")]
@@ -388,9 +422,9 @@ class PptxViewer(QWidget):
                         rels_tree = ET.fromstring(z.read(rels_path))
                         for rel in rels_tree.iter():
                             if rel.tag.endswith("}Relationship"):
-                                target = rel.attrib.get("Target", "")
-                                if target.startswith("../media/"):
-                                    media_path = "ppt/media/" + target.split("/")[-1]
+                                rel_target = rel.attrib.get("Target", "")
+                                if rel_target.startswith("../media/"):
+                                    media_path = "ppt/media/" + rel_target.split("/")[-1]
                                     if media_path in z.namelist():
                                         img_bytes = z.read(media_path)
                                         ext = media_path.split(".")[-1].lower()
@@ -404,7 +438,7 @@ class PptxViewer(QWidget):
                     body_texts = texts[1:] if texts else []
                     elements = [("text", text) for text in body_texts]
                     elements.extend(("image", image) for image in images)
-                    self.slides.append({
+                    target.append({
                         "title": title,
                         "content": "\n\n".join(body_texts),
                         "elements": elements,
@@ -413,6 +447,7 @@ class PptxViewer(QWidget):
                     })
         except Exception as e:
             print(f"[PPTX Viewer] Fallback zip parse error: {e}")
+        return target
 
     def set_bookmark_callback(self, callback):
         self._bookmark_callback = callback

@@ -6,10 +6,14 @@ This is the documentation-directory entry point for agent guidance. The establis
 
 - `main.py` starts the desktop app and first-run onboarding.
 - `ui.py` contains the main window and welcome screen.
+- `workspace_services.py` provides the application-level boundary for viewer construction and session persistence.
+- `async_loader.py` provides the shared Qt worker used by heavy document viewers.
+- `vault_index.py` stores local vault filename metadata for background search.
 - `onboarding.py` contains first-run onboarding hooks.
 - `getting_started/` contains user-facing tutorials and guides.
 - Root-level `test_*.py` files contain the Python test suite.
 - `releases/` contains operational package-manager release instructions.
+- `.github/workflows/test.yml` runs pull-request and `main` branch tests without invoking the release pipeline.
 - `handoff/` contains durable summaries of substantial work phases.
 
 ## Search and validation

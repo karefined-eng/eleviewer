@@ -14,6 +14,7 @@ import io
 from theme import (
     xlsx_sheet_tab_stylesheet, get_active_palette, get_brand_accent
 )
+from async_loader import AsyncLoadWorker
 import re
 
 
@@ -97,6 +98,7 @@ class XlsxViewer(QWidget):
         self._loading_sheet = False
         self._bookmark_callback = None
         self._last_found = None
+        self._load_worker = None
 
         layout = QVBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
@@ -159,6 +161,44 @@ class XlsxViewer(QWidget):
     def load_from_path(self, file_path):
         try:
             self.workbook = load_workbook(file_path, data_only=True, keep_vba=False)
+            self._apply_loaded_workbook()
+        except Exception as e:
+            self._raise_load_error(e)
+
+    def load_from_path_async(self, file_path):
+        self.file_path = file_path
+        self._loading_sheet = True
+        self._load_worker = AsyncLoadWorker(
+            lambda: load_workbook(file_path, data_only=True, keep_vba=False), self
+        )
+        self._load_worker.result_ready.connect(self._on_workbook_ready)
+        self._load_worker.error_occurred.connect(self._on_workbook_error)
+        self._load_worker.finished.connect(self._load_worker.deleteLater)
+        self._load_worker.start()
+
+    def _on_workbook_ready(self, workbook):
+        self.workbook = workbook
+        self._apply_loaded_workbook()
+
+    def _on_workbook_error(self, message):
+        try:
+            self._raise_load_error(Exception(message))
+        except Exception as error:
+            self._loading_sheet = False
+            self._readonly_label.setText(str(error))
+
+    def _raise_load_error(self, error):
+        error_msg = str(error)
+        if "defaultColWidthPt" in error_msg:
+            raise Exception(
+                "XLSX file compatibility issue. Try opening in Excel and re-saving."
+            )
+        if "not a zip file" in error_msg.lower() or "badzipfile" in error_msg.lower():
+            raise Exception("The selected file is not a valid Excel (.xlsx) archive or is corrupted.")
+        raise Exception(f"Failed to load XLSX: {error_msg}")
+
+    def _apply_loaded_workbook(self):
+        try:
             self.sheet_tabs.blockSignals(True)
             while self.sheet_tabs.count():
                 self.sheet_tabs.removeTab(0)
@@ -170,15 +210,15 @@ class XlsxViewer(QWidget):
                 self.sheet_tabs.setCurrentIndex(0)
                 self._on_sheet_changed(self.workbook.sheetnames[0])
             self.is_modified = False
-        except Exception as e:
-            error_msg = str(e)
-            if "defaultColWidthPt" in error_msg:
-                raise Exception(
-                    "XLSX file compatibility issue. Try opening in Excel and re-saving."
-                )
-            elif "not a zip file" in error_msg.lower() or "badzipfile" in error_msg.lower():
-                raise Exception("The selected file is not a valid Excel (.xlsx) archive or is corrupted.")
-            raise Exception(f"Failed to load XLSX: {error_msg}")
+            self._loading_sheet = False
+        except Exception as error:
+            self._loading_sheet = False
+            self._raise_load_error(error)
+
+    def cleanup(self):
+        if self._load_worker and self._load_worker.isRunning():
+            self._load_worker.cancel()
+            self._load_worker.wait(3000)
 
     def _on_tab_index_changed(self, index):
         if index < 0 or not self.workbook:

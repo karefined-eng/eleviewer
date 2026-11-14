@@ -31,6 +31,7 @@ from theme import (
     BRAND_BACKGROUND, BRAND_PRIMARY, BRAND_BORDER, BRAND_PANEL,
     BRAND_MUTED_FG, get_brand_accent, get_active_palette,
 )
+from async_loader import AsyncLoadWorker
 
 
 class DocxViewer(QWidget):
@@ -51,6 +52,7 @@ class DocxViewer(QWidget):
         self.read_only = True
         self.docx_content = None
         self._bookmark_callback = None
+        self._load_worker = None
 
         layout = QVBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
@@ -110,6 +112,59 @@ class DocxViewer(QWidget):
                 self.docx_content = None
         self._display_content()
         self.is_modified = False
+
+    def load_from_path_async(self, file_path):
+        """Parse and render a DOCX off the UI thread, then update Qt widgets safely."""
+        self.file_path = file_path
+        self.editor.setHtml("<p>Loading document…</p>")
+        self._load_worker = AsyncLoadWorker(
+            lambda: self._render_path_to_html(file_path), self
+        )
+        self._load_worker.result_ready.connect(self._on_async_html_ready)
+        self._load_worker.error_occurred.connect(self._on_async_load_error)
+        self._load_worker.finished.connect(self._load_worker.deleteLater)
+        self._load_worker.start()
+
+    def _render_path_to_html(self, file_path):
+        cached_html = self._get_cached_render(file_path)
+        if cached_html is not None:
+            return cached_html
+        if MAMMOTH_AVAILABLE and os.path.exists(file_path):
+            try:
+                with open(file_path, "rb") as docx_file:
+                    result = mammoth.convert_to_html(
+                        docx_file,
+                        convert_image=mammoth.images.img_element(
+                            self._mammoth_image_converter
+                        ),
+                    )
+                return self._wrap_html(result.value)
+            except Exception:
+                pass
+        if DOCX_AVAILABLE:
+            try:
+                return self._wrap_html(self._build_html_from_docx(Document(file_path)))
+            except Exception:
+                pass
+        return self._wrap_html(self._fallback_zip_parse(file_path))
+
+    def _on_async_html_ready(self, html_content):
+        if self._load_worker is None:
+            return
+        self._cache_render(self.file_path, html_content)
+        self.editor.blockSignals(True)
+        self.editor.setHtml(html_content)
+        self.editor.blockSignals(False)
+        self.is_modified = False
+
+    def _on_async_load_error(self, message):
+        self.editor.setHtml(f"<p>Could not load this document: {html.escape(message)}</p>")
+        self.is_modified = False
+
+    def cleanup(self):
+        if self._load_worker and self._load_worker.isRunning():
+            self._load_worker.cancel()
+            self._load_worker.wait(3000)
 
     def _get_render_cache_key(self, file_path):
         if not file_path or not os.path.exists(file_path):

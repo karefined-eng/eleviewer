@@ -8,6 +8,7 @@ from PySide6.QtCore import Qt, Signal, QTimer, QThread, QEvent
 from theme import get_active_palette, get_brand_accent
 from file_icons import file_type_icon
 from settings import load_settings
+from vault_index import VaultIndex
 
 
 # FIX: search runs on QThreadPool worker to prevent GUI thread freezing
@@ -26,57 +27,26 @@ class VaultSearchWorker(QThread):
         self._is_cancelled = True
 
     def run(self):
-        count = 0
-        for vault in self.vaults_to_search:
-            if self._is_cancelled or count >= 100:
-                break
-            try:
-                vault_resolved = Path(vault).resolve()
-            except (OSError, RuntimeError) as error:
-                self.error_found.emit(f"Could not access vault: {vault} ({error})")
-                continue
-
-            vault_str = str(vault_resolved)
-            vault_name = vault_resolved.name
-            # SECURITY: followlinks=False prevents traversing symlinks outside vault
-            def on_walk_error(error):
-                self.error_found.emit(f"Could not read {error.filename}: {error.strerror}")
-
-            for root, dirs, files in os.walk(vault_str, onerror=on_walk_error, followlinks=False):
-
-                if self._is_cancelled or count >= 100:
+        index = VaultIndex()
+        try:
+            for vault in self.vaults_to_search:
+                if self._is_cancelled:
                     break
-                abs_root = os.path.abspath(root)
-                # SECURITY: block paths that escape vault boundary
                 try:
-                    inside_vault = os.path.commonpath((vault_str, abs_root)) == vault_str
-                except ValueError:
-                    inside_vault = False
-                if not inside_vault:
-                    dirs.clear()
-                    continue
+                    index.refresh_vault(vault, lambda: self._is_cancelled)
+                except (OSError, RuntimeError) as error:
+                    self.error_found.emit(f"Could not access vault: {vault} ({error})")
 
-                dirs[:] = [d for d in dirs if not d.startswith('.')]
-
-                for f in files:
-                    if self._is_cancelled or count >= 100:
-                        break
-                    if f.startswith('.'):
-                        continue
-                    if self.query in f.lower():
-                        full_path = os.path.join(root, f)
-                        abs_full_path = os.path.abspath(full_path)
-                        try:
-                            inside_vault = os.path.commonpath((vault_str, abs_full_path)) == vault_str
-                        except ValueError:
-                            inside_vault = False
-                        if not inside_vault:
-                            continue
-
-                        rel_path = os.path.relpath(root, vault_str)
-                        display_dir = "" if rel_path == "." else f" ({rel_path})"
-                        self.result_found.emit(f, display_dir, vault_name, abs_full_path)
-                        count += 1
+            if self._is_cancelled:
+                return
+            rows = index.search(self.vaults_to_search, self.query, limit=100)
+            for file_name, relative_dir, vault, full_path in rows:
+                if self._is_cancelled:
+                    break
+                display_dir = "" if not relative_dir else f" ({relative_dir})"
+                self.result_found.emit(file_name, display_dir, Path(vault).name, full_path)
+        finally:
+            index.close()
 
 
 class VaultSearchDialog(QDialog):

@@ -2,6 +2,7 @@ import os
 import pytest
 from pathlib import Path
 from vault_search import VaultSearchWorker
+from vault_index import VaultIndex
 
 def test_vault_search_worker_finds_files(tmp_path):
     # Setup mock vault
@@ -64,3 +65,24 @@ def test_vault_search_worker_does_not_match_sibling_path(tmp_path):
     worker.run()
 
     assert results == []
+
+
+def test_vault_index_persists_and_removes_files(tmp_path):
+    vault = tmp_path / "vault"
+    vault.mkdir()
+    note = vault / "biology-notes.md"
+    note.write_text("notes", encoding="utf-8")
+    database = tmp_path / "index.sqlite3"
+
+    index = VaultIndex(database)
+    index.refresh_vault(vault)
+    assert index.search([vault], "biology") == [
+        ("biology-notes.md", "", str(vault.resolve()), str(note.resolve()))
+    ]
+    index.close()
+
+    note.unlink()
+    index = VaultIndex(database)
+    index.refresh_vault(vault)
+    assert index.search([vault], "biology") == []
+    index.close()

@@ -56,13 +56,15 @@ def create_viewer_widget(file_path, content=None):
 
     if ext == "docx":
         from docx_viewer import DocxViewer
-        viewer = DocxViewer(file_path)
+        viewer = DocxViewer()
+        viewer.load_from_path_async(file_path)
         viewer.file_path = file_path
         return viewer
 
     elif ext == "xlsx":
         from xlsx_viewer import XlsxViewer
-        viewer = XlsxViewer(file_path)
+        viewer = XlsxViewer()
+        viewer.load_from_path_async(file_path)
         viewer.file_path = file_path
         return viewer
 
@@ -94,7 +96,8 @@ def create_viewer_widget(file_path, content=None):
 
     elif ext == "pptx":
         from pptx_viewer import PptxViewer
-        viewer = PptxViewer(file_path)
+        viewer = PptxViewer()
+        viewer.load_from_path_async(file_path)
         viewer.file_path = file_path
         return viewer
 
