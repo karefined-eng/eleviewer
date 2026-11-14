@@ -358,9 +358,13 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt, Signal, QSize
 from PySide6.QtGui import QKeySequence, QShortcut
 
-from icons import icon
+from icons import icon, ICONS_DIR
 from settings import load_settings, save_settings, DEFAULT_WEB_TABS
-from theme import compact_toolbar_stylesheet, ICON_SIZE_COMPACT
+from theme import (
+    compact_toolbar_stylesheet,
+    ICON_SIZE_COMPACT,
+    get_active_theme_name,
+)
 
 
 
@@ -577,6 +581,9 @@ class WebPanel(QWidget):
         # Style the tab bar explicitly to look like a modern browser
         palette = get_active_palette()
         accent = get_brand_accent()
+        close_icon = ICONS_DIR / (
+            "x-bright.svg" if get_active_theme_name() == "dark" else "x-dark.svg"
+        )
         self.tabs.setStyleSheet(f"""
             QTabBar {{
                 background: {palette['BRAND_BACKGROUND']};
@@ -604,7 +611,16 @@ class WebPanel(QWidget):
                 background: {palette['BRAND_PANEL_2']};
             }}
             QTabBar::close-button {{
-                image: none; /* fallback */
+                image: url("{close_icon.as_posix()}");
+                subcontrol-position: right;
+                width: 12px;
+                height: 12px;
+                margin: 0 4px 0 6px;
+                padding: 1px;
+                border-radius: 4px;
+            }}
+            QTabBar::close-button:hover {{
+                background: {palette['BRAND_BORDER']};
             }}
         """)
         

@@ -5,6 +5,7 @@ import urllib.request
 import tempfile
 import subprocess
 import hashlib
+import re
 from urllib.parse import urlparse
 from PySide6.QtCore import QThread, Signal, Qt, QUrl
 from PySide6.QtWidgets import (
@@ -76,7 +77,7 @@ class CheckUpdateThread(QThread):
                                 break
 
                         expected_hash = ""
-                        if hash_url:
+                        if hash_url and is_trusted_download_url(hash_url):
                             try:
                                 hash_req = urllib.request.Request(hash_url, headers={"User-Agent": "EleViewer-AutoUpdater"})
                                 with urllib.request.urlopen(hash_req, timeout=5) as h_resp:
@@ -84,7 +85,9 @@ class CheckUpdateThread(QThread):
                                         hash_content = h_resp.read().decode('utf-8')
                                         for line in hash_content.splitlines():
                                             if line.startswith("SHA-256:"):
-                                                expected_hash = line.split(":", 1)[1].strip()
+                                                candidate = line.split(":", 1)[1].strip()
+                                                if re.fullmatch(r"[0-9a-fA-F]{64}", candidate):
+                                                    expected_hash = candidate
                                                 break
                             except Exception:
                                 pass

@@ -147,12 +147,46 @@ Generate bespoke nodes that respect the avatar mapping, not library defaults.
 
 ---
 
+## Candidate Learning 5: Optional Office Preview Handler Integration
+
+| Field | Value |
+|---|---|
+| **Trigger** | Designing Office-file preview or rendering support for users who have Microsoft Office installed |
+| **Invariant** | Keep EleViewer's native DOCX/PPTX/XLSX viewers as the portable default; use registered Windows Office Preview Handlers only as an optional fidelity enhancement, and keep full Office editing as a separate external action |
+| **Evidence** | Session discussion established that Windows File Explorer uses Office Preview Handlers through COM, while EleViewer's current viewers preserve offline operation and study features such as search, bookmarks, and TTS |
+
+### Classification
+**Rule** — A concise architectural constraint is sufficient: Office integration must remain optional and must not replace the portable native viewers.
+
+### Scope
+**Workspace** — This repository's Windows desktop architecture and Office-file UX
+
+### Proposed addition to the repository rules
+
+Target: `.agents/rules/karpathy-rules.md`
+
+Insert a new section after the existing architecture guidance:
+
+```markdown
+## Optional Office Preview Integration
+
+Keep EleViewer's native DOCX, PPTX, and XLSX viewers as the portable default.
+If Microsoft Office is installed, an optional Windows Preview Handler adapter may
+provide higher-fidelity previews through the registered COM preview-handler
+interfaces. Do not make Office a runtime dependency, replace native study
+features with the handler, or embed full Office processes for ordinary viewing.
+Offer "Open in Word/Excel/PowerPoint" separately for full editing.
+```
+
+---
+
 ## Awaiting Approval
 
 Please approve:
 - [x] Add the three environment rules to AGENTS.md
 - [x] Create the new Metaphorical Translation Engine skill
 - [x] Combination of both
+- [x] Add the Optional Office Preview Integration rule to `.agents/rules/karpathy-rules.md`
 
 ---
 
@@ -178,3 +212,13 @@ Please approve:
 
 - AGENTS.md: New content appears at lines 56–87
 - Skill file: Created at `/skills/metaphorical-translation/SKILL.md` with valid frontmatter and 189 lines
+
+### Candidate Learning 5 Outcome
+
+Approved and applied the Optional Office Preview Integration rule to
+`.agents/rules/karpathy-rules.md`.
+
+### Verification
+
+- Re-read `.agents/rules/karpathy-rules.md` and confirmed the exact section is present.
+- No code or runtime behavior changed, so no additional test command was required.

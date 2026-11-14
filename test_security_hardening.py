@@ -3,6 +3,7 @@ from types import SimpleNamespace
 from docx_viewer import DocxViewer
 from updater import is_trusted_download_url, DownloadThread
 import hashlib
+import updater
 
 
 def _make_doc(text):
@@ -99,3 +100,25 @@ def test_updater_hash_verification_success(monkeypatch):
     thread.run()
     
     assert len(finished_emitted) == 1
+
+
+def test_updater_rejects_untrusted_hash_asset(monkeypatch):
+    class MockResponse:
+        status = 200
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc_val, exc_tb):
+            pass
+
+        def read(self):
+            return b'{"tag_name":"v9.9.9","assets":[{"name":"EleViewer.exe","browser_download_url":"https://github.com/karefined-eng/eleviewer/releases/download/v9.9.9/EleViewer.exe"},{"name":"EleViewer_SHA256.txt","browser_download_url":"https://example.com/hash.txt"}],"html_url":"https://github.com/karefined-eng/eleviewer/releases/tag/v9.9.9"}'
+
+    errors = []
+    monkeypatch.setattr(updater.urllib.request, "urlopen", lambda *args, **kwargs: MockResponse())
+    thread = updater.CheckUpdateThread(current_version="1.0.0")
+    thread.error_occurred.connect(errors.append)
+    thread.run()
+
+    assert errors == ["Security verification failed: No SHA-256 hash found for this release."]

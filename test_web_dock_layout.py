@@ -24,6 +24,9 @@ def test_web_dock_header_and_layout():
     # Dock controls merged into the web panel's navigation row
     web_panel = dock.widget()
     assert hasattr(web_panel, "nav_layout"), "WebPanel must expose its nav row"
+    tab_style = web_panel.tabs.tab_bar.styleSheet()
+    assert "QTabBar::close-button" in tab_style
+    assert "image:" in tab_style and ("x-bright.svg" in tab_style or "x-dark.svg" in tab_style)
     dock_buttons = []
     for i in range(web_panel.nav_layout.count()):
         widget = web_panel.nav_layout.itemAt(i).widget()

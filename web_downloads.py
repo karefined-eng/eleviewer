@@ -108,7 +108,7 @@ class DownloadItemWidget(QWidget):
             import subprocess
             import sys
             if sys.platform == "win32":
-                subprocess.Popen(f'explorer /select,"{path}"')
+                subprocess.Popen(["explorer.exe", f"/select,{os.path.normpath(path)}"])
 
 class DownloadsDialog(QDialog):
     def __init__(self, parent=None):

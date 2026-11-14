@@ -60,6 +60,15 @@ For multi-step tasks, state a brief plan:
 
 Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
 
+## Optional Office Preview Integration
+
+Keep EleViewer's native DOCX, PPTX, and XLSX viewers as the portable default.
+If Microsoft Office is installed, an optional Windows Preview Handler adapter may
+provide higher-fidelity previews through the registered COM preview-handler
+interfaces. Do not make Office a runtime dependency, replace native study
+features with the handler, or embed full Office processes for ordinary viewing.
+Offer "Open in Word/Excel/PowerPoint" separately for full editing.
+
 ---
 
 **These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.
