@@ -208,13 +208,27 @@ class UpdateDialog(QDialog):
         )
         self.update_btn.clicked.connect(self._start_download)
 
+        self.skip_btn = QPushButton("Skip this version")
+        self.skip_btn.clicked.connect(self._skip_version)
+
         self.cancel_btn = QPushButton("Remind Me Later")
         self.cancel_btn.clicked.connect(self.reject)
 
         btn_layout.addStretch()
+        btn_layout.addWidget(self.skip_btn)
         btn_layout.addWidget(self.cancel_btn)
         btn_layout.addWidget(self.update_btn)
         layout.addLayout(btn_layout)
+
+    def _skip_version(self):
+        from settings import load_settings, save_settings
+        s = load_settings()
+        skipped = s.get("skipped_update_versions", [])
+        if tag_name not in skipped:
+            skipped.append(tag_name)
+        s["skipped_update_versions"] = skipped
+        save_settings(s)
+        self.reject()
 
     def _start_download(self):
         if self.download_url.endswith(".exe"):

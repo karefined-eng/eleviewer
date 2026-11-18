@@ -127,6 +127,10 @@ class MarkdownViewer(QWidget):
                 btn.clicked.connect(slot)
             return btn
 
+        # Undo / Redo buttons
+        self.btn_undo = _tb("rotate-ccw", "Undo (Ctrl+Z)", self._on_undo_clicked)
+        self.btn_redo = _tb("rotate-cw", "Redo (Ctrl+Y)", self._on_redo_clicked)
+
         # Heading dropdown
         self.btn_h = _tb("type", "Heading")
         self.btn_h.setPopupMode(QToolButton.InstantPopup)
@@ -168,7 +172,7 @@ class MarkdownViewer(QWidget):
         self.btn_pin.setChecked(is_pinned)
         self._update_pin_icon()
 
-        for w in (self.btn_h, self.btn_bullet, self.btn_numbered, self.btn_bold, self.btn_italic,
+        for w in (self.btn_undo, self.btn_redo, self.btn_h, self.btn_bullet, self.btn_numbered, self.btn_bold, self.btn_italic,
                   self.btn_underline, self.btn_strike, self.btn_link, self.btn_table, self.btn_clear):
             fmt_layout.addWidget(w)
             
@@ -335,6 +339,16 @@ class MarkdownViewer(QWidget):
             tbl += "\n"
         cursor.insertText(tbl)
         ed.setFocus()
+
+    def _on_undo_clicked(self):
+        ed = self._current_edit_widget()
+        if ed:
+            ed.undo()
+
+    def _on_redo_clicked(self):
+        ed = self._current_edit_widget()
+        if ed:
+            ed.redo()
 
     def _on_clear_clicked(self):
         ed = self._current_edit_widget()

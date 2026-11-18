@@ -7,6 +7,7 @@ This repository is a Python + PySide6 desktop app for browsing and studying loca
 - Read `docs/origin.md` before major product or UI changes; do not drift from documented intent.
 - Treat `docs/AGENTS.md` and `.agents/AGENTS.md` as the repo's living operating manual; read them before acting.
 - Keep durable work notes in `docs/handoff/` and UX rationale in `docs/research/`.
+- API reference for core modules lives in `docs/api/`; user-facing feature guides live in `docs/features/`; friction logs live in `docs/friction-log.md`.
 - Do not leave a tool trap or environment quirk unexplained; log it under `Tool Quirks` / `Environment Traps` before ending the session.
 - Be proactive: challenge weak assumptions, explain tradeoffs, and keep decisions anchored in user value and product psychology.
 - Prefer legal/safe, authorized workflows; do not help with unauthorized scraping or private-data collection.

@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.3.8] - 2026-11-18
+
+### Added
+- **PDF Annotations & Highlighting**: Highlight text, add sticky notes, and draw freehand annotations on PDFs using an overlay widget. Annotations persist to a sidecar JSON file (`.eleviewer_annotations.json`) alongside each PDF.
+- **PDF Table of Contents Sidebar**: Toggle with `Ctrl+Shift+L` or the "Contents" toolbar button. State is remembered per session.
+- **Doc↔Doc Split View**: Open two documents side-by-side with `Ctrl+\` or the Split View toolbar button. Move tabs between left and right panes.
+- **Undo/Redo Toolbar**: Undo (`Ctrl+Z`) and Redo (`Ctrl+Y`) buttons on the main toolbar for all text editors.
+- **Print to PDF/System Printer**: Print any document via `Ctrl+P` or File > Print. Export any document to PDF via File > Export as PDF.
+- **Clipboard-Aware Paste**: Paste images from clipboard into notes (saved to vault/images/ as `![](path)`). Rich text/HTML is converted to Markdown.
+- **Auto-Update "Skip This Version"**: Update dialog now includes a skip option. Skipped versions are persisted and won't re-prompt.
+- **Accessibility**: `accessibleName` and `accessibleDescription` set on main toolbar, PDF viewer toolbar, and editor formatting buttons for screen-reader support.
+
+### Changed
+- `settings.py`: Added `pdf_toc_visible`, `skipped_update_versions`, and `undo`/`redo`/`split` to toolbar order defaults.
+
 ## [1.3.7] - 2026-11-14
 
 ### Added

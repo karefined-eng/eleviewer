@@ -27,7 +27,12 @@ EleViewer relies heavily on standard PySide6 widgets and custom components to ke
 - `main.py`: Bootstraps the application, enforces single-instance locking (so clicking a file opens it in the *existing* window), and binds `sys.excepthook` to route global unhandled exceptions securely to the feedback dialog.
 
 ### UI & Shell
-- `ui.py`: The `MainWindow` class. Manages the tab widget, toolbars, and side panels. Implements `_apply_toolbar_style()` to dynamically switch toolbar button styles (`Qt.ToolButtonTextUnderIcon`, `Qt.ToolButtonIconOnly`, or `Qt.ToolButtonTextBesideIcon`) based on user preferences.
+- `ui.py`: The `MainWindow` class. Manages the tab widget, toolbars, and side panels. Implements `_apply_toolbar_style()` to dynamically switch toolbar button styles (`Qt.ToolButtonTextUnderIcon`, `Qt.ToolButtonIconOnly`, or `Qt.ToolButtonTextBesideIcon`) based on user preferences. New features:
+  - **Split View** (`toggle_split_view()`, `Ctrl+\`): Moves tabs between left and right `QTabWidget` panes (`tabs` and `tabs_right`) for side-by-side document comparison.
+  - **Undo/Redo** (`undo_current()`, `redo_current()`, `Ctrl+Z`/`Ctrl+Y`): Routes undo/redo to the currently focused editor's `QTextDocument`.
+  - **Print** (`print_file()`, `Ctrl+P`): Uses `QPrintDialog` and the existing `_render_to_printer()` helper to print PDFs (page-by-page rendering), Markdown/HTML/text (via `QTextDocument`), and images.
+  - **PDF TOC Toggle** (`toggle_pdf_toc()`, `Ctrl+Shift+L`): Delegates to the current `PdfViewer._toggle_toc()`.
+  - **Accessibility**: `accessibleName` and `accessibleDescription` set on all toolbar buttons and editor formatting widgets.
 - `theme.py`: **CRITICAL**. Do not hardcode hex colors in any UI file. Use the centralized constants (`BRAND_PRIMARY`, `BRAND_PANEL`, etc.) here to ensure the desktop app visually matches the website. Defines centralized toolbar and icon size metrics (`ICON_SIZE_TOOLBAR = 24`, 54×50px min button sizes for text-under-icon labels). Additionally powers **Dynamic UI Accents** (via `get_active_accent()`).
 - `settings_dialog.py`: Modular six-tab workstation configuration dialog (Startup & Defaults, Text Editing, PDF Reading, Web Browser Panel, Audio & Read Aloud, and Folders & Organization) allowing end-users to customize themes, toolbar styles, downloads directory, default zoom, editor fonts, and TTS speeds without touching raw JSON.
 
@@ -35,8 +40,8 @@ EleViewer relies heavily on standard PySide6 widgets and custom components to ke
 - `file_handler.py`: The heart of the viewer. It reads a file extension and dynamically instantiates the correct viewer (e.g., `MarkdownViewer`, `XlsxViewer`, `PdfViewer`).
 
 ### The Viewers
-- `pdf_viewer.py`: Uses `QPdfView` (native Qt module, not PyMuPDF) and caches loaded documents to reduce repeated render cost when the same file is reopened.
-- `editor.py`: The text/Markdown editor. Uses a PySide6-based preview path with debounced refreshes and cached render output to keep typing responsive.
+- `pdf_viewer.py`: Uses `QPdfView` (native Qt module, not PyMuPDF) and caches loaded documents to reduce repeated render cost when the same file is reopened. Also includes `AnnotationOverlay` for PDF highlighting, sticky notes, and freehand drawing, with persistence to sidecar `.eleviewer_annotations.json` files. Table of Contents sidebar persists visibility via settings (`pdf_toc_visible`).
+- `editor.py`: The text/Markdown editor. Uses a PySide6-based preview path with debounced refreshes and cached render output to keep typing responsive. Now includes clipboard-aware paste: images from clipboard are saved to `vault/images/` and inserted as Markdown `![](path)`; rich text/HTML is converted to Markdown.
 - `xlsx_viewer.py` & `csv_viewer.py`: Use `openpyxl` and standard library `csv` to render spreadsheets natively into `QTableWidget` with cell/row/column insertion and F9 TTS table summaries.
 - `docx_viewer.py` & `pptx_viewer.py`: Render Word and PowerPoint content into lightweight HTML previews using available parser libraries and pure Python native byte extraction for inline images, with caching for repeated loads.
 - `html_viewer.py` & `web_panel.py`: Dedicated HTML/XML workstation and lazy-loaded WebEngine dock (`QWebEngineView`). Features include:
@@ -53,7 +58,7 @@ EleViewer relies heavily on standard PySide6 widgets and custom components to ke
 - `vault_explorer.py` & `vault_indexer.py`: The left sidebar for file navigation (filtering out system junk files like `desktop.ini`). The current indexer is a Python/SQLite-based background search flow rather than a Rust extension.
 - `quick_switcher.py`: The `Ctrl+Q` fuzzy finder for fast file switching.
 - `draft_recovery.py`: Saves auto-snapshots of text using a background `DraftWorker(QThread)` to prevent UI stutter and data loss.
-- `updater.py`: Background thread to query GitHub API for latest releases, parse version tags, and present download progress dialogs.
+- `updater.py`: Background thread to query GitHub API for latest releases, parse version tags, and present download progress dialogs. Now includes a "Skip this version" button that persists skipped versions in settings (`skipped_update_versions`).
 - `onboarding.py` & `whats_new.py`: First-run configuration guides and interactive release note dialogs to keep users informed without friction.
 - `save_utils.py`, `session_manager.py`, `settings.py`: Enforces atomic disk writes (`tempfile.mkstemp` + `os.fsync` + `os.replace`) to strictly guarantee physical disk writes and eliminate 0-byte corruption on crash, while persisting scroll position, zoom, and PDF page numbers across sessions.
 - `release_hash.py`: Standalone script for computing SHA-256 hashes for the packaged installer or bundled executable used in GitHub Releases, Winget, and other package-manager distribution flows.

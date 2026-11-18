@@ -32,7 +32,7 @@ DEFAULT_SETTINGS = {
     "theme_accent": "grey",
     "toolbar_button_style": "text_under_icon",
     "show_toolbar": True,
-    "toolbar_order": ["new", "vault", "bookmarks", "open", "save", "tts", "web", "settings"],
+    "toolbar_order": ["new", "vault", "bookmarks", "open", "save", "undo", "redo", "tts", "web", "split", "settings"],
     "default_download_folder": "",
     "web_default_zoom": 100,
     "web_intercept_links": True,
@@ -61,6 +61,8 @@ DEFAULT_SETTINGS = {
     "onboarding_completed": False,
     "last_run_version": "0.0.0",
     "file_search_scope": "active_vault",
+    "pdf_toc_visible": False,
+    "skipped_update_versions": [],
 }
 
 

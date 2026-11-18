@@ -4,7 +4,8 @@ import os
 # Heavy viewers are lazily imported inside create_viewer_widget() for <100ms cold start
 
 
-BINARY_FORMATS = {"docx", "xlsx", "pdf", "pptx"}
+IMAGE_FORMATS = {"png", "jpg", "jpeg", "gif", "bmp", "svg", "webp", "ico"}
+BINARY_FORMATS = {"docx", "xlsx", "pdf", "pptx", *IMAGE_FORMATS}
 TEXT_RESTORE_FORMATS = {"txt", "md", "csv", "tsv", "html", "htm", ""}
 
 # Reading larger text files would freeze the UI thread, so they are refused
@@ -98,6 +99,12 @@ def create_viewer_widget(file_path, content=None):
         from pptx_viewer import PptxViewer
         viewer = PptxViewer()
         viewer.load_from_path_async(file_path)
+        viewer.file_path = file_path
+        return viewer
+
+    elif ext in IMAGE_FORMATS:
+        from image_viewer import ImageViewer
+        viewer = ImageViewer(file_path)
         viewer.file_path = file_path
         return viewer
 

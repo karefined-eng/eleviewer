@@ -3,8 +3,9 @@ from PySide6.QtWidgets import (
     QSplitter, QMenu, QToolBar, QToolButton, QVBoxLayout, QHBoxLayout, QGridLayout, QWidget,
     QDockWidget, QLabel, QSystemTrayIcon, QApplication, QScrollBar, QScrollArea, QFrame,
 )
-from PySide6.QtGui import QAction, QKeySequence, QShortcut, QIcon, QFontMetrics, QDrag, QColor
+from PySide6.QtGui import QAction, QKeySequence, QShortcut, QIcon, QFontMetrics, QDrag, QColor, QPainter, QTextDocument
 from PySide6.QtCore import Qt, QSize, QTimer, Slot, QUrl, Signal, QEvent, QMimeData
+from PySide6.QtPrintSupport import QPrintDialog, QPrinter
 import os
 import sys
 
@@ -52,6 +53,14 @@ _TAB_ICON_MAP = {
     "pptx": "monitor",
     "html": "globe",
     "htm": "globe",
+    "png": "image",
+    "jpg": "image",
+    "jpeg": "image",
+    "gif": "image",
+    "bmp": "image",
+    "svg": "image",
+    "webp": "image",
+    "ico": "image",
 }
 
 
@@ -207,8 +216,9 @@ class MainWindow(QMainWindow):
     tts_error_raised = Signal(str)
 
     FILE_FILTER = (
-        "All Supported (*.md *.txt *.docx *.xlsx *.pptx *.pdf *.csv *.html *.htm);;"
-        "PowerPoint (*.pptx);;Word (*.docx);;Excel (*.xlsx);;PDF (*.pdf);;"
+        "All Supported (*.md *.txt *.docx *.xlsx *.pptx *.pdf *.csv *.html *.htm *.png *.jpg *.jpeg *.gif *.bmp *.svg *.webp *.ico);;"
+        "Images (*.png *.jpg *.jpeg *.gif *.bmp *.svg *.webp *.ico);;"
+        "PDF (*.pdf);;PowerPoint (*.pptx);;Word (*.docx);;Excel (*.xlsx);;"
         "Markdown (*.md);;HTML (*.html *.htm);;Text (*.txt);;CSV (*.csv)"
     )
 
@@ -228,6 +238,7 @@ class MainWindow(QMainWindow):
         self.setWindowIcon(create_eleviewer_icon(64))
         self.resize(1200, 800)
         self.setStyleSheet(main_window_stylesheet())
+        self.setAcceptDrops(True)
         self._setup_status_bar()
 
         self._build_layout()
@@ -312,6 +323,59 @@ class MainWindow(QMainWindow):
                 except Exception:
                     pass
         return super().nativeEvent(eventType, message)
+
+    def eventFilter(self, obj, event):
+        if event.type() == QEvent.DragEnter:
+            if event.mimeData().hasUrls():
+                for url in event.mimeData().urls():
+                    if url.isLocalFile():
+                        event.acceptProposedAction()
+                        return True
+        elif event.type() == QEvent.DragMove:
+            if event.mimeData().hasUrls():
+                event.acceptProposedAction()
+                return True
+        elif event.type() == QEvent.Drop:
+            if event.mimeData().hasUrls():
+                opened = False
+                for url in event.mimeData().urls():
+                    if url.isLocalFile():
+                        local_path = url.toLocalFile()
+                        if os.path.isfile(local_path):
+                            self.open_file(local_path)
+                            opened = True
+                if opened:
+                    event.acceptProposedAction()
+                    return True
+        return super().eventFilter(obj, event)
+
+    def dragEnterEvent(self, event):
+        if event.mimeData().hasUrls():
+            for url in event.mimeData().urls():
+                if url.isLocalFile():
+                    event.acceptProposedAction()
+                    return
+        super().dragEnterEvent(event)
+
+    def dragMoveEvent(self, event):
+        if event.mimeData().hasUrls():
+            event.acceptProposedAction()
+            return
+        super().dragMoveEvent(event)
+
+    def dropEvent(self, event):
+        if event.mimeData().hasUrls():
+            opened = False
+            for url in event.mimeData().urls():
+                if url.isLocalFile():
+                    local_path = url.toLocalFile()
+                    if os.path.isfile(local_path):
+                        self.open_file(local_path)
+                        opened = True
+            if opened:
+                event.acceptProposedAction()
+                return
+        super().dropEvent(event)
 
     def show_and_raise(self):
         self.showNormal()
@@ -407,6 +471,11 @@ class MainWindow(QMainWindow):
             pass
 
     def _on_update_found(self, tag_name, release_notes, download_url, expected_hash):
+        # Skip if user previously skipped this version
+        settings = load_settings()
+        skipped = settings.get("skipped_update_versions", [])
+        if tag_name in skipped:
+            return
         from updater import UpdateDialog
         dlg = UpdateDialog(tag_name, release_notes, download_url, expected_hash, self)
         dlg.exec()
@@ -510,6 +579,8 @@ class MainWindow(QMainWindow):
 
         self.editor_tabs_splitter = QSplitter(Qt.Horizontal)
         self.tabs = QTabWidget()
+        self.tabs.setAcceptDrops(True)
+        self.tabs.installEventFilter(self)
         self.tabs.setTabsClosable(True)
         self.tabs.setDocumentMode(True)
         self.tabs.setMovable(True)
@@ -522,8 +593,11 @@ class MainWindow(QMainWindow):
         self.tabs.customContextMenuRequested.connect(self.show_tab_context_menu)
         
         self.tabs_right = QTabWidget()
+        self.tabs_right.setAcceptDrops(True)
+        self.tabs_right.installEventFilter(self)
         self.tabs_right.setTabsClosable(True)
         self.tabs_right.setDocumentMode(True)
+        self.tabs_right.tabBar().installEventFilter(self)
         self.tabs_right.tabBar().setMovable(True)
         self.tabs_right.tabBar().setUsesScrollButtons(True)
         self.tabs_right.tabBar().setElideMode(Qt.ElideRight)
@@ -647,6 +721,20 @@ class MainWindow(QMainWindow):
         save_btn.setShortcutContext(Qt.WidgetShortcut)
         save_btn.triggered.connect(self.save_file)
         self.toolbar.register_action("save", save_btn)
+
+        undo_btn = QAction(icon("rotate-ccw", size=ICON_SIZE_TOOLBAR), "Undo", self)
+        undo_btn.setToolTip("Undo (Ctrl+Z)")
+        undo_btn.setShortcut("Ctrl+Z")
+        undo_btn.setShortcutContext(Qt.WidgetShortcut)
+        undo_btn.triggered.connect(self.undo_current)
+        self.toolbar.register_action("undo", undo_btn)
+
+        redo_btn = QAction(icon("rotate-cw", size=ICON_SIZE_TOOLBAR), "Redo", self)
+        redo_btn.setToolTip("Redo (Ctrl+Y)")
+        redo_btn.setShortcut("Ctrl+Y")
+        redo_btn.setShortcutContext(Qt.WidgetShortcut)
+        redo_btn.triggered.connect(self.redo_current)
+        self.toolbar.register_action("redo", redo_btn)
         
         tts_btn = QAction(icon("volume-2", size=ICON_SIZE_TOOLBAR), "Read Aloud", self)
         tts_btn.setToolTip("Read Aloud / Toggle TTS (F9)")
@@ -665,6 +753,13 @@ class MainWindow(QMainWindow):
         settings_btn.setToolTip("Open Settings (Alt+S)")
         settings_btn.triggered.connect(self.open_settings)
         self.toolbar.register_action("settings", settings_btn)
+
+        split_btn = QAction(icon("splitter-grip-v", size=ICON_SIZE_TOOLBAR), "Split View", self)
+        split_btn.setToolTip("Toggle Split View (Ctrl+\\)")
+        split_btn.setShortcut("Ctrl+\\")
+        split_btn.setShortcutContext(Qt.WidgetShortcut)
+        split_btn.triggered.connect(self.toggle_split_view)
+        self.toolbar.register_action("split", split_btn)
 
         settings_data = load_settings()
         toolbar_order = settings_data.get("toolbar_order")
@@ -690,7 +785,27 @@ class MainWindow(QMainWindow):
             s["toolbar_order"] = new_order
             save_settings(s)
         self.toolbar.order_changed.connect(save_order)
-        
+
+        # ── Accessibility: set accessible names on toolbar widgets ─────
+        _acc_map = {
+            "new": "New File",
+            "vault": "Toggle Vault Panel",
+            "bookmarks": "Toggle Bookmarks Panel",
+            "open": "Open File",
+            "save": "Save File",
+            "undo": "Undo",
+            "redo": "Redo",
+            "tts": "Read Aloud",
+            "web": "Web Panel",
+            "settings": "Settings",
+            "split": "Toggle Split View",
+        }
+        for action_id, action in self.toolbar._id_actions.items():
+            widget = self.toolbar.widgetForAction(action)
+            if widget:
+                widget.setAccessibleName(_acc_map.get(action_id, action.text()))
+                widget.setAccessibleDescription(action.toolTip())
+
         # Populate the quick menu in the status bar with distinct app controls
         self.quick_menu.addAction(icon("settings", size=16), "Settings...", self.open_settings)
         self.quick_menu.addAction("Keyboard Shortcuts", self.open_shortcuts_dialog)
@@ -757,6 +872,8 @@ class MainWindow(QMainWindow):
             ("Ctrl+N", self.new_tab),
             ("Ctrl+O", self.open_file),
             ("Ctrl+S", self.save_file),
+            ("Ctrl+Z", self.undo_current),
+            ("Ctrl+Y", self.redo_current),
             ("Ctrl+Shift+S", self.save_file_as),
             ("Ctrl+W", self.close_current_tab),
             ("Ctrl+F", self.show_find),
@@ -765,6 +882,8 @@ class MainWindow(QMainWindow):
             ("Ctrl+Alt+B", self.toggle_bookmarks_panel),
             ("Ctrl+Alt+T", self.toggle_main_toolbar),
             ("Ctrl+D", self.bookmark_current_tab),
+            ("Ctrl+P", self.print_file),
+            ("Ctrl+Shift+L", self.toggle_pdf_toc),
             ("F1", self.open_getting_started),
             ("Alt+S", self.open_settings),
         ]
@@ -967,6 +1086,68 @@ class MainWindow(QMainWindow):
             self.editor_splitter.setSizes([max(self.width() - 280, 400), 260])
         else:
             self.editor_splitter.setSizes([self.width(), 0])
+
+    def toggle_pdf_toc(self):
+        """Toggle Table of Contents sidebar for the current PDF viewer."""
+        editor = self.current_editor()
+        if editor and hasattr(editor, "_toggle_toc"):
+            editor._toggle_toc()
+
+    def toggle_split_view(self):
+        """Toggle side-by-side document split view."""
+        if self.tabs_right.isVisible():
+            # Unsplit: move all tabs from tabs_right back to tabs
+            while self.tabs_right.count() > 0:
+                widget = self.tabs_right.widget(0)
+                self.tabs_right.removeTab(0)
+                self.tabs.addTab(widget, widget.tabText(self.tabs.indexOf(widget)) if self.tabs.indexOf(widget) >= 0 else "Document")
+            self.tabs_right.hide()
+            self.editor_tabs_splitter.setSizes([self.editor_tabs_splitter.width(), 0])
+            self.show_status_message("Split view disabled", 2000)
+        else:
+            # Split: move current tab to tabs_right or create new tab there
+            if self.tabs.count() > 0:
+                current_idx = self.tabs.currentIndex()
+                widget = self.tabs.widget(current_idx)
+                self.tabs.removeTab(current_idx)
+                self.tabs_right.addTab(widget, self.tabs.tabText(current_idx))
+            self.tabs_right.show()
+            total = self.editor_tabs_splitter.width()
+            self.editor_tabs_splitter.setSizes([total // 2, total // 2])
+            self.show_status_message("Split view enabled", 2000)
+
+    def print_file(self):
+        """Print the current document."""
+        editor = self.current_editor()
+        if not editor:
+            self.show_status_message("No document to print", 2000)
+            return
+        printer = QPrinter(QPrinter.PrinterMode.HighResolution)
+        dialog = QPrintDialog(printer, self)
+        if dialog.exec() != QPrintDialog.DialogCode.Accepted:
+            return
+        self._render_to_printer(editor, printer)
+        self.show_status_message("Print job sent", 2000)
+
+    def undo_current(self):
+        """Undo on the currently focused editor."""
+        editor = self.current_editor()
+        if editor:
+            if hasattr(editor, "editor") and hasattr(editor.editor, "undo"):
+                editor.editor.undo()
+            elif hasattr(editor, "undo"):
+                editor.undo()
+            self.show_status_message("Undo", 1000)
+
+    def redo_current(self):
+        """Redo on the currently focused editor."""
+        editor = self.current_editor()
+        if editor:
+            if hasattr(editor, "editor") and hasattr(editor.editor, "redo"):
+                editor.editor.redo()
+            elif hasattr(editor, "redo"):
+                editor.redo()
+            self.show_status_message("Redo", 1000)
 
     def open_feedback_dialog(self):
         from feedback_dialog import FeedbackDialog
@@ -1837,6 +2018,8 @@ class MainWindow(QMainWindow):
         self._add_menu_action(file_menu, "Open...", self.open_file, "Ctrl+O")
         self._add_menu_action(file_menu, "Save", self.save_file, "Ctrl+S")
         self._add_menu_action(file_menu, "Save As...", self.save_file_as, "Ctrl+Shift+S")
+        self._add_menu_action(file_menu, "Export as PDF...", self.export_pdf)
+        self._add_menu_action(file_menu, "Print...", self.print_file, "Ctrl+P")
         file_menu.addSeparator()
         if WEB_AVAILABLE:
             self._add_menu_action(file_menu, "New Web Tab", self.open_web_tab, "Ctrl+T")
@@ -2457,6 +2640,103 @@ class MainWindow(QMainWindow):
 
     save_tab_as = save_file_as
 
+    def print_file(self):
+        editor = self.current_editor()
+        if not editor:
+            self.show_status_message("No document open to print", 2000)
+            return
+
+        from PySide6.QtPrintSupport import QPrinter, QPrintDialog
+
+        printer = QPrinter(QPrinter.HighResolution)
+        dialog = QPrintDialog(printer, self)
+        dialog.setWindowTitle("Print Document")
+        if dialog.exec() != QPrintDialog.Accepted:
+            return
+
+        self._render_to_printer(editor, printer)
+
+    def export_pdf(self):
+        editor = self.current_editor()
+        if not editor:
+            self.show_status_message("No document open to export", 2000)
+            return
+
+        path = getattr(editor, "file_path", None)
+        default_name = os.path.splitext(os.path.basename(path))[0] + ".pdf" if path else "document.pdf"
+        out_path, _ = QFileDialog.getSaveFileName(self, "Export as PDF", default_name, "PDF Files (*.pdf)")
+        if not out_path:
+            return
+
+        from PySide6.QtPrintSupport import QPrinter
+
+        printer = QPrinter(QPrinter.HighResolution)
+        printer.setOutputFormat(QPrinter.PdfFormat)
+        printer.setOutputFileName(out_path)
+
+        self._render_to_printer(editor, printer)
+        self.show_status_message(f"Exported to {os.path.basename(out_path)}", 3000)
+
+    def _render_to_printer(self, editor, printer):
+        from PySide6.QtGui import QPainter, QTextDocument
+        from markdown_renderer import MarkdownViewer
+        from html_viewer import HtmlViewer
+        from editor import EditorTab
+
+        # 1. Plain text / Markdown / HTML / Editor
+        if isinstance(editor, MarkdownViewer):
+            editor.preview.document().print_(printer)
+            return
+        elif isinstance(editor, HtmlViewer):
+            editor.view.document().print_(printer)
+            return
+        elif isinstance(editor, EditorTab):
+            editor.editor.document().print_(printer)
+            return
+        elif hasattr(editor, "document") and callable(getattr(editor, "document")):
+            editor.document().print_(printer)
+            return
+
+        # 2. Image viewer
+        if hasattr(editor, "_orig_pixmap") and editor._orig_pixmap and not editor._orig_pixmap.isNull():
+            painter = QPainter(printer)
+            try:
+                rect = printer.pageLayout().paintRectPixels(printer.resolution())
+                scaled = editor._orig_pixmap.scaled(
+                    rect.width(), rect.height(),
+                    Qt.KeepAspectRatio, Qt.SmoothTransformation
+                )
+                x = rect.x() + (rect.width() - scaled.width()) // 2
+                y = rect.y() + (rect.height() - scaled.height()) // 2
+                painter.drawPixmap(x, y, scaled)
+            finally:
+                painter.end()
+            return
+
+        # 3. PDF viewer
+        if hasattr(editor, "pdf_doc_qt") and editor.pdf_doc_qt:
+            painter = QPainter(printer)
+            try:
+                rect = printer.pageLayout().paintRectPixels(printer.resolution())
+                total = editor.pdf_doc_qt.pageCount()
+                for i in range(total):
+                    if i > 0:
+                        printer.newPage()
+                    page_img = editor.pdf_doc_qt.render(i, rect.size())
+                    painter.drawImage(rect.topLeft(), page_img)
+            finally:
+                painter.end()
+            return
+
+        # Fallback for other widgets (DOCX, XLSX, etc.): print plain text
+        doc = QTextDocument()
+        text = editor.toPlainText() if hasattr(editor, "toPlainText") else ""
+        if text:
+            doc.setPlainText(text)
+            doc.print_(printer)
+        else:
+            self.show_status_message("Printing not supported for this view", 2000)
+
     def update_recent_files_menu(self):
         self.recent_menu.clear()
         recent_files = load_recent_files(validate=True)
@@ -2674,7 +2954,9 @@ class MainWindow(QMainWindow):
 
     def show_find(self):
         editor = self.current_editor()
-        if hasattr(editor, "find_text"):
+        if hasattr(editor, "show_find"):
+            editor.show_find()
+        elif hasattr(editor, "find_text"):
             self.find_replace_panel.show()
             self.find_replace_panel.focus_find()
         else:

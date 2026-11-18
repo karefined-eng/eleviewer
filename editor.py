@@ -1,8 +1,8 @@
 from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QToolButton, QTextEdit, QMenu, QSizePolicy
+    QWidget, QVBoxLayout, QHBoxLayout, QToolButton, QTextEdit, QMenu, QSizePolicy, QApplication
 )
-from PySide6.QtCore import Signal, QSize, Qt
-from PySide6.QtGui import QAction, QTextDocument
+from PySide6.QtCore import Signal, QSize, Qt, QBuffer, QByteArray, QMimeData
+from PySide6.QtGui import QAction, QTextDocument, QClipboard, QImage
 
 from icons import icon
 from theme import editor_stylesheet, compact_toolbar_stylesheet, resolve_markdown_icon_size
@@ -42,6 +42,10 @@ class EditorTab(QWidget):
                 btn.clicked.connect(slot)
             return btn
 
+        # Undo / Redo buttons
+        self.btn_undo = _tb("rotate-ccw", "Undo (Ctrl+Z)")
+        self.btn_redo = _tb("rotate-cw", "Redo (Ctrl+Y)")
+
         # Heading dropdown
         self.btn_h = _tb("type", "Heading")
         self.btn_h.setPopupMode(QToolButton.InstantPopup)
@@ -76,14 +80,42 @@ class EditorTab(QWidget):
 
         self.btn_clear = _tb("eraser", "Clear Formatting", self._on_clear_clicked)
         
+        # Accessibility: accessible names for formatting toolbar buttons
+        self.btn_undo.setAccessibleName("Undo")
+        self.btn_undo.setAccessibleDescription("Undo last change (Ctrl+Z)")
+        self.btn_redo.setAccessibleName("Redo")
+        self.btn_redo.setAccessibleDescription("Redo last change (Ctrl+Y)")
+        self.btn_h.setAccessibleName("Heading")
+        self.btn_h.setAccessibleDescription("Apply heading style to selected text")
+        self.btn_bullet.setAccessibleName("Bullet List")
+        self.btn_bullet.setAccessibleDescription("Insert bullet list")
+        self.btn_numbered.setAccessibleName("Numbered List")
+        self.btn_numbered.setAccessibleDescription("Insert numbered list")
+        self.btn_bold.setAccessibleName("Bold")
+        self.btn_bold.setAccessibleDescription("Make selected text bold")
+        self.btn_italic.setAccessibleName("Italic")
+        self.btn_italic.setAccessibleDescription("Make selected text italic")
+        self.btn_underline.setAccessibleName("Underline")
+        self.btn_underline.setAccessibleDescription("Underline selected text")
+        self.btn_strike.setAccessibleName("Strikethrough")
+        self.btn_strike.setAccessibleDescription("Apply strikethrough to selected text")
+        self.btn_link.setAccessibleName("Link")
+        self.btn_link.setAccessibleDescription("Insert a hyperlink")
+        self.btn_table.setAccessibleName("Table")
+        self.btn_table.setAccessibleDescription("Insert a table")
+        self.btn_clear.setAccessibleName("Clear Formatting")
+        self.btn_clear.setAccessibleDescription("Remove formatting from selected text")
+        
         # Pin button
         self.btn_pin = _tb("pin", "Pin Toolbar", self._on_pin_toggled)
         self.btn_pin.setCheckable(True)
         is_pinned = load_settings().get("formatting_toolbar_pinned", False)
         self.btn_pin.setChecked(is_pinned)
         self._update_pin_icon()
+        self.btn_pin.setAccessibleName("Pin Toolbar")
+        self.btn_pin.setAccessibleDescription("Pin the formatting toolbar in place")
 
-        for w in (self.btn_h, self.btn_bullet, self.btn_numbered, self.btn_bold, self.btn_italic,
+        for w in (self.btn_undo, self.btn_redo, self.btn_h, self.btn_bullet, self.btn_numbered, self.btn_bold, self.btn_italic,
                   self.btn_underline, self.btn_strike, self.btn_link, self.btn_table, self.btn_clear):
             toolbar.addWidget(w)
             
@@ -105,6 +137,8 @@ class EditorTab(QWidget):
         self.editor = QTextEdit()
         self.editor.setStyleSheet(editor_stylesheet())
         self.editor.textChanged.connect(self._on_text_changed)
+        self.btn_undo.clicked.connect(self.editor.undo)
+        self.btn_redo.clicked.connect(self.editor.redo)
 
         layout.addWidget(self.toolbar_widget)
         layout.addLayout(self.toggle_layout)
@@ -235,6 +269,84 @@ class EditorTab(QWidget):
         
         cursor.insertText(text)
         self.editor.setFocus()
+
+    # ── Clipboard-aware paste ───────────────────────────────────────
+
+    def _paste_from_clipboard(self):
+        """Handle Ctrl+V: paste images as markdown, rich text as formatted."""
+        clipboard = QApplication.clipboard()
+        mime = clipboard.mimeData()
+
+        if mime.hasImage():
+            self._paste_image_from_clipboard(mime)
+            return
+        if mime.hasHtml():
+            self._paste_rich_text_from_clipboard(mime)
+            return
+        # Fall back to default plain-text paste
+        self.editor.paste()
+
+    def _paste_image_from_clipboard(self, mime):
+        """Save clipboard image to vault/images/ and insert markdown."""
+        image = mime.imageData()
+        if isinstance(image, QImage) and not image.isNull():
+            self._save_image_and_insert(image)
+        elif mime.hasUrls():
+            for url in mime.urls():
+                if url.isLocalFile():
+                    from PySide6.QtGui import QPixmap
+                    pix = QPixmap(url.toLocalFile())
+                    if not pix.isNull():
+                        self._save_image_and_insert(pix.toImage())
+                        return
+
+    def _save_image_and_insert(self, image):
+        """Save image to vault and insert markdown image reference."""
+        import os
+        from datetime import datetime
+        from paths import APP_DATA_DIR
+
+        images_dir = APP_DATA_DIR / "images"
+        images_dir.mkdir(parents=True, exist_ok=True)
+
+        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+        img_name = f"paste_{ts}.png"
+        img_path = images_dir / img_name
+
+        if image.save(str(img_path), "PNG"):
+            rel_path = str(img_path)
+            md = f"\n![]({rel_path})\n"
+            cursor = self.editor.textCursor()
+            cursor.insertText(md)
+            self.is_modified = True
+            self.textChanged.emit()
+            self.show_status_message(f"Image pasted: {img_name}", 3000)
+
+    def _paste_rich_text_from_clipboard(self, mime):
+        """Convert rich text/html to markdown and insert."""
+        html = mime.html()
+        if not html:
+            self.editor.paste()
+            return
+        # Very basic HTML-to-markdown conversion
+        import re
+        text = html
+        text = re.sub(r'<br\s*/?>', '\n', text, flags=re.I)
+        text = re.sub(r'</p>', '\n\n', text, flags=re.I)
+        text = re.sub(r'<[^>]+>', '', text)
+        text = text.replace('&nbsp;', ' ').replace('&amp;', '&').replace('&lt;', '<').replace('&gt;', '>')
+        cursor = self.editor.textCursor()
+        cursor.insertText(text)
+        self.is_modified = True
+        self.textChanged.emit()
+
+    def keyPressEvent(self, event):
+        """Intercept Ctrl+V for clipboard-aware paste."""
+        if event.modifiers() & Qt.ControlModifier and event.key() == Qt.Key_V:
+            self._paste_from_clipboard()
+            event.accept()
+            return
+        super().keyPressEvent(event)
 
     def _insert_format(self, prefix, suffix):
         cursor = self.editor.textCursor()

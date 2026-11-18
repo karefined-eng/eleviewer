@@ -21,25 +21,38 @@ Instead of juggling five different apps and a web browser with 50 open tabs, Ele
 1. **Split-Screen Web Panel**  
    Read your textbook on the left and browse the web on the right. EleViewer includes a built-in web browser right next to your notes, so you can research without getting distracted by YouTube or social media.
 
-2. **Vaults & Live Search**  
+2. **Doc↔Doc Split View**  
+   View two documents side-by-side with `Ctrl+\`. Compare a draft against a rubric, read two chapters in parallel, or cross-reference notes while reading a PDF.
+
+3. **Vaults & Live Search**  
    Link your school folder as a "Vault". Our background search engine memorizes where everything is so you can instantly find any file just by typing its name.
 
-3. **Session Restore**  
+4. **Session Restore**  
    Accidentally closed the app? Laptop died? No problem. EleViewer automatically remembers exactly what files you had open, what page you were on, and even where you were scrolled.
 
-4. **Persistent Bookmarks**  
+5. **Persistent Bookmarks**  
    Drop a bookmark (Ctrl+D) on page 400 of a PDF or save a helpful website. Your bookmarks stay pinned to your workspace forever, so you never lose your spot.
 
-5. **Global Quick Note (Alt+E)**  
+6. **PDF Annotations & Highlighting**  
+   Highlight passages in yellow, green, or pink. Add sticky notes anchored to page positions. Draw freehand annotations with the pen tool. Annotations save automatically and reload when you reopen the PDF.
+
+7. **Global Quick Note (Alt+E)**  
    Whenever you have a sudden idea, press `Alt+E` from anywhere on your computer. A quick scratchpad will pop up instantly so you can write it down without breaking your flow.
 
 ### 📄 Universal File Support
 
 EleViewer opens all your school files locally:
-* **PDFs**: Read smoothly and use the built-in Read Aloud voice to rest your eyes.
+* **PDFs**: Read smoothly, use the Table of Contents sidebar (`Ctrl+Shift+L`), search in-document (`Ctrl+F`), highlight and annotate, and use Read Aloud voice.
 * **Word & PowerPoint (.docx, .pptx)**: Open your assignments and slides instantly without paying for Microsoft Office.
 * **Excel (.xlsx, .csv)**: View spreadsheets cleanly.
-* **Markdown**: Take beautiful, auto-formatting notes.
+* **Markdown**: Take beautiful, auto-formatting notes with clipboard-aware paste (images and rich text convert automatically).
+
+### ✏️ Editing & Productivity
+
+- **Undo/Redo**: `Ctrl+Z` / `Ctrl+Y` on the main toolbar for all text editors.
+- **Print & Export**: Print any document (`Ctrl+P`) or export to PDF via File > Export as PDF.
+- **Clipboard Paste**: Copy an image or formatted text from anywhere and paste it into a note with `Ctrl+V`. Images are saved automatically and inserted as Markdown.
+- **Keyboard Shortcuts**: `Ctrl+O` open, `Ctrl+S` save, `Ctrl+N` new note, `Ctrl+D` bookmark, `Ctrl+F` find in document, `Alt+V` toggle vault, `F9` read aloud, `Ctrl+\` split view.
 
 ## Choose your Windows download
 

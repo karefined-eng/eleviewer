@@ -25,6 +25,8 @@ SHORTCUTS = {
     "Ctrl+Alt+B": "toggle_bookmarks_panel",
     "Ctrl+Alt+T": "toggle_main_toolbar",
     "Ctrl+D": "bookmark_current_tab",
+    "Ctrl+P": "print_file",
+    "Ctrl+Shift+O": "toggle_pdf_toc",
     "F1": "open_getting_started",
     "Alt+S": "open_settings",
 }
@@ -57,6 +59,8 @@ class ShortcutHost(QWidget):
     def toggle_bookmarks_panel(self): self.record("toggle_bookmarks_panel")
     def toggle_main_toolbar(self): self.record("toggle_main_toolbar")
     def bookmark_current_tab(self): self.record("bookmark_current_tab")
+    def print_file(self): self.record("print_file")
+    def toggle_pdf_toc(self): self.record("toggle_pdf_toc")
     def open_getting_started(self): self.record("open_getting_started")
     def open_settings(self): self.record("open_settings")
 

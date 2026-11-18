@@ -103,6 +103,17 @@ def _draw_icon_pixmap(ext: str, size: int, color_hex: str) -> QPixmap:
         right_path.lineTo(x + w * 0.58, y + h * 0.72)
         painter.drawPath(right_path)
 
+    elif ext in (".png", ".jpg", ".jpeg", ".gif", ".bmp", ".svg", ".webp", ".ico"):
+        # Lucide FileImage: mountain peak and sun circle
+        painter.drawEllipse(QPointF(x + w * 0.38, y + h * 0.45), w * 0.08, w * 0.08)
+        img_path = QPainterPath()
+        img_path.moveTo(x + w * 0.25, y + h * 0.75)
+        img_path.lineTo(x + w * 0.45, y + h * 0.55)
+        img_path.lineTo(x + w * 0.60, y + h * 0.68)
+        img_path.lineTo(x + w * 0.75, y + h * 0.52)
+        img_path.lineTo(x + w * 0.75, y + h * 0.75)
+        painter.drawPath(img_path)
+
     else:
         # Default fallback: Lucide FileText style (3 lines)
         l1_y = y + h * 0.42
