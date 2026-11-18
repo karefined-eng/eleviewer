@@ -1296,18 +1296,22 @@ class MainWindow(QMainWindow):
     def _refresh_welcome_search_guidance(self):
         if not hasattr(self, "welcome_search_guidance"):
             return
-
-        vault_paths = [
-            path for path in load_settings().get("vault_paths", [])
-            if path and os.path.isdir(path)
-        ]
-        has_vaults = bool(vault_paths)
-        self.welcome_search_guidance.setText(
-            "Search file names in your active course folder, or open a website in the web panel."
-            if has_vaults
-            else "Link a course folder to search its file names, or open a website in the web panel."
-        )
-        self.welcome_add_vault_button.setVisible(not has_vaults)
+        try:
+            vault_paths = [
+                path for path in load_settings().get("vault_paths", [])
+                if path and os.path.isdir(path)
+            ]
+            has_vaults = bool(vault_paths)
+            self.welcome_search_guidance.setText(
+                "Search file names in your active course folder, or open a website in the web panel."
+                if has_vaults
+                else "Link a course folder to search its file names, or open a website in the web panel."
+            )
+            self.welcome_add_vault_button.setVisible(not has_vaults)
+        except RuntimeError:
+            # Underlying C++ QObject was deleted (welcome tab destroyed).
+            # Signal connection is still live; guard prevents the crash.
+            pass
 
     def _create_welcome_widget(self):
         w = QWidget()
