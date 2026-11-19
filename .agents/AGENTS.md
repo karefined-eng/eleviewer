@@ -103,3 +103,20 @@ This repository is a Python + PySide6 desktop app for browsing and studying loca
 - **Patch context after creating handoff files:** A later multi-file patch can fail when the newly created file is not represented in the current Git diff context. Read the file and apply its replacement hunk separately.
 - **pip-compile hash resolution:** `pip-compile --generate-hashes --output-file=requirements.lock.txt requirements.txt` produced no output and remained running for several minutes in this environment. Stop it rather than leaving a resolver process active; use exact pins and CI `pip-audit` until a clean release environment can generate platform-specific hashes.
 - **pip-audit network resolution:** `pip-audit -r requirements.lock.txt --strict` also remained silent beyond two minutes locally. Stop it and rely on the CI audit job, where the package advisory service has normal network access.
+- **Qt deleted C++ object RuntimeError guard:** PySide6 widgets whose C++ object has been destroyed (e.g., when a parent tab is closed) raise `RuntimeError: Internal C++ object already deleted` on any method call. `hasattr()` only checks the Python wrapper, not whether the C++ object is still alive. When accessing a Qt widget whose parent tab or dialog may have been destroyed while signal-slot connections remain live, wrap the access in `try/except RuntimeError`:
+```python
+try:
+    self.welcome_search_guidance.setText(...)
+except RuntimeError:
+    # C++ QObject was deleted; signal connection is stale. Guard against crash.
+    pass
+```
+- **PowerShell head/tail unavailable:** Windows PowerShell 5.1 does not provide `head` or `tail` cmdlets. Use `Select-Object -First N` for the first N lines and `Select-Object -Last N` for the last N lines:
+```powershell
+command | Select-Object -First 10   # instead of command | head -10
+command | Select-Object -Last 20    # instead of command | tail -20
+```
+- **PowerShell mkdir -p unavailable:** Windows PowerShell 5.1's `mkdir` does not support the Unix `-p` recursive flag. Create directories recursively with:
+```powershell
+New-Item -ItemType Directory -Force -Path docs/api, docs/features
+```
